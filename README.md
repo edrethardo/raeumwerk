@@ -1,3 +1,3 @@
 # Räumwerk
 
-Projekt der Werkbank.
+Projekt der Agentenumgebung.
