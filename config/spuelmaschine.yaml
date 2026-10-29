@@ -1,0 +1,134 @@
+# Parametrisches Modell einer 60-cm-Einbau-Spuelmaschine (vollintegriert,
+# unter einer Arbeitsplatte) mit Ober- und Unterkorb, Glashalter-Reihen und
+# Ablage (Arbeitsplatte auf dem Nachbarschrank).
+#
+# Jeder Wert hat eine Quelle `src` (Schluessel aus `quellen`) oder ist
+# `annahme` (kein Datenblattwert gefunden oder bewusst gewaehlt; die
+# Begruendung steht im Kommentar). Laengen in m. Gelesen von
+# spuelmaschine/masse.py, Erklaerung: docs/spuelmaschine.md.
+#
+# Koordinaten (Kuechensystem): Ursprung auf dem Boden an der linken
+# Vorderkante der Geraetenische, +x nach rechts entlang der Front, +y aus
+# der Nische heraus in den Raum, +z nach oben. Die Korpusfront liegt bei y = 0,
+# die Rueckwand der Nische bei y = -nische.tiefe.
+#
+# Spaeter wird das Modell an die Maschine des Owners angepasst; bis dahin ist
+# es ein Standardmodell aus mehreren Herstellerangaben.
+
+quellen:
+  bosch_smv4hvx14e: >-
+    Bosch Produktdatenblatt "Serie 4, Vollintegrierter Geschirrspueler, 60 cm
+    SMV4HVX14E" (media3.bosch-home.com, specsheet de-DE): Nischenmasse
+    815-875 x 600 x 550 mm (HxBxT), Geraetemasse 815 x 598 x 550 mm, Tiefe bei
+    geoeffneter Tuer (90 Grad) 1150 mm, Oberkorb hoehenverstellbar 3-stufig
+  miele_g6260: >-
+    Miele Gebrauchsanweisung Geschirrspueler G 6260 SCVi / G 6265 SCVi,
+    Kapitel Oberkorb und Technische Daten: Nischenhoehe ab 805 mm (+65 mm),
+    Nischenbreite 600 mm, Geraetebreite 598 mm, Geraetetiefe 570 mm;
+    Tellerdurchmesser Oberkorb oben/mitte/unten 20/22/24 cm, Unterkorb
+    31/29/27 cm (Modelle mit Besteckkorb)
+  asko_dw60: >-
+    ASKO Montageinformation Geschirrspueler 60 cm (Planungsunterlage eines
+    Kuechenhaendlers): vollintegriert XL 82 cm, Nischenhoehe 820-870 mm,
+    Sockelhoehe 60-140 mm, Hoehe der Abdecktuer 680-760 mm (Standardeinbau),
+    Nischentiefe min. 550 mm
+  bsh_koerbe: >-
+    Ersatzteilangaben Bosch/Siemens (Haendler fiyo, Originalteile):
+    Oberkorb 00770441 525 x 190 x 475 mm (Breite x Hoehe x Tiefe),
+    Oberkorb 00774191 520 x 510 x 160 mm (Laenge x Breite x Hoehe),
+    Unterkorb 00775102 525 x 515 x 140 mm (Laenge x Breite x Hoehe)
+  kueche_norm: >-
+    uebliche Kuechenmasse: Arbeitsplattentiefe 600 mm, Plattendicke
+    38-40 mm, Unterschrankbreite 600 mm (Groessenordnung, kein Messwert)
+
+nische:
+  breite_m: {wert: 0.600, src: bosch_smv4hvx14e}     # Miele und ASKO ebenso 600 mm
+  hoehe_m: {wert: 0.820, src: asko_dw60}             # untere ASKO-XL-Grenze, in Bosch 815-875
+  tiefe_m: {wert: 0.550, src: bosch_smv4hvx14e}      # ASKO: min. 550 mm
+
+geraet:
+  breite_m: {wert: 0.598, src: bosch_smv4hvx14e}     # Miele ebenso 598 mm
+  tiefe_m: {wert: 0.550, src: bosch_smv4hvx14e}      # Miele 570 mm (Bosch gewaehlt, passt in 550er-Nische)
+  # Hoehe = Nischenhoehe (Fuesse auf Nischenhoehe eingestellt)
+  wand_m: {wert: 0.025, src: annahme}                # Seitenwand Korpus + Spalt, aussen -> Innenraum
+  rueckwand_m: {wert: 0.020, src: annahme}
+  decke_m: {wert: 0.030, src: annahme}               # Bottichdecke unter der Arbeitsplatte
+  wanne_oben_m: {wert: 0.100, src: annahme}          # Oberkante Bodenwanne = Sockelhoehe
+
+tuer:
+  # Die Tuer haengt unten an der Front (Scharnier bei y = 0) und liegt
+  # geoeffnet waagerecht vor der Maschine.
+  breite_m: {wert: 0.598, src: bosch_smv4hvx14e}     # = Geraetebreite
+  # Laenge Scharnier -> Oberkante: Tiefe bei geoeffneter Tuer 1150 mm minus
+  # Geraetetiefe 550 mm (abgeleitet aus dem Bosch-Datenblatt)
+  laenge_m: {wert: 0.600, src: bosch_smv4hvx14e}
+  dicke_m: {wert: 0.040, src: annahme}               # Innentuer + Moebelfront (19 mm)
+  scharnier_hoehe_m: {wert: 0.100, src: asko_dw60}   # = Sockelhoehe 100 mm (Bereich 60-140 mm)
+  oeffnung_grad: {wert: 90.0, src: bosch_smv4hvx14e} # ganz offen, waagerecht
+
+oberkorb:
+  breite_m: {wert: 0.525, src: bsh_koerbe}
+  tiefe_m: {wert: 0.475, src: bsh_koerbe}
+  # Korb ohne Rollen/Halter: Drahtwand niedriger als die Teile-Gesamthoehe
+  # (160-190 mm laut bsh_koerbe)
+  wand_hoehe_m: {wert: 0.120, src: annahme}
+  # Boden des Oberkorbs, abgeleitet: Unterkorbboden (0,13, Annahme) + lichte
+  # Hoehe fuer Teller im Unterkorb bei Oberkorb "Mitte" (29 cm laut miele_g6260)
+  boden_hoehe_m: {wert: 0.420, src: annahme}
+  lichte_hoehe_m: {wert: 0.220, src: miele_g6260}    # Oberkorb "Mitte": Teile bis 22 cm
+  # Weg der Teleskopschienen bis zum Anschlag (fast Vollauszug); kein
+  # Datenblattwert gefunden
+  auszug_max_m: {wert: 0.450, src: annahme}
+  vorne_eingeschoben_y_m: {wert: -0.040, src: annahme}  # Korbfront hinter der geschlossenen Tuer
+
+unterkorb:
+  breite_m: {wert: 0.525, src: bsh_koerbe}
+  tiefe_m: {wert: 0.515, src: bsh_koerbe}
+  wand_hoehe_m: {wert: 0.140, src: bsh_koerbe}
+  boden_hoehe_m: {wert: 0.130, src: annahme}          # ueber der Wanne, auf Rollen
+  auszug_max_m: {wert: 0.450, src: annahme}           # rollt auf die Tuer
+  vorne_eingeschoben_y_m: {wert: -0.010, src: annahme}  # 515 mm tief: fuellt den Bottich (530 mm) fast ganz
+
+gitter:
+  # Gitter-Ersatz: wenige Staebe statt tausender Draehte
+  stab_dicke_m: {wert: 0.006, src: annahme}
+  stab_abstand_m: {wert: 0.100, src: annahme}         # Wandstaebe senkrecht
+  boden_dicke_m: {wert: 0.006, src: annahme}          # Korbboden als duenne Platte (Kollision)
+
+glashalter:
+  # Zwei Reihen entlang der Korbtiefe (y) im rechten, vorderen Korbteil mit je
+  # 2 Slots; Glaeser stehen kopfueber (Rand unten) auf dem Korbboden. Zwischen
+  # den Slots niedrige Querstreben, beidseits jeder Reihe eine Laengsstrebe.
+  # Die Slots liegen mindestens 0,18 m vor der Arbeitsplattenkante (y = 0,05),
+  # damit der Arm ueber dem Korb nicht unter die Platte muss (Befund der
+  # Erreichbarkeit: Slot bei y = 0,035 -> Unterarm trifft Platte/Bottichdecke).
+  reihen_x_m: {wert: [0.45, 0.33], src: annahme}      # Reihenmitte x (Kuechensystem)
+  slots_je_reihe: {wert: 2, src: annahme}             # 2 x 2 = 4 Glaeser (Auftrag)
+  erster_slot_ab_korbfront_m: {wert: 0.090, src: annahme}  # bei ausgezogenem Korb: Korbfront -> Slot 1
+  teilung_m: {wert: 0.100, src: annahme}              # Glas 75 mm + 25 mm Luft
+  strebe_hoehe_m: {wert: 0.035, src: annahme}         # 23 mm unter den Fingerspitzen (TCP - 30 mm)
+  laengsstrebe_abstand_m: {wert: 0.060, src: annahme} # von der Reihenmitte (Glasrand + 22,5 mm)
+
+glas:
+  # wie config/scene.yaml (Greifdemo)
+  durchmesser_m: {wert: 0.075, src: annahme}
+  hoehe_m: {wert: 0.110, src: annahme}
+  masse_kg: {wert: 0.25, src: annahme}
+
+arbeitsplatte:
+  dicke_m: {wert: 0.040, src: kueche_norm}
+  tiefe_m: {wert: 0.600, src: kueche_norm}            # ab Rueckwand
+  # Platte laeuft ueber Maschine und Nachbarschraenke
+  links_x_m: {wert: -0.600, src: kueche_norm}         # ein Unterschrank links
+  rechts_x_m: {wert: 1.200, src: kueche_norm}         # ein Unterschrank rechts (Ablage)
+  # Nachbarschraenke: Front bei y = 0, Tiefe = Nischentiefe
+
+ablage:
+  # Abstellpunkte (Glasmitte x, y) auf der Arbeitsplatte rechts neben der
+  # Maschine, nahe der Plattenvorderkante (y = 0,05): von der Schiene vor dem
+  # Schrank aus erreicht der Arm mit senkrechtem Greifer (J5 <= 95 Grad) nur
+  # einen schmalen Ring um den Fuss (Befund der Rastersuche, Punkte bei
+  # y = -0,18 lagen ausserhalb). Glaeser werden kopfueber abgestellt wie im Korb.
+  punkte_xy_m:
+    wert: [[0.70, -0.03], [0.82, -0.03], [0.70, -0.13], [0.82, -0.13]]
+    src: annahme
