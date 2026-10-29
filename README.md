@@ -4,6 +4,7 @@ Ein Open-Source-Framework, mit dem ein Roboter eine Spülmaschine selbstständig
 
 - Umgebung und Smoke-Test: `docs/umgebung.md`
 - Robotermodell: `docs/robotermodell.md`
+- Greifdemo starten (frischer Klon, ein Befehl): `docs/START.md`; Details: `docs/greifdemo.md`
 - Was nachgewiesen ist und was experimentell: `docs/STATUS.md`
 
 ## Drittquellen
