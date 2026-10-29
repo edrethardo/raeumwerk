@@ -190,7 +190,7 @@ Video-Renderer bleibt unberührt.
 ## 7. Grenzen
 
 - Nur Posen und senkrechte Wege sind geprüft, nicht der Transport vom Korb
-  zur Ablage (Wegeplanung offen).
+  zur Ablage (Wegeplanung und Umdrehen: `docs/ausraeumen.md`).
 - Korb als feste Pose; der Schiebeweg ist nur beschrieben, nicht in Newton
   simuliert.
 - Gitterkörbe als wenige Stäbe und Platte, Gläser als Vollzylinder.
