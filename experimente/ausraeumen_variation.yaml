@@ -1,0 +1,28 @@
+# Variationslauf Ausraeumen (docs/ausraeumen.md, docs/START.md):
+# 4 Glaeser kopfueber aus dem Oberkorb, umdrehen, aufrecht abstellen.
+# Je Glas Versatz im Slot +-5 mm (x, y) und Drehung um die Glasachse +-3 Grad,
+# Korbauszug +-1 cm um den Nennwert. Die Planung kennt die Lage (keine Kamera).
+# Ein Versuch dauert auf der CPU etwa 40 min, auf einer RTX 3090 etwa 5-8 min.
+name: ausraeumen-variation
+beschreibung: "Glaslage +-5 mm / +-3 Grad je Glas, Korbauszug +-1 cm"
+backend: ausraeumen
+szene: config/ausraeumen.yaml
+roboter: config/robot.yaml
+versuche: 10
+seed: 58
+parameter:
+  glas1_dx_m: {bereich: [-0.005, 0.005]}
+  glas1_dy_m: {bereich: [-0.005, 0.005]}
+  glas2_dx_m: {bereich: [-0.005, 0.005]}
+  glas2_dy_m: {bereich: [-0.005, 0.005]}
+  glas3_dx_m: {bereich: [-0.005, 0.005]}
+  glas3_dy_m: {bereich: [-0.005, 0.005]}
+  glas4_dx_m: {bereich: [-0.005, 0.005]}
+  glas4_dy_m: {bereich: [-0.005, 0.005]}
+  glas1_gier_grad: {bereich: [-3.0, 3.0]}
+  glas2_gier_grad: {bereich: [-3.0, 3.0]}
+  glas3_gier_grad: {bereich: [-3.0, 3.0]}
+  glas4_gier_grad: {bereich: [-3.0, 3.0]}
+  korbauszug_delta_m: {bereich: [-0.01, 0.01]}
+stueck:
+  max_minuten: 25

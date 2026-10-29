@@ -30,7 +30,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
-BACKENDS = ("newton", "attrappe")
+BACKENDS = ("newton", "attrappe", "ausraeumen")
+SZENE_STANDARD = {"ausraeumen": "config/ausraeumen.yaml"}
+# Backend ausraeumen: weitere Dateien, die in den Konfig-Hash eingehen
+WEITERE_DATEIEN = {"ausraeumen": {"spuelmaschine": "config/spuelmaschine.yaml",
+                                  "scene_spuelmaschine": "config/scene_spuelmaschine.yaml"}}
 
 # Parameter -> (Beschreibung, erlaubte Grenzen)
 PARAMETER: Dict[str, Tuple[str, Tuple[float, float]]] = {
@@ -44,6 +48,14 @@ PARAMETER: Dict[str, Tuple[str, Tuple[float, float]]] = {
     "reibung_tisch": ("Reibwert Tisch", (0.0, 2.0)),
     "greifkraft_n": ("Greifkraft je Finger (<= Antriebsgrenze)", (0.5, 50.0)),
 }
+
+
+def parameter_tabelle(backend: str) -> Dict[str, Tuple[str, Tuple[float, float]]]:
+    """Erlaubte Parameter je Backend (ausraeumen: Glaslage je Slot, Korbauszug)."""
+    if backend == "ausraeumen":
+        from ausraeumen.konfig import PARAMETER as P_AUS
+        return P_AUS
+    return PARAMETER
 
 
 class ExperimentFehler(ValueError):
@@ -77,8 +89,8 @@ class Experiment:
         return p if p.is_absolute() else REPO / p
 
 
-def _spec(name: str, roh: Any) -> Dict[str, Any]:
-    lo, hi = PARAMETER[name][1]
+def _spec(name: str, roh: Any, tabelle=None) -> Dict[str, Any]:
+    lo, hi = (tabelle or PARAMETER)[name][1]
 
     def zahl(x):
         if isinstance(x, bool) or not isinstance(x, (int, float)):
@@ -131,17 +143,19 @@ def aus_dict(d: Dict[str, Any]) -> Experiment:
     params = d.get("parameter") or {}
     if not isinstance(params, dict):
         raise ExperimentFehler("parameter: Abbildung erwartet")
-    falsch = sorted(set(params) - set(PARAMETER))
+    tab = parameter_tabelle(backend)
+    falsch = sorted(set(params) - set(tab))
     if falsch:
-        raise ExperimentFehler(f"unbekannte Parameter: {', '.join(falsch)} (erlaubt: {', '.join(sorted(PARAMETER))})")
+        raise ExperimentFehler(f"unbekannte Parameter: {', '.join(falsch)} (erlaubt: {', '.join(sorted(tab))})")
     stueck = d.get("stueck") or {}
     mm = float(stueck.get("max_minuten", 25.0))
     if not 0 < mm <= 30:
         raise ExperimentFehler("stueck.max_minuten: 0 < x <= 30 (Stuecke hoechstens 30 min)")
     extra = {k: d[k] for k in ("abgeleitet_von", "begruendung") if k in d}
-    return Experiment(name=name, backend=backend, szene=str(d.get("szene", "config/scene.yaml")),
+    return Experiment(name=name, backend=backend,
+                      szene=str(d.get("szene", SZENE_STANDARD.get(backend, "config/scene.yaml"))),
                       roboter=str(d.get("roboter", "config/robot.yaml")), versuche=n, seed=seed,
-                      parameter={k: _spec(k, params[k]) for k in sorted(params)},
+                      parameter={k: _spec(k, params[k], tab) for k in sorted(params)},
                       stueck_max_minuten=mm, beschreibung=str(d.get("beschreibung", "")), extra=extra)
 
 
@@ -182,6 +196,8 @@ def sha256_datei(p: Path) -> str:
 def konfig_hash(exp: Experiment) -> Tuple[str, Dict[str, str]]:
     """Hash ueber Experiment (geparst) und die Bytes von Szene und Roboter."""
     dateien = {"szene": sha256_datei(exp.pfad(exp.szene)), "roboter": sha256_datei(exp.pfad(exp.roboter))}
+    for k, rel in WEITERE_DATEIEN.get(exp.backend, {}).items():
+        dateien[k] = sha256_datei(exp.pfad(rel))
     kern = {k: v for k, v in exp.als_dict().items() if k not in ("beschreibung", "begruendung")}
     roh = json.dumps({"experiment": kern, "dateien": dateien}, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(roh.encode()).hexdigest(), dateien
@@ -205,6 +221,15 @@ def szene_fuer(basis, parameter: Dict[str, float]):
 
 def greif_versatz(parameter: Dict[str, float]) -> Tuple[float, float, float]:
     return tuple(float(parameter.get(f"greif_versatz_{a}_m", 0.0)) for a in "xyz")  # type: ignore[return-value]
+
+
+def standardwerte_fuer(exp: Experiment) -> Dict[str, float]:
+    """Standardwerte aller Parameter des Backends (Manifest, Vorschlag)."""
+    if exp.backend == "ausraeumen":
+        return {k: 0.0 for k in parameter_tabelle("ausraeumen")}
+    from greifen import szene
+
+    return standardwerte(szene.load(exp.pfad(exp.szene)))
 
 
 def standardwerte(sz) -> Dict[str, float]:

@@ -29,7 +29,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     r.add_argument("--run-dir", default=None, help="Run-Verzeichnis (Fortsetzen: dasselbe angeben)")
     r.add_argument("--max-minuten", type=float, default=None, help="Zeitbudget dieses Stuecks (<= 30)")
     r.add_argument("--device", default=None, help="z. B. cpu oder cuda:0 (Standard: GPU, wenn da)")
-    r.add_argument("--backend", default=None, choices=["newton", "attrappe"])
+    r.add_argument("--backend", default=None, choices=["newton", "attrappe", "ausraeumen"])
+    r.add_argument("--teil", default=None, metavar="K/N",
+                   help="nur Versuche mit nr %% N == K (mehrere Prozesse auf einem Run-Verzeichnis)")
     p = sub.add_parser("report", help="Erfolge, Kollisionen, Fehlergruende zusammenfassen")
     p.add_argument("run")
     p.add_argument("--json", action="store_true", help="JSON statt Text ausgeben")
@@ -41,8 +43,16 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if a.cmd == "run":
         from . import lauf
+        teil = None
+        if a.teil:
+            try:
+                k, n = (int(x) for x in a.teil.split("/"))
+                teil = (k, n)
+            except ValueError:
+                print(f"FEHLER --teil {a.teil}: K/N erwartet, z. B. 0/3", file=sys.stderr)
+                return 2
         return lauf.run(a.experiment, a.run_dir, a.max_minuten, a.device, a.backend,
-                        log=lambda s: print(s, flush=True))
+                        log=lambda s: print(s, flush=True), teil=teil)
 
     from . import auswertung, experiment as ex
     from .lauf import run_pfad

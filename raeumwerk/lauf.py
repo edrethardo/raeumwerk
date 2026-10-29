@@ -22,6 +22,7 @@ Exit: 0 fertig, 1 Fehler, 2 Aufruf/Konfiguration, 3 Stueck zu Ende (weiter),
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import datetime as _dt
 import io
@@ -35,7 +36,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import __version__
 from . import experiment as ex
@@ -96,9 +97,22 @@ def _rel(p: Path) -> str:
 
 
 def _atomar(p: Path, text: str) -> None:
-    tmp = p.with_name(p.name + ".tmp")
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, p)
+
+
+@contextlib.contextmanager
+def _sperre(run: Path):
+    """Exklusive Dateisperre auf ``<run>/.manifest.lock`` (mehrere Prozesse, ``--teil``)."""
+    import fcntl
+
+    with open(run / ".manifest.lock", "a+", encoding="utf-8") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
 
 
 def lies_manifest(run: Path) -> Dict[str, Any]:
@@ -150,8 +164,14 @@ def neues_manifest(exp: ex.Experiment, exp_pfad: Path, run: Path, khash: str, da
 
 
 def run(exp_pfad: Path | str, run_dir: Optional[Path | str] = None, max_minuten: Optional[float] = None,
-        device: Optional[str] = None, backend: Optional[str] = None, log=print) -> int:
+        device: Optional[str] = None, backend: Optional[str] = None, log=print,
+        teil: Optional[Tuple[int, int]] = None) -> int:
+    """``teil=(k, n)``: nur die Versuche mit ``nr % n == k`` (mehrere Prozesse auf
+    einem Run-Verzeichnis; das Manifest wird unter einer Dateisperre gemischt)."""
     exp_pfad = Path(exp_pfad)
+    if teil is not None and not (teil[1] >= 1 and 0 <= teil[0] < teil[1]):
+        log(f"FEHLER --teil {teil}: k/n mit 0 <= k < n")
+        return EXIT_AUFRUF
     try:
         exp = ex.laden(exp_pfad)
         if backend:
@@ -169,27 +189,50 @@ def run(exp_pfad: Path | str, run_dir: Optional[Path | str] = None, max_minuten:
     run = run_pfad(run_dir)
     (run / "versuche").mkdir(parents=True, exist_ok=True)
 
-    from greifen import szene
+    standard = ex.standardwerte_fuer(exp)
+    with _sperre(run):
+        if (run / "manifest.json").exists():
+            man = lies_manifest(run)
+            if man.get("konfig_hash") != khash:
+                log(f"FEHLER {run.name}: Konfig-Hash {khash[:12]} passt nicht zum Run ({str(man.get('konfig_hash'))[:12]})")
+                return EXIT_AUFRUF
+            git = git_stand()
+            if git.get("sha") != man["git"].get("sha"):
+                man.setdefault("git_spaeter", []).append(dict(git, ab_stueck=len(man["stuecke"])))
+        else:
+            man = neues_manifest(exp, exp_pfad, run, khash, dateien, ex.versuchsliste(exp), standard)
+            shutil.copyfile(exp_pfad, run / "experiment.yaml")
+        plan = man["versuche_plan"]
 
-    standard = ex.standardwerte(szene.load(exp.pfad(exp.szene)))
-    if (run / "manifest.json").exists():
-        man = lies_manifest(run)
-        if man.get("konfig_hash") != khash:
-            log(f"FEHLER {run.name}: Konfig-Hash {khash[:12]} passt nicht zum Run ({str(man.get('konfig_hash'))[:12]})")
-            return EXIT_AUFRUF
-        git = git_stand()
-        if git.get("sha") != man["git"].get("sha"):
-            man.setdefault("git_spaeter", []).append(dict(git, ab_stueck=len(man["stuecke"])))
-    else:
-        man = neues_manifest(exp, exp_pfad, run, khash, dateien, ex.versuchsliste(exp), standard)
-        shutil.copyfile(exp_pfad, run / "experiment.yaml")
-    plan = man["versuche_plan"]
+        stueck = {"nr": len(man["stuecke"]), "id": f"{os.getpid()}-{time.time_ns()}", "start": jetzt(), "ende": None,
+                  "budget_min": budget_min, "versuche": [], "grund_ende": None}
+        if teil is not None:
+            stueck["teil"] = f"{teil[0]}/{teil[1]}"
+        man["stuecke"].append(stueck)
+        man["status"] = "laeuft"
+        _atomar(run / "manifest.json", json.dumps(man, indent=2))
+    eigen = {"git_spaeter", "versionen", "device", "fehler_traceback", "letzte_aenderung", "status"}
 
-    stueck = {"nr": len(man["stuecke"]), "start": jetzt(), "ende": None, "budget_min": budget_min,
-              "versuche": [], "grund_ende": None}
-    man["stuecke"].append(stueck)
-    man["status"] = "laeuft"
-    _atomar(run / "manifest.json", json.dumps(man, indent=2))
+    def mischen(status: Optional[str] = None) -> None:
+        """Eigenes Stueck und eigene Felder ins Manifest auf der Platte mischen."""
+        with _sperre(run):
+            m = lies_manifest(run)
+            m["stuecke"] = sorted([s for s in m["stuecke"] if s.get("id") != stueck["id"]] + [stueck],
+                                  key=lambda s: s["nr"])
+            for k in eigen:
+                if k in man:
+                    m[k] = man[k]
+            if status:
+                m["status"] = status
+            f = fertige_versuche(run)
+            m["versuche_fertig"] = len(f)
+            m["erfolge"] = sum(1 for r in f.values() if r["erfolg"])
+            if len(f) == len(plan):
+                m["status"] = "fertig"
+            man["erfolge"], man["versuche_fertig"] = m["erfolge"], m["versuche_fertig"]
+            schreibe_csv(run, f)
+            _atomar(run / "manifest.json", json.dumps(m, indent=2))
+            man["status"] = m["status"]
 
     def term(signum, frame):  # noqa: ARG001
         raise Abbruch()
@@ -200,7 +243,8 @@ def run(exp_pfad: Path | str, run_dir: Optional[Path | str] = None, max_minuten:
     try:
         sim = None
         fertig = fertige_versuche(run)
-        offen = [v for v in plan if v["nr"] not in fertig]
+        offen = [v for v in plan if v["nr"] not in fertig
+                 and (teil is None or v["nr"] % teil[1] == teil[0])]
         dauern = [float(r.get("wand_gesamt_s") or 0.0) for r in fertig.values()]
         for v in offen:
             vergangen = time.monotonic() - t0
@@ -223,13 +267,15 @@ def run(exp_pfad: Path | str, run_dir: Optional[Path | str] = None, max_minuten:
             stueck["versuche"].append(v["nr"])
             log("VERSUCH " + json.dumps({"nr": v["nr"], "erfolg": rec["erfolg"], "gruende": rec["gruende"],
                                          "parameter": v["parameter"], "wand_s": rec["wand_gesamt_s"]}))
-            man["versuche_fertig"] = len(fertig)
-            man["erfolge"] = sum(1 for r in fertig.values() if r["erfolg"])
-            schreibe_csv(run, fertig)
-            _atomar(run / "manifest.json", json.dumps(man, indent=2))
+            mischen()
+        fertig = fertige_versuche(run)
+        eigene_offen = [v for v in plan if v["nr"] not in fertig and (teil is None or v["nr"] % teil[1] == teil[0])]
         if len(fertig) == len(plan):
             man["status"], rc = "fertig", EXIT_FERTIG
             stueck["grund_ende"] = stueck["grund_ende"] or "alle Versuche fertig"
+        elif teil is not None and not eigene_offen:
+            man["status"], rc = "laeuft", EXIT_FERTIG
+            stueck["grund_ende"] = stueck["grund_ende"] or f"Teil {teil[0]}/{teil[1]} fertig, andere Teile offen"
         else:
             man["status"], rc = "unvollstaendig", EXIT_WEITER
     except Abbruch:
@@ -243,9 +289,8 @@ def run(exp_pfad: Path | str, run_dir: Optional[Path | str] = None, max_minuten:
         signal.signal(signal.SIGTERM, alt)
         stueck["ende"] = jetzt()
         stueck["wand_s"] = round(time.monotonic() - t0, 2)
-        man["versuche_fertig"] = len(fertige_versuche(run))
         man["letzte_aenderung"] = jetzt()
-        _atomar(run / "manifest.json", json.dumps(man, indent=2))
+        mischen(man["status"])
     log("RUN_RESULT " + json.dumps({"run": run.name, "status": man["status"], "rc": rc,
                                     "fertig": man["versuche_fertig"], "geplant": len(plan),
                                     "erfolge": man["erfolge"], "stueck": stueck["nr"],
