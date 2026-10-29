@@ -1,0 +1,88 @@
+# Szene der Glas-Greifdemo: Bodenplatte, Tisch (Quader), Glas (Zylinder).
+#
+# Weltkoordinaten = Koordinaten der Schiene (7. Achse): Ursprung am Schienen-
+# anfang auf dem Boden, +x entlang der Schiene, +z nach oben. Der Roboterfuss
+# steht bei x = 0,15 m + Achswert. Laengen in m, Massen in kg, Zeiten in s.
+# Jeder Wert hat eine Quelle `src` (Schluessel aus `quellen`) oder ist
+# `annahme`. Erklaerung: docs/greifdemo.md. Gelesen von greifen/szene.py.
+
+quellen:
+  wasserglas: >-
+    uebliches Trinkglas (Tumbler), Durchmesser 70-80 mm, Hoehe 100-120 mm,
+    Masse 200-300 g (Vorgabe des Auftrags; Mitte des Bereichs gewaehlt)
+  reibung_tabelle: >-
+    Richtwerte Haftreibung trocken: Glas auf Glas/Holz/Kunststoff 0,4-0,9,
+    Gummi auf Glas 0,7-1,0 (Tabellenbuch-Groessenordnung, kein Messwert)
+  mujoco_standard: >-
+    MuJoCo-Standard fuer weiche Kontakte solref = (0,02 s; 1,0); in Newton
+    entspricht das ke = 2500, kd = 100 (newton/_src/solvers/mujoco/kernels.py,
+    convert_solref)
+
+tisch:
+  # Quader neben der Schiene, Oberkante niedrig genug, dass der Arm das Glas
+  # von oben (Greifer senkrecht nach unten) mit 10 cm Hub erreicht; siehe
+  # docs/greifdemo.md (Reichweite mit Gelenk 5 <= 95 Grad).
+  mitte_xy_m: {wert: [0.70, 0.42], src: annahme}
+  groesse_m: {wert: [1.00, 0.40, 0.16], src: annahme}   # x, y, Hoehe = Oberkante
+  reibung: {wert: 0.5, src: reibung_tabelle}
+
+glas:
+  durchmesser_m: {wert: 0.075, src: wasserglas}
+  hoehe_m: {wert: 0.110, src: wasserglas}
+  masse_kg: {wert: 0.25, src: wasserglas}
+  # Vollzylinder gleicher Masse (echtes Glas ist hohl: Traegheit etwas groesser;
+  # fuer Greifen/Abstellen unerheblich)
+  reibung: {wert: 0.6, src: reibung_tabelle}
+  start_xy_m: {wert: [0.55, 0.35], src: annahme}
+  ziel_xy_m: {wert: [0.85, 0.33], src: annahme}
+
+kontakt:
+  # Fuer alle Paare gleich (Glas-Finger, Glas-Tisch, Boden). MuJoCo nimmt je
+  # Paar das Maximum der beiden Reibwerte: Finger-Glas 1,0, Glas-Tisch 0,6.
+  ke: {wert: 2500.0, src: mujoco_standard}
+  kd: {wert: 100.0, src: mujoco_standard}
+  reibung_finger: {wert: 1.0, src: reibung_tabelle}    # Gummibelag
+  reibung_torsion: {wert: 0.01, src: annahme}          # Drehreibung um die Kontaktnormale (m)
+  reibung_boden: {wert: 0.5, src: reibung_tabelle}
+
+greifen:
+  # TCP-Hoehe ueber der Tischplatte beim Greifen. Finger 60 mm lang, TCP auf
+  # halber Fingerlaenge: Fingerspitzen 58 mm, Greiferkoerper 118 mm ueber dem
+  # Tisch (8 mm ueber dem Glasrand).
+  tcp_ueber_tisch_m: {wert: 0.088, src: annahme}
+  vorposition_ueber_greifpunkt_m: {wert: 0.10, src: annahme}
+  hub_m: {wert: 0.10, src: annahme}                    # Anheben um 10 cm (Auftrag)
+  rueckzug_m: {wert: 0.10, src: annahme}
+  absetzen_luft_m: {wert: 0.002, src: annahme}         # TCP beim Absetzen 2 mm hoeher als beim Greifen
+  # Greifkraft = Fingersteifigkeit * Ueberdrueckung; Obergrenze ist die
+  # Antriebskraft des Greifers aus config/robot.yaml (greifer.kraft_n = 50 N).
+  greifkraft_n: {wert: 20.0, src: annahme}
+  finger_ke: {wert: 2000.0, src: annahme}              # N/m
+  finger_kd: {wert: 100.0, src: annahme}               # N s/m
+  # Anteil der Datenblattgeschwindigkeit, den die Planung nutzt
+  geschwindigkeit_anteil: {wert: 0.6, src: annahme}
+  haltezeit_s: {wert: 0.4, src: annahme}               # nach Schliessen/Oeffnen
+  nachlauf_s: {wert: 1.0, src: annahme}
+
+bewertung:
+  ziel_toleranz_m: {wert: 0.01, src: annahme}          # Auftrag: 1 cm
+  kippung_max_grad: {wert: 10.0, src: annahme}         # Auftrag: < 10 Grad
+  hub_min_m: {wert: 0.08, src: annahme}                # gilt als angehoben
+  stehhoehe_toleranz_m: {wert: 0.005, src: annahme}    # Glasmitte am Ende auf Tischhoehe
+  tisch_kollision_m: {wert: 0.0001, src: annahme}      # Durchdringung Arm-Tisch > 0,1 mm = Kollision
+  durchdringung_max_m: {wert: 0.003, src: annahme}     # Finger im Glas
+  glas_v_max_m_s: {wert: 1.0, src: annahme}            # schneller = weggeschossen
+
+variation:
+  versuche: {wert: 20, src: annahme}
+  streuung_xy_m: {wert: 0.02, src: annahme}            # gleichverteilt +-2 cm um den Start
+  seed: {wert: 4711, src: annahme}
+
+negativtest:
+  # absichtlich falscher Greifpunkt: 6 cm neben der Glasmitte quer zur
+  # Schliessrichtung (Welt-y); die 20 mm breiten Finger schliessen neben dem Glas
+  greifpunkt_versatz_m: {wert: [0.0, 0.06, 0.0], src: annahme}
+
+simulation:
+  dt_s: {wert: 0.002, src: annahme}
+  messintervall_schritte: {wert: 5, src: annahme}      # Kontakte/Glaslage alle 10 ms
