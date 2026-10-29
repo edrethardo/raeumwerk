@@ -49,7 +49,7 @@ class _Builder:
         self.parts: List[str] = [f'<robot name="{name}">']
 
     def link(self, name: str, mass: float, boxes: List[Box], com: Optional[Sequence[float]] = None,
-             inertia: Optional[Sequence[float]] = None) -> None:
+             inertia: Optional[Sequence[float]] = None, visual_xml: Optional[str] = None) -> None:
         p = [f"  <link name={quoteattr(name)}>"]
         if mass > 0:
             if com is None or inertia is None:
@@ -62,10 +62,13 @@ class _Builder:
                 f'    <inertial><origin xyz="{_vec(com)}" rpy="0 0 0"/><mass value="{_f(mass)}"/>'
                 f'<inertia ixx="{_f(ixx)}" ixy="0" ixz="0" iyy="{_f(iyy)}" iyz="0" izz="{_f(izz)}"/></inertial>'
             )
+        if visual_xml:
+            p.append(visual_xml)
         for size, center in boxes:
             geo = f'<geometry><box size="{_vec(size)}"/></geometry>'
             org = f'<origin xyz="{_vec(center)}" rpy="0 0 0"/>'
-            p.append(f"    <visual>{org}{geo}</visual>")
+            if not visual_xml:
+                p.append(f"    <visual>{org}{geo}</visual>")
             p.append(f"    <collision>{org}{geo}</collision>")
         p.append("  </link>")
         self.parts.append("\n".join(p))
@@ -88,10 +91,19 @@ class _Builder:
         return "\n".join(self.parts + ["</robot>", ""])
 
 
-def build_urdf(cfg: Optional[RobotConfig] = None, payload_kg: float = 0.0) -> str:
+def build_urdf(cfg: Optional[RobotConfig] = None, payload_kg: float = 0.0,
+               mesh_dir: Optional[str] = None) -> str:
+    """URDF als Text. ``mesh_dir`` (Ordner mit den iRC_ROS-Meshes, siehe
+    ``rebel_model.visual_mesh``) ersetzt nur die Visuals der Armglieder durch
+    Meshes; Massen, Gelenke und Kollisionsquader bleiben gleich. Die
+    Simulation ruft ``build_urdf`` ohne ``mesh_dir`` auf."""
     cfg = cfg or load()
     a, s, g = cfg.arm, cfg.achse7, cfg.greifer
     b = _Builder("rebel6_axis7_gripper")
+    vis = {}
+    if mesh_dir is not None:
+        from .visual_mesh import urdf_visual_xml, zuordnung
+        vis = {x.link: urdf_visual_xml(x, mesh_dir) for x in zuordnung(cfg)}
 
     # --- 7. Achse --------------------------------------------------------
     L, W, H = s["laenge_m"], s["breite_m"], s["hoehe_m"]
@@ -114,7 +126,8 @@ def build_urdf(cfg: Optional[RobotConfig] = None, payload_kg: float = 0.0) -> st
     b.link("base_link", cfg.massen["base_link"], [
         ((fw, fw, platte), (0.0, 0.0, platte / 2.0)),
         ((saeule, saeule, j1 - platte), (0.0, 0.0, platte + (j1 - platte) / 2.0)),
-    ], com=(0.0, 0.0, j1 / 2.0), inertia=_box_inertia(cfg.massen["base_link"], (fw, fw, j1)))
+    ], com=(0.0, 0.0, j1 / 2.0), inertia=_box_inertia(cfg.massen["base_link"], (fw, fw, j1)),
+        visual_xml=vis.get("base_link"))
 
     seg = [  # (Link, Laenge bis zum naechsten Gelenk, Breite)
         ("link_1", a["j2_hoehe_m"] - j1, gw),
@@ -127,7 +140,7 @@ def build_urdf(cfg: Optional[RobotConfig] = None, payload_kg: float = 0.0) -> st
     for (lname, ln, w) in seg:
         if ln <= 0:
             raise ValueError(f"{lname}: Laenge {ln} <= 0")
-        b.link(lname, cfg.massen[lname], [((w, w, ln), (0.0, 0.0, ln / 2.0))])
+        b.link(lname, cfg.massen[lname], [((w, w, ln), (0.0, 0.0, ln / 2.0))], visual_xml=vis.get(lname))
 
     vel = math.radians(a["geschwindigkeit_grad_s"])
     parents = ["base_link", "link_1", "link_2", "link_3", "link_4", "link_5"]
@@ -160,8 +173,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("-o", "--out", help="Zieldatei (Standard: stdout)")
     ap.add_argument("--payload", type=float, default=0.0, help="Nutzlast im TCP in kg")
     ap.add_argument("--config", help="robot.yaml (Standard: config/robot.yaml)")
+    ap.add_argument("--meshes", help="Ordner mit den iRC_ROS-Meshes (nur Optik, siehe rebel_model/visual_mesh.py)")
     args = ap.parse_args(argv)
-    text = build_urdf(load(args.config), payload_kg=args.payload)
+    text = build_urdf(load(args.config), payload_kg=args.payload, mesh_dir=args.meshes)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             fh.write(text)
