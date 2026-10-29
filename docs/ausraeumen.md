@@ -186,13 +186,13 @@ Korbauszug −8,8 … +7,9 mm.
 
 | Größe | Wert | Grenze |
 |---|---|---|
-| Zielfehler der Erfolge | höchstens 7,37 mm, Mittel 6,04 mm | 10 mm |
+| Zielfehler der Erfolge | höchstens 7,37 mm, Mittel über alle 40 Gläser 3,03 mm (Mittel der Versuchsmaxima 6,04 mm) | 10 mm |
 | Fingerdurchdringung | höchstens 2,92 mm | 3 mm |
 | Kontakt Arm ↔ Tisch | 0 mm | 0,1 mm |
 
-Der Zielfehler liegt im Mittel (6,0 mm) über dem der Demo (3,4–5,5 mm) und
-mindestens 2,6 mm unter der Grenze; die Fingerdurchdringung hat nur 0,08 mm
-Reserve. Zehn Versuche ohne Fehlschlag belegen keine Quote nahe 1: die obere
+Über alle 40 Gläser liegt der Zielfehler im Mittel bei 3,0 mm und damit etwas unter dem Demo-Bereich (3,4–5,5 mm).
+Das schlechteste Glas liegt mindestens 2,6 mm unter der Grenze. Die Fingerdurchdringung hat nur 0,08 mm
+Reserve. Ihre 3-mm-Grenze ist eine Modellgrenze der weichen Kontakte, keine gemessene Materialgrenze. Zehn Versuche ohne Fehlschlag belegen keine Quote nahe 1: die obere
 95-%-Grenze der Fehlerquote liegt bei dieser Stichprobe bei etwa 26 %.
 
 ## 8. Negativtest
