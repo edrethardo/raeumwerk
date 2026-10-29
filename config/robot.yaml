@@ -1,0 +1,95 @@
+# Parameter des Simulationsmodells: igus ReBeL 6 DOF auf einer 7. Achse
+# (Linearschiene) mit elektrischem Parallelgreifer.
+#
+# Jeder Wert hat eine Quelle `src` (Schluessel aus `quellen`) oder ist
+# `annahme` (kein Datenblattwert gefunden; am echten Geraet nachmessen).
+# Laengen in m, Winkel in Grad, Massen in kg. Erklaerung: docs/robotermodell.md.
+# Das Modell erzeugt rebel_model/urdf_gen.py aus dieser Datei.
+
+quellen:
+  ds_rebel: >-
+    igus Datenblatt "ReBeL 6 DOF", Issue 03/2024, Datei
+    "technical data sheet ReBeL 6DOF_EN.pdf" (sha256 in docs/robotermodell.md)
+  cpr_urdf: >-
+    CommonplaceRobotics/iRC_ROS, Commit 41701e6df3398087d217f0f478622e60f694de41,
+    irc_ros_description/urdf/robots/igus_rebel_6dof_00.description.xacro (Apache-2.0)
+  ds_achse7: >-
+    igus Produktseite "7th axis for ReBeL", Artikel ZLW-20200S-7TH-REBEL-01-<Hub>
+    (Hub 500 bis 3000 mm, Wiederholgenauigkeit 0,3 mm, bis 0,3 m/s)
+  ds_greifer: >-
+    igus Produktseite "Lightweight Parallel Gripper for ReBeL", Artikel
+    0-LCA-GRI-0100 (Greifbereich 100 mm, maximale Oeffnung 105 mm)
+
+arm:
+  # Abstaende in der Kerzenpose (alle Gelenke 0, Arm senkrecht), entlang z
+  # ab der Unterseite des Roboterfusses.
+  j1_hoehe_m: {wert: 0.100, src: cpr_urdf}        # Fuss -> Gelenk 1 (fuer die FK egal, J1 dreht um z)
+  j2_hoehe_m: {wert: 0.252, src: ds_rebel}        # Fuss -> Achse Gelenk 2
+  oberarm_m: {wert: 0.237, src: ds_rebel}         # Gelenk 2 -> Gelenk 3
+  unterarm_m: {wert: 0.297, src: ds_rebel}        # Gelenk 3 -> Gelenk 5
+  j4_ab_j3_m: {wert: 0.127, src: annahme}         # 0.297 - 0.170 (J4->J5 aus cpr_urdf); fuer die FK egal
+  hand_m: {wert: 0.126, src: ds_rebel}            # Gelenk 5 -> Werkzeugflansch
+  j6_ab_j5_m: {wert: 0.1208, src: cpr_urdf}       # fuer die FK egal (J6 dreht um die Flanschachse)
+  hoehe_kerze_m: {wert: 0.912, src: ds_rebel}     # Gesamthoehe Kerzenpose (Kontrollwert)
+  reichweite_m: {wert: 0.660, src: ds_rebel}      # Gelenk 2 -> Flansch, Arm gestreckt (Kontrollwert)
+  # Gelenke: Achsrichtung wie cpr_urdf (fuer den spaeteren Hardware-Abgleich),
+  # Nullpunkt = Kerzenpose, Grenzen aus dem Datenblatt.
+  gelenke:
+    - {name: joint1, achse: [0, 0, -1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
+    - {name: joint2, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel}
+    - {name: joint3, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel}
+    - {name: joint4, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
+    - {name: joint5, achse: [0, 1, 0], unten_grad: -95, oben_grad: 95, src: ds_rebel}
+    - {name: joint6, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
+  geschwindigkeit_grad_s: {wert: 45, src: ds_rebel}
+  moment_nm: {wert: 40.0, src: annahme}           # Antriebsgrenze im Modell; kein Datenblattwert
+  masse_gesamt_kg: {wert: 8.2, src: ds_rebel}
+  # Aufteilung der 8,2 kg auf die Glieder: annahme (Datenblatt nennt nur die Summe)
+  massen_kg:
+    src: annahme
+    base_link: 2.2
+    link_1: 1.2
+    link_2: 1.4
+    link_3: 1.2
+    link_4: 0.9
+    link_5: 0.8
+    link_6: 0.5
+  nutzlast_max_kg: {wert: 2.0, src: ds_rebel}     # inkl. Greifer
+  wiederholgenauigkeit_m: {wert: 0.001, src: ds_rebel}
+  # Kollisionsquader (Kantenlaenge quer zum Arm)
+  fuss_breite_m: {wert: 0.180, src: ds_rebel}     # Fuss-Durchmesser 180 mm, als Quader
+  glied_breite_m: {wert: 0.090, src: annahme}
+  hand_breite_m: {wert: 0.080, src: annahme}
+  flansch_durchmesser_m: {wert: 0.043, src: ds_rebel}
+
+achse7:
+  # Zahnriemenachse unter dem Fuss, faehrt entlang +x der Schiene.
+  hub_m: {wert: 1.000, src: ds_achse7}            # Variante 1000 mm (500..3000 lieferbar)
+  laenge_m: {wert: 1.300, src: annahme}           # Hub + Schlitten + 2 Endstuecke
+  schlitten_laenge_m: {wert: 0.200, src: annahme}
+  schlitten_hoehe_m: {wert: 0.020, src: annahme}
+  breite_m: {wert: 0.200, src: annahme}           # ZLW-20200: Schlittenbreite 200 mm (Namensschema)
+  hoehe_m: {wert: 0.060, src: annahme}            # Profilhoehe bis Schlitten-Unterseite
+  geschwindigkeit_m_s: {wert: 0.3, src: ds_achse7}
+  wiederholgenauigkeit_m: {wert: 0.0003, src: ds_achse7}
+  kraft_n: {wert: 300.0, src: annahme}
+  masse_schiene_kg: {wert: 6.0, src: annahme}
+  masse_schlitten_kg: {wert: 1.0, src: annahme}
+
+greifer:
+  # Zwei prismatische Finger, der rechte spiegelt den linken (URDF mimic).
+  # Gelenkwert q = Weg je Finger ab "zu"; Oeffnung = min_oeffnung + 2 q.
+  hub_gesamt_m: {wert: 0.100, src: ds_greifer}    # Greifbereich
+  max_oeffnung_m: {wert: 0.105, src: ds_greifer}
+  finger_breite_m: {wert: 0.020, src: annahme}    # quer zur Greifrichtung
+  finger_dicke_m: {wert: 0.010, src: annahme}     # in Greifrichtung
+  finger_laenge_m: {wert: 0.060, src: annahme}
+  koerper_laenge_m: {wert: 0.050, src: annahme}   # Flansch -> Fingerwurzel
+  koerper_breite_m: {wert: 0.150, src: annahme}   # in Greifrichtung, >= max_oeffnung + 2 Fingerdicken
+  koerper_tiefe_m: {wert: 0.050, src: annahme}
+  masse_kg: {wert: 0.40, src: annahme}            # Koerper; Finger je 0.05
+  finger_masse_kg: {wert: 0.05, src: annahme}
+  geschwindigkeit_m_s: {wert: 0.05, src: annahme}
+  kraft_n: {wert: 50.0, src: annahme}
+  # TCP: Mitte zwischen den Fingern, auf halber Fingerlaenge
+  tcp_ab_flansch_m: {wert: 0.080, src: annahme}   # koerper_laenge + finger_laenge / 2
