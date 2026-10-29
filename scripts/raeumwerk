@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Kommandozeile `raeumwerk` (python -m raeumwerk) mit passendem Python.
+#
+#   scripts/raeumwerk [--cpu] run <experiment.yaml> [--run-dir NAME|PFAD] [--max-minuten M] [--device D]
+#   scripts/raeumwerk report <run> [--json]
+#   scripts/raeumwerk next <run> [--out datei.yaml]
+#
+# run:    Python des Isaac-Lab-venv ($RAEUMWERK_HOME/venvs/isaaclab); mit --cpu
+#         Newton mit festen Versionen per uvx auf der CPU (wie run_greifen.sh)
+# report, next: brauchen nur die Standardbibliothek (python3)
+# RAEUMWERK_PYTHON ueberschreibt die Wahl. Run-Verzeichnisse ohne / im Namen
+# liegen unter $RAEUMWERK_EXPERIMENT_RUNS (Standard $RAEUMWERK_HOME/runs/experimente).
+# Auf einem geteilten GPU-Rechner `run` nur ueber scripts/submit_gpu.sh starten.
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+_runs_env=${RAEUMWERK_EXPERIMENT_RUNS:-}
+if [ -f config/local.env ]; then set -a; . config/local.env; set +a; fi
+export RAEUMWERK_HOME=${RAEUMWERK_HOME:-$HOME/raeumwerk}
+export RAEUMWERK_EXPERIMENT_RUNS=${_runs_env:-${RAEUMWERK_EXPERIMENT_RUNS:-$RAEUMWERK_HOME/runs/experimente}}
+
+cpu=0
+if [ "${1:-}" = "--cpu" ]; then cpu=1; shift; fi
+cmd=${1:-}
+extra=()
+if [ -n "${RAEUMWERK_PYTHON:-}" ]; then
+  py=("$RAEUMWERK_PYTHON")
+elif [ "$cmd" != run ]; then
+  py=(python3)
+elif [ "$cpu" = 1 ]; then
+  UVX=${UVX:-$(command -v uvx || echo "$HOME/.local/bin/uvx")}
+  [ -x "$UVX" ] || { echo "uvx fehlt (https://docs.astral.sh/uv/)" >&2; exit 3; }
+  py=("$UVX" -p 3.12 --with newton==1.6.1 --with warp-lang==1.17.0 --with mujoco==3.12.0
+      --with mujoco-warp==3.12.0 --with numpy --with pyyaml python)
+  extra=(--device cpu)
+else
+  PY="$RAEUMWERK_HOME/venvs/isaaclab/bin/python"
+  [ -x "$PY" ] || { echo "venv fehlt: scripts/install_backends.sh isaaclab (oder --cpu)" >&2; exit 3; }
+  py=("$PY")
+fi
+if [ "$cmd" = run ]; then
+  nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv,noheader 2>/dev/null || true
+  # Listener waehrend des Laufs mitschreiben (keine Schnittstelle nach aussen erlaubt)
+  mkdir -p "$RAEUMWERK_EXPERIMENT_RUNS"
+  ss_log="$RAEUMWERK_EXPERIMENT_RUNS/ss-ltnp-$(date -u +%Y%m%dT%H%M%SZ)-$$.txt"
+  ( while true; do echo "--- $(date -Is)"; ss -ltnp 2>/dev/null; sleep 10; done ) > "$ss_log" 2>&1 &
+  sspid=$!
+  trap 'kill $sspid 2>/dev/null' EXIT
+  trap 'kill -TERM $kind 2>/dev/null; wait $kind; exit 143' TERM INT
+  "${py[@]}" -m raeumwerk "$@" "${extra[@]}" &
+  kind=$!
+  wait $kind
+  exit $?
+fi
+exec "${py[@]}" -m raeumwerk "$@"
