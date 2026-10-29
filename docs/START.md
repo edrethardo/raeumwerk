@@ -91,11 +91,26 @@ werden sie übersprungen.
 
 ## 6. Bilder und Video
 
-Nicht umgesetzt. Ein headless gerendertes Video bräuchte entweder Isaac Sim (Kit,
-11 GB RAM beim Erststart) oder den Newton-Viewer mit EGL auf dem GPU-Rechner.
-Beides ist mehr Aufwand, als der Auftrag für diesen Punkt vorsieht. Statt
-Bildern liegt in `versuch-NN.json` unter `messung.phasen_ende` die Glaslage am
-Ende jeder Phase.
+Ein Video der Demo entsteht in zwei Schritten, ganz ohne Display und ohne GPU:
+
+```bash
+# 1. Demo laufen lassen und die Posen aller Körper aufzeichnen (30 Bilder je Simsekunde)
+scripts/run_greifen.sh --cpu demo --aufzeichnen ergebnis/demo.npz
+# 2. Offscreen rendern (matplotlib/Agg) und mit ffmpeg kodieren
+uvx -p 3.12 --with numpy --with pyyaml --with matplotlib \
+  python scripts/render_video.py ergebnis/demo.npz --out ergebnis/greifdemo.mp4 --standbild ergebnis/mitte.png
+```
+
+Schritt 1 dauert auf der CPU etwa 2 min, Schritt 2 etwa 40 s. Ohne
+`--aufzeichnen` verhält sich die Demo wie vorher. Das Video zeigt die
+Kollisionsquader aus der URDF, das Glas als Zylinder, Tisch, Schiene sowie
+Start- und Zielmarke, oben links die Phase und am Ende das Ergebnis der
+Bewertung (Zielfehler, Kippung). Kodiert wird mit H.264 (libx264), yuv420p und
+`+faststart`, 1280×720 bei 30 Bildern/s. Das spielt auf iPhone und iPad. Ist das
+Video kürzer als 24 s, läuft es langsamer als Echtzeit (`--tempo`, die
+Einblendung zeigt die Simzeit). `ergebnis/` steht in `.gitignore`; Videos und
+Aufzeichnungen kommen nicht ins Repo. Test: `tests/test_video.py` (der
+Render-Test braucht matplotlib und ffmpeg, sonst wird er übersprungen).
 
 ## 7. Experimente: `raeumwerk run`, `report`, `next`
 
