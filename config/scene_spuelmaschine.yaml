@@ -1,0 +1,76 @@
+# Szene Spuelmaschine: Lage der 7. Achse (Schiene) des ReBeL zur Maschine,
+# Greifparameter fuer die kopfueber stehenden Glaeser, Kollisionsrand,
+# Raster der Lagesuche und Newton-Parameter fuer den Stabilitaetstest.
+#
+# Koordinaten: Kuechensystem aus config/spuelmaschine.yaml (Boden z = 0,
+# Korpusfront y = 0, +y in den Raum, Nische x = 0 .. 0,6 m).
+# Jeder Wert hat `src` (Schluessel aus `quellen`) oder ist `annahme`.
+# Gelesen von spuelmaschine/erreichbarkeit.py und spuelmaschine/stabilitaet.py,
+# Erklaerung und Ergebnistabelle: docs/spuelmaschine.md.
+
+quellen:
+  rastersuche: >-
+    Ergebnis der Rastersuche `python -m spuelmaschine.erreichbarkeit --raster`
+    (Tabelle und Begruendung in docs/spuelmaschine.md)
+  scene_greifdemo: >-
+    config/scene.yaml (Greifdemo): Kontaktparameter, Reibwerte, dt und der
+    TCP-Abstand ueber dem Glasrand beim Greifen von oben
+
+pose:
+  oberkorb_auszug_m: {wert: 0.450, src: annahme}     # ganz ausgezogen (auszug_max_m)
+  unterkorb_auszug_m: {wert: 0.0, src: annahme}      # eingeschoben
+
+schiene:
+  # Ursprung = Schienenanfang (Link `rail` der URDF) im Kuechensystem, z =
+  # Oberkante des Podests. Gierwinkel: Drehung der Schienen-x-Achse um +z
+  # (0 = parallel zur Front nach +x, 90 = senkrecht zur Front in den Raum).
+  lage: {wert: senkrecht_zur_front, src: rastersuche}
+  ursprung_xyz_m: {wert: [0.78, 0.06, 0.65], src: rastersuche}
+  gier_grad: {wert: 90.0, src: rastersuche}
+
+podest:
+  # Fester Sockel unter der Schiene, Grundflaeche = Schiene + Rand je Seite;
+  # Podest und Schiene duerfen Tuer und Schraenke nicht beruehren
+  rand_m: {wert: 0.03, src: annahme}                  # Grundflaeche = Schiene aus config/robot.yaml + Rand
+
+greifen:
+  # Greifer senkrecht nach unten; die Finger schliessen quer zur Glasreihe
+  # (Kuechen-x), damit sie nicht zwischen die Nachbarglaeser muessen.
+  tcp_ueber_glasrand_m: {wert: 0.088, src: scene_greifdemo}  # Greiferkoerper 8 mm ueber dem Glasboden
+  vorposition_m: {wert: 0.10, src: annahme}           # Slot: Anfahrt senkrecht von oben, Finger ueber der Korbwand
+  # Ablage: Glasrand 5 cm ueber der Platte; mehr braucht der Transport nicht
+  # (Plattenkante 0,86 m), jeder weitere cm kostet Podesthoehe (J5-Grenze)
+  ablage_vorposition_m: {wert: 0.05, src: annahme}
+  aushub_m: {wert: 0.15, src: annahme}                # Glasrand 3 cm ueber der Korbwand (12 cm)
+  absetzen_luft_m: {wert: 0.002, src: scene_greifdemo}
+  wegpunkt_abstand_m: {wert: 0.01, src: annahme}      # Senkrechte Wege in 1-cm-Schritten pruefen
+  gelenksprung_max_grad: {wert: 10.0, src: annahme}   # je Wegpunkt; groesser = kein durchgehender Griff
+  slot_gier_grad: {wert: [0.0, 180.0], src: annahme}  # Schliessrichtung +-x
+  ablage_gier_grad: {wert: [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0], src: annahme}
+
+kollision:
+  sicherheitsrand_m: {wert: 0.005, src: annahme}      # Abstand Roboter <-> Szene, sonst Kollision
+  ik_fehler_max_m: {wert: 0.001, src: annahme}        # Auftrag: < 1 mm
+
+raster:
+  # Rastersuche ueber Lage, Abstand und Podesthoehe; beide Ausrichtungen
+  senkrecht_x_m: {wert: [0.74, 0.78, 0.82, 0.86, 0.90, 0.95, 1.00], src: annahme}  # ab 0,734: Podest frei von der Tuer
+  senkrecht_y_m: {wert: [0.06], src: annahme}         # Schienenanfang vor der Arbeitsplattenkante (0,05)
+  parallel_y_m: {wert: [0.75, 0.85, 0.95], src: annahme}  # hinter der offenen Tuer (0,60) + halbe Schienenbreite
+  parallel_x_m: {wert: [-0.40, -0.10, 0.20], src: annahme}
+  hoehe_m: {wert: [0.0, 0.2, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8], src: annahme}
+  seed: {wert: 2718, src: annahme}
+
+newton:
+  # Stabilitaetstest: nur Maschine, Arbeitsplatte und die 4 Glaeser
+  dt_s: {wert: 0.002, src: scene_greifdemo}
+  einschwingen_s: {wert: 0.2, src: annahme}           # Absetzen in die Kontaktlage
+  dauer_s: {wert: 2.0, src: annahme}                  # Auftrag: 2 s ruhig
+  drift_max_m: {wert: 0.001, src: annahme}            # Auftrag: < 1 mm
+  einsinken_max_m: {wert: 0.005, src: annahme}        # weiche Kontakte, kein Durchfallen
+  ke: {wert: 2500.0, src: scene_greifdemo}
+  kd: {wert: 100.0, src: scene_greifdemo}
+  reibung_glas: {wert: 0.6, src: scene_greifdemo}
+  reibung_korb: {wert: 0.5, src: annahme}             # Kunststoffbeschichteter Draht
+  reibung_torsion: {wert: 0.01, src: scene_greifdemo}
+  messintervall_schritte: {wert: 5, src: scene_greifdemo}
