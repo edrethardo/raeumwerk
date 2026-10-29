@@ -7,6 +7,7 @@ Ein Open-Source-Framework, mit dem ein Roboter eine Spülmaschine selbstständig
 - Greifdemo starten (frischer Klon, ein Befehl): `docs/START.md`; Details: `docs/greifdemo.md`
 - Experimente headless (`raeumwerk run/report/next`), GPU-Warteschlange, Trennung Simulation/Hardware: `docs/architektur.md`
 - Was nachgewiesen ist und was experimentell: `docs/STATUS.md`
+- Kaufempfehlung Kamera (Ensenso) und ReBeL-Zubehör: `docs/hardware-auswahl.md`
 
 ## Drittquellen
 
