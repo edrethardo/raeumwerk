@@ -118,13 +118,19 @@ Nennmoment bleibt.
 |---|---|
 | `rebel_model.schnell`: FK, Jacobi und IK für viele Gelenkvektoren auf einmal (numpy-Batch), Drehungen um Koordinatenachsen als Spaltenmischung | IK gleich der Einzel-IK (`Chain.ik`) bis auf 1e-13 rad, ~8× schneller je Ziel |
 | Startposen stückweise: erst die erste allein, dann der Rest als Batch | meist reicht die erste; scheitern alle, kosten die übrigen nur einen Batch |
-| Warmstart entlang der Wege, Zufallsstarts nur bei Fehlschlag | kein Neustart mitten im Weg, wenn das Ergebnis ohnehin feststeht (ein Neustart springt > 10°) |
+| Warmstart entlang der Wege, Zufallsstarts nur bei Fehlschlag | wie bisher: Neustart nur, wenn der Warmstart nicht konvergiert; scheitern alle Startposen, 12 weitere Zufallsstarts (`ik.zufallsstarts_bei_fehlschlag`) |
 | vektorisierter AABB-Vorfilter der Kollision | Quadertest nur für nahe Paare |
 | Prozesse über alle Ziele (`--jobs`, Standard alle Kerne) | Zug, Slots, Teller, Ablage parallel |
 | Cache je Ziel (`~/.cache/raeumwerk/aufbau`) | Schlüssel = SHA-256 aus Aufbau (ohne Name/Beschreibung), Ziel, `config/*.yaml` und Quellcode; jede Änderung an Szene, Roboter oder Code rechnet neu |
 
 ## Grenzen
 
+- Kalte Läufe dauern 0,5–5 min (8 Kerne); teuer sind Ziele, die scheitern
+  (alle Startposen, Zufallsstarts, 300 IK-Schritte je Versuch). `stationaer`
+  liegt mit 5:02 min knapp über 5 min.
+- Mit mehr Zufallsstarts findet das Werkzeug manchmal Ziele, die die alten
+  Skripte nicht fanden (C2: Glasplätze 4/16 statt 2/16); umgekehrt fiel kein
+  Ziel weg.
 - Ergebnisse, die nur von einem Zufallsstart erreicht werden, schwanken mit dem
   Seed. Seeds sind fest je Ziel (reproduzierbar), aber andere als in den alten
   Skripten, die einen Zufallsstrom über alle Ziele teilten.
