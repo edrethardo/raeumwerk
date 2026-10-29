@@ -730,3 +730,254 @@ liegen außerhalb des Repos und gehen als Artefakt an den Owner.
 - [K13] igus drylin ZLW, technische Daten (Werte „in horizontaler Einbaulage“): https://igus.eu/drive-technology/linear-axes-with-toothed-belts/technical-data
 - [K14] RBTX, Cobot-Hubsäule AI Lift (RBTX-BUS-0001, 2.340,00 € netto, 500 mm): https://rbtx.de/de-DE/components/profiles-more/cobot-lifting-column-ai-lift-500 ; Datenblatt Baumeister & Schack: https://a.storyblok.com/f/298593/x/ad1cc75250/13_ai-lift-baumeister-rev06.pdf
 - [Q17], [Q18] wie `docs/hardware-auswahl.md`.
+
+## 14. Machbarkeit: ReBeL auf der Arbeitsplatte über der Maschine (Variante C)
+
+Stand: 29.10.2026. **Nur Machbarkeitsprüfung, kein Produktcode.** Frage des
+Owners: Der Roboter steht auf der Arbeitsplatte über der Einbau-Spülmaschine
+(Plattenoberkante 0,86 m, Vorderkante y = 0,05 m). Kann er dann den Oberkorb
+mit Gläsern und Tellern leeren? Geprüft sind zwei Untervarianten:
+**C1** (fest an der Vorderkante) und **C2** (auf der vorhandenen horizontalen
+7. Achse entlang der Platte, Schiene in x). Gerechnet wurde mit denselben
+Überschlagsskripten wie in §13, außerhalb des Repos. `rebel_model` und
+`spuelmaschine/erreichbarkeit.py` blieben unverändert. Neu sind die Lage
+(Fuß an der Kante, Neigung), die Halterung als Hindernis und die
+Oberkorb-Teller.
+
+### 14.1 Kurzfassung
+
+- **Er leert den Oberkorb nicht vollständig.**
+  - Steht der ReBeL aufrecht auf der Platte, reicht er an die Ablage auf der
+    Platte. Den eingeschobenen Oberkorb kann er aber nicht ziehen: Der
+    Frontgriff liegt 0,32 m unter der Platte und hinter der Kante.
+  - Zieht der Arm geneigt über die Kante (C2, Roboterachse 105–135° aus der
+    Senkrechten zum Raum hin), geht der Korbzug über 0,45 m. Dann erreicht er
+    aber nur **2/16 Glasplätze**, **3/8 Teller** (nur die rechte Korbhälfte)
+    und auf der Platte nur **1/4 Ablagepunkte** (Seitgriff, vordere Reihe).
+- **C1 (fest) geht nicht.** Ohne die 8 cm Bauhöhe von Schiene und Schlitten
+  fehlen beim Zug 2–5 cm (0,40–0,43 m statt 0,45 m). Gläser und Teller
+  ergaben in der geneigten Lage 0 von 8 bzw. 0 von 5 geprüften Zielen.
+- **Momente:** Der Zug geht. Mit Eigengewicht liegt J2 bei 10,0 Nm (20 N)
+  bzw. 12,4 Nm (30 N), bei der Z-Achse waren es 18,4 bzw. 20,2 Nm.
+  - Der geneigte Arm entlastet J2 (Eigengewicht 5–6 Nm statt 13–15 Nm).
+  - Dafür liegt die J1-Achse fast waagerecht und trägt **10–15 Nm**
+    Eigengewicht, auch in Ruhe.
+- **Kamera:** Hinter oder über dem Roboter sieht die B57 den Oberkorb nicht:
+  0 % bzw. 1–12 %. Der Roboter steht zwischen Kamera und Korb. Brauchbar
+  bleibt nur ein Ausleger vor der Maschine (20–39 %), also wieder im
+  Stehplatz.
+- **Tür und Platz:** Die Tür schwenkt frei (0–90°, Halter, Fuß und Schiene
+  frei, Parkpose gefunden). Vor der Maschine bleibt der Boden frei. Dafür
+  belegt der Roboter die Arbeitsplatte und arbeitet in Kopfhöhe von Kindern.
+- **Empfehlung:** Variante C nicht weiter verfolgen. Die Z-Achse frontal
+  (§13) bleibt die bessere Lösung für den Oberkorb. C2 ist nur dann
+  interessant, wenn ein zweiter Greifpunkt bzw. die Korbtiefe die
+  Glasabdeckung ändert (§14.8).
+
+### 14.2 Modell, Raster und Ziele
+
+| Größe | C1: fest | C2: 7. Achse entlang der Platte |
+|---|---|---|
+| Fuß | Fußmitte x 0,15 / 0,30 / 0,45 m | Schiene x −0,40…0,90 m, Fuß fährt x −0,25…0,75 m (ZLW 1000 mm Hub) |
+| Fußabstand zur Vorderkante d | −0,10…+0,15 m (+ = über die Kante) | dito, Schienenmitte |
+| Neigung t der Roboterachse zum Raum | 0° stehend, 45°, 90° (Winkel), 135°, 180° hängend; nachgerechnet 105° und 120° | dito |
+| Halterung (Hindernis) | Platte 0,25 × 0,25 m; überstehend Konsole unter dem Fuß, geneigt Keil bzw. Winkel, hängend Ausleger auf der Platte | dito über die Schienenlänge |
+| Ablage | 4 Gläser auf der Platte rechts neben dem Fuß (x +0,30/+0,42 m, y −0,03/−0,15 m) | 4 Gläser hinter dem Schienenende (x 1,00/1,10 m, y −0,03/−0,15 m) |
+
+- **Gierwinkel:** spielt bei J1 ±179° keine Rolle und wurde nicht variiert.
+- **Vorfilter:** Reichweite aller Ziele, 120 Lagen (C1 90, C2 30), dazu
+  Lagekonflikte von Fuß, Schiene und Halter.
+- **Volle IK mit Kollisionsprüfung:**
+  - Korbzug: stehend, 90°, 105°, 120°, 135° und hängend.
+  - Alle Ziele: für die beste Lage je Variante, C2 bei 105°/d 0 und C1 bei
+    105°/d 0/x 0,30.
+- **Ausgeschieden im Vorfilter:**
+  - Hängend (180°) bei d ≤ +0,10 m: Fuß trifft die Platte bzw. die
+    Bottichdecke.
+  - 45° bei d ≤ +0,05 m: Keil trifft die Bottichdecke.
+
+Ziele (nur Oberkorb, 0,45 m ausgezogen, Regeln wie §13.2: 5 mm Rand,
+IK-Fehler < 1 mm, Sprung ≤ 10° je 1-cm-Wegpunkt, Korbzug mit Szene je 1 cm):
+- **Korbzug:** Zangengriff waagerecht an der oberen Frontstrebe (x 0,30,
+  0,15 bzw. 0,45 m), 8 cm Anfahrt, 0,45 m Zug. Das Einschieben ist derselbe
+  Weg rückwärts. Zusätzlich geprüft: Griff von oben.
+- **Glasplätze:** 16 wie §13 (4 Reihen x 0,12–0,48 m × 4 Tiefen).
+- **Teller im Oberkorb:** 8 Dessertteller, Annahme Ø 19 cm (Maßgedeck
+  EN 50242 [K15]). Sie stehen hochkant in Stachelreihen, die Fläche zur
+  Front, in zwei Reihen bei x 0,15 und 0,45 m, je 4 Tiefen 0,07–0,25 m
+  hinter der Korbfront. Oberkörbe nehmen Teller bis Ø 22–27 cm auf, je nach
+  Korbstufe [K16]; 19 cm liegt sicher darunter.
+  - Griff von oben am Tellerrand, 2 cm tief, Finger schließen entlang y.
+  - 10 cm Anfahrt, 15 cm Aushub (Tellerunterkante 3 cm über der Korbwand).
+  - Die Teller sind wie in §6.3 nicht als Hindernis modelliert. Gläser
+    stehen in diesem Lastfall nicht im Korb.
+- **Ablage:** Griff von oben wie §13. Zusätzlich der Seitgriff am aufrechten
+  Glas (TCP in Glasmitte, waagerecht von vorn, wie `config/ausraeumen.yaml`).
+
+### 14.3 Abdeckung der Ziele
+
+| Zielgruppe | heute (Podest 0,40 / 0,65 m) | Z-Achse frontal (§13) | C1 fest (stehend; geneigt 105°) | **C2 7. Achse (geneigt 105°, d 0)** |
+|---|---|---|---|---|
+| Oberkorb ziehen 0,45 m und einschieben | ja (7. Achse zieht) | ja | **nein**: stehend außer Reichweite; geneigt nur 0,40–0,43 m | **ja** (auch bei 120°/d +0,05 und 135°/d +0,15) |
+| Glasplätze Oberkorb (16) | 3/16 | 6/16 | stehend 2/13 (Lauf vorzeitig beendet); geneigt 0/8 geprüft | **2/16** (x 0,24 und 0,36, vorderste Tiefe) |
+| Teller Oberkorb (8) | nicht gerechnet | nicht gerechnet | geneigt 0/5 geprüft | **3/8** (rechts 3/4, links 0/4) |
+| Ablage auf der Platte (4, Griff von oben) | 4/4 bei 0,65 m | 0/4 (Tisch 4/4) | stehend 4/4 (Vorfilter); geneigt 0/4 (90–163 mm zu weit) | 0/4 (97–179 mm zu weit) |
+| Ablage auf der Platte (4, Seitgriff) | – | – | nicht gerechnet | 1/4 (vorn außen) |
+| Tür schließen mit montiertem Roboter | geht | Parkhöhe ≥ 0,65 m nötig | geht (Lage frei) | **geht** (Halter, Fuß und Schiene frei im Schwenk 0–90°, Parkpose Arm über der linken Platte) |
+
+Lesart:
+- **Stehend fehlt der Korbzug.** Die eingeschobene Frontstrebe liegt bei
+  y −0,04 m, z 0,54 m. Beim waagerechten Griff stünde das Handgelenk
+  0,6 m von J2 entfernt, der Arm reicht 0,53 m. Von oben gegriffen fehlen
+  6 mm, und J5 bekäme den Hebel aus §13.4 (4,1 Nm bei 20 N).
+- **Stehend 90° (Winkel):** Der Zugweg reißt bei 48–50 von 54 Wegpunkten
+  ab (0,40–0,42 m).
+- **Hängend vor der Kante (180°, d +0,15 m)** findet keine IK für den
+  Griffbeginn. Die Strebe liegt nur 0,07 m vom eigenen J2 entfernt, der Arm
+  faltet aber nicht enger als ~0,19 m (J3 ≤ 140°).
+- **Erst die Neigung um 105–135° bringt den Zug.** Dann liegt J2 vor der
+  Kante auf etwa 0,86 m Höhe. C1 fehlen dabei 2–5 cm, weil Schiene und
+  Schlitten bei C2 den Fuß um 8 cm von der Platte abheben. Ein C1-Winkel mit
+  8 cm Distanz entspräche geometrisch C2 (nicht gerechnet).
+- **Gläser:** Die äußeren Reihen x 0,12 und 0,48 m scheitern wie in §13 am
+  150 mm breiten Greiferkörper.
+  - In den inneren Reihen trifft der geneigte Unterarm ab der zweiten Tiefe
+    die Plattenkante, die Bottichdecke oder die eigene Halterung.
+  - Die hinterste Reihe (y 0,02 m) liegt unter der Platte, siehe
+    `pose-glas-links-hinten.png`.
+- **Teller:** Erreichbar ist nur die rechte Reihe, die hinterste davon
+  stößt an den eigenen Fuß. Die linke Reihe (x 0,15 m) findet keine IK.
+  Der Fuß fährt auf der Schiene mit. Die Ursache ist nicht untersucht.
+- **Ablage:**
+  - Die geneigte Basis reicht nicht bis auf die Plattenoberfläche: Die Hand
+    müsste beim Griff von oben 0,2 m über dem Glas stehen.
+  - Der Seitgriff erreicht die vordere Reihe. Bei 0,12 m Teilung trifft der
+    Greiferkörper das Nachbarglas, nötig sind ≥ 0,16 m.
+  - In der hinteren Reihe (y −0,15 m) streift der Unterarm die Platte.
+
+### 14.4 Momente beim Korbzug mit Eigengewicht
+
+Gerechnet ist `tau = Jᵀ F` über den ganzen Zugweg, Maximum je Gelenk. Dazu
+kommt das Eigengewicht: Gliedmassen aus `config/robot.yaml` im
+Link-Ursprung, Greifer 0,5 kg. Die Summe ist konservativ als |Zug| +
+|Schwerkraft| je Wegpunkt gebildet. Grenzen [K10]: J1–J3 Nennmoment
+10–15 Nm, Maximum 12,5–20 Nm. J4–J6 Nennmoment 2 Nm, Maximum 2,5–3 Nm.
+Geurteilt wird gegen die unteren Werte.
+
+| Lage | Zug | J1 | J2 | J3 | J4 / J5 | davon Eigengewicht J2 | Urteil |
+|---|---|---|---|---|---|---|---|
+| C2 105°, d 0 | 20 N | 7,2 | 13,1 | 9,4 | 0,8 / 1,1 | 5,7 | knapp (J2 über Nenn, unter Max) |
+| | 30 N | 7,8 | 16,8 | 11,7 | 0,8 / 1,1 | 5,7 | geht nicht (J2 über 12,5) |
+| **C2 120°, d +0,05** | 20 N | 4,6 | **10,0** | 9,3 | 1,1 / 0,7 | 5,3 | **geht** (J2 am Nennmoment) |
+| | 30 N | 5,5 | 12,4 | 11,7 | 1,1 / 0,7 | 5,3 | knapp |
+| C2 135°, d +0,15 | 20 N | 13,5 | 14,9 | 8,4 | 1,2 / 0,5 | 10,1 | geht nicht (J1, J2) |
+| Z-Achse frontal (§13.4) | 20 / 30 N | 4,0 | 18,4 / 20,2 | 4,5 / 6,7 | 0 | 13,3–14,9 | knapp bis über Max |
+
+- **Hängt der Arm nach unten, ist das für J2 günstiger.** Das Eigengewicht an
+  J2 fällt von 13–15 Nm (Z-Achse) auf 5–6 Nm. Die Summe mit 20 N Zug fällt
+  von 18,4 auf 10,0 Nm (120°). Ohne Eigengewicht trägt J2 aus dem Zug
+  allein 5–8 Nm (20 N) bzw. 8–12 Nm (30 N).
+- **Der Preis ist J1.** Bei 105–135° liegt die J1-Achse fast waagerecht. Das
+  Eigengewicht des Arms dreht dann an J1:
+  - in den Greifposen für Glas und Teller (0,25 bzw. 0,35 kg Last)
+    10–15 Nm,
+  - in der Parkpose 11 Nm.
+  - Das liegt dauernd über dem Nennmoment von 10 Nm. Ob das J1-Getriebe das
+    im Dauerbetrieb hält, muss am Gerät gemessen werden.
+- **Das Handgelenk bleibt frei.** Die Zugkraft läuft wie in §13 entlang der
+  Werkzeugachse. J4 und J5 tragen nur Eigengewicht (≤ 1,2 Nm).
+- **Ergebnis:** Das Ziehen geht bei 20 N in der 120°-Lage. Bei 30 N ist es
+  knapp. Mit 105° geht es bei 30 N nicht.
+
+### 14.5 Kamera
+
+Gerechnet mit dem Kamerawerkzeug aus §3, Oberkorb 0,45 m ausgezogen, die 8
+Teller ergänzt. Der Arm steht in der Tellergreifpose (C2, 105°). Roboter und
+Halter sind Hindernisse.
+
+| B57-Lage | Streben % | Slots % | Geschirr % | Teller % | Abstand m |
+|---|---|---|---|---|---|
+| Wandhalter hinter dem Roboter (0,30; −0,50; 1,45) | 0 | 0 | 0 | 0 | 1,0–1,4 |
+| Wandhalter tief (0,30; −0,45; 1,20) | 0 | 0 | 0 | 0 | 0,8–1,2 |
+| Ausleger über der Kante (0,30; 0,05; 1,30) | 3 | 1 | 7 | 12 | 0,7–1,0 |
+| Ausleger rechts über der Kante (0,75; 0,05; 1,20) | 5 | 0 | 0 | 0 | 0,7–1,1 |
+| Ausleger vor der Maschine wie §4 (0,55; 0,35; 1,10) | 52 | 20 | 32 | 39 | 0,5–0,9 |
+
+- **Befund:** Der Korb liegt unter der Plattenkante, der Roboter mit
+  Halterung steht genau dazwischen. Von hinten bzw. oben verdecken Platte,
+  Fuß und Unterarm fast alles.
+  - Die Messsimulation über der Kante ergab einen Korbposen-Fehler von
+    26 mm (§4: 0,06 mm).
+  - Nur der Ausleger vor der Maschine sieht genug. Auch dort verdeckt der
+    Arm in der Greifpose die Hälfte (§4 ohne Arm: 88 % der Slots).
+- **D405** über dem Greifer unter 30°: Die Nahsicht hängt nicht vom Aufbau ab
+  (§13.7: Zielglas 3,6 mm). In diesem Lauf überdeckten die ergänzten Teller
+  das Zielglas der Konzeptszene. Die D405-Werte dieses Laufs sind deshalb
+  nicht verwertbar.
+
+### 14.6 Vergleich der Aufbauten
+
+| Größe | heute | Z-Achse frontal | C1 fest auf der Platte | C2 7. Achse auf der Platte |
+|---|---|---|---|---|
+| Abdeckung Oberkorb (Zug / Gläser / Teller / Ablage Platte) | ja / 3/16 / – / 4/4 | ja / 6/16 / – / 0/4 (Tisch 4/4) | nein / ≤ 2/16 / 0 / 4/4 nur stehend | ja / 2/16 / 3/8 / 1/4 |
+| Unterkorb | 9/20 Teller | 15/20 Teller, Zug ja | nicht erreichbar (0,6 m unter der Platte, nicht gerechnet) | dito |
+| Platzbedarf | Podest 1,36 × 0,26 m rechts neben der Tür | Säule + Schlitten ≈ 0,30 × 0,45 m vor der Maschine | Fuß + Keil ≈ 0,25 × 0,30 m auf der Platte, Boden frei | Schiene 1,3 × 0,2 m entlang der Plattenkante + Keil, Boden frei, Arbeitsplatte über der Maschine belegt |
+| Stehplatz vor der Maschine | frei | belegt | **frei** | **frei** |
+| Kosten | ReBeL + ZLW-Bundle 10.499,07 € [Q17] | Bundle senkrecht 10.369–10.499 € (Freigabe offen) bzw. Hubsäule 2.340 € netto [K14] | ReBeL 4.970 € [Q18] + Keil/Winkel Eigenbau | ZLW-Bundle 10.499,07 € [Q17], waagerecht (die Einbaulage der Datenblattwerte [K13]) |
+| Sicherheit | Roboter seitlich, Kniehöhe bis Brust | Säule im Stehplatz, vertikale Last ohne Bremse | Arm in 0,8–1,3 m Höhe an der Plattenkante, **Kopfhöhe von Kindern**, im Arbeitsplatz des Menschen | wie C1, dazu fährt die Achse 1 m entlang der Platte (Quetschstelle Schlitten ↔ Gegenstände auf der Platte) |
+| J2 mit Eigengewicht beim Zug (20 N) | ≤ 0,6 Nm (Achse zieht) | 18,4 Nm | – | 10,0 Nm; dafür J1 10–15 Nm Dauerlast |
+
+### 14.7 Empfehlung
+
+1. **Variante C nicht weiter verfolgen.**
+   - Auf der Platte erreicht der ReBeL entweder die Ablage (stehend) oder
+     den Korbzug (geneigt), nie beides.
+   - Geneigt schafft er nur 2 der 16 Glasplätze und die rechte
+     Tellerreihe, das ist schlechter als die Z-Achse (6/16).
+   - Die Kamera müsste trotzdem vor die Maschine.
+   - Der Arm arbeitet in Kopfhöhe von Kindern und an der Arbeitsplatte.
+2. **Was C2 gut macht:**
+   - Die Achse liegt waagerecht in der freigegebenen Einbaulage.
+   - Der Stehplatz und der Türschwenk bleiben frei.
+   - J2 trägt beim Zug nur gut die Hälfte des Moments der Z-Achse.
+   - Wer diese Vorteile will, muss vorher das J1-Dauermoment (10–15 Nm bei
+     geneigter Achse) am Gerät messen.
+3. **Die Z-Achse frontal (§13) bleibt die Empfehlung für den Oberkorb.**
+
+### 14.8 Nicht gerechnet / offen
+
+- **Nicht gerechnet:** Dynamik, Weg Korb → Ablage mit getragenem Teller,
+  Umgreifen des kopfüber stehenden Glases, Teller als Hindernis für die
+  Finger (Stachelteilung), Rackmatic-Stufen.
+- **Abgebrochene Läufe:**
+  - Gläser stehend (C1): 13 von 16 geprüft.
+  - Gläser und Teller geneigt (C1): 8 bzw. 5 geprüft.
+  - Grund: Diese Lagen ziehen den Korb nicht. Die Lauf-Zahlen sind
+    Untergrenzen.
+- **C1 mit 8 cm Distanz unter dem Fuß** sollte C2 geometrisch gleichen.
+  Nicht gerechnet.
+- **Seitgriff-Ablage** mit 0,16 m Teilung und Ablage näher an der Kante
+  (y ≥ −0,05 m) könnte 2/4 ergeben. Nicht gerechnet.
+
+### 14.9 Verworfen
+
+- **Hängend vor der Kante (180°):**
+  - bei d ≤ +0,10 m Lagekonflikt mit Platte bzw. Bottichdecke;
+  - bei +0,15 m Griff zu nah an J2 (keine IK);
+  - Ablage auf der Platte unerreichbar (0/4 im Vorfilter).
+- **Stehend auf der Platte (0°):** kein Korbzug (waagerecht 0,6 m zu weit,
+  von oben 6 mm und J5-Moment).
+- **Winkel 90° (Arm waagerecht zum Raum):** Zugweg reißt bei 0,40–0,42 m ab.
+- **Geneigt 135°, d +0,15 m:** Zug geht, aber J1 13,5 und J2 14,9 Nm bei
+  20 N.
+- **B57 an der Wand hinter dem Roboter:** 0 % Sicht auf den Oberkorb.
+
+Bilder (Übersicht C2, Korbzug, Glas links hinten, Teller, Ablage,
+Perspektiven B57 über der Kante und D405) liegen außerhalb des Repos und
+gehen als Artefakt an den Owner.
+
+### 14.10 Quellen zu §14 (abgerufen 29.10.2026)
+
+- [K15] EN 50242, Maßgedeck (Dessertteller Ø 19 cm, Untertasse Ø 14 cm), Zusammenfassung: https://de.wikipedia.org/wiki/EN_50242
+- [K16] Bosch, Gebrauchsanleitung Geschirrspüler (Oberkorb Stufe 1/2/3: Teller max. Ø 22/24/27 cm): https://media3.bosch-home.com/Documents/9000611003_A.pdf ; BSH-Datenblatt DF480101 (maximale Tellergrößen Ober-/Unterkorb 27/25, 24,5/27,5 bzw. 22/31 cm): https://media3.bsh-group.com/Documents/specsheet/de-DE/DF480101.pdf
+- [K10], [K13], [K14], [Q17], [Q18] wie §13 bzw. `docs/hardware-auswahl.md`.
