@@ -140,7 +140,7 @@ def _remote_smoke(tmp_path, *args, lock_free=False):
         "GPU_HOST": "sim-box.example",
         "GPU_LOCK": str(fakes / "gpu-lock.sh"),
         "REMOTE_REPO": "/srv/raeumwerk/repo",
-        "WAIT_MAX_S": "1",
+        "WAIT_MAX_S": os.environ.get("RW_TEST_WAIT_MAX_S", "1"),
         "POLL_S": "1",
         "FAKE_LOCK_FREE": "1" if lock_free else "0",
     }
@@ -150,10 +150,12 @@ def _remote_smoke(tmp_path, *args, lock_free=False):
     return proc, log("lock.log"), log("ssh.log")
 
 
-def test_remote_smoke_gives_up_after_wait_max(tmp_path):
+def test_remote_smoke_gives_up_after_wait_max(tmp_path, monkeypatch):
+    # WAIT_MAX_S=3 bei POLL_S=1: auch unter Last (langsamer erster acquire) mind. 2 Versuche.
+    monkeypatch.setenv("RW_TEST_WAIT_MAX_S", "3")
     proc, lock_log, ssh_log = _remote_smoke(tmp_path, "newton", "1", "5")
     assert proc.returncode == 4, proc.stderr
-    assert "WAIT_MAX_S=1" in proc.stderr
+    assert "WAIT_MAX_S=3" in proc.stderr
     assert lock_log.count("acquire raeumwerk-smoke-newton") >= 2  # hat gepollt
     assert "release" not in lock_log  # fremden Lock nie freigeben
     assert ssh_log == ""
