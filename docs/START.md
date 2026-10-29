@@ -188,3 +188,77 @@ uvx -p 3.12 --with numpy --with pyyaml --with matplotlib \
 Mit `RAEUMWERK_ASSETS` (ReBeL-Meshes, `scripts/fetch_assets.sh`) zeigt das
 Video die igus-Optik, sonst die Kollisionsquader. Newton-Tests:
 `RAEUMWERK_RUN_NEWTON=1 RAEUMWERK_NEWTON_PYTHON=<Python mit Newton> pytest -q tests/test_ausraeumen.py -k newton`.
+
+## 9. Rendern mit Isaac Sim (RTX)
+
+Die Physik bleibt Newton; Isaac Sim 6.2 spielt die Aufzeichnung nur ab und
+rendert sie mit dem RTX-Renderer (Licht, Schatten, Materialien, Glas
+transparent). Drei Schritte, nur der mittlere braucht Isaac Sim und die GPU:
+
+```bash
+# 1. Renderauftrag bauen (ohne Isaac Sim): Posen je Videobild, Kamera, Szene, Materialien
+uvx -p 3.12 --with numpy --with pyyaml python scripts/isaac_render_auftrag.py \
+    greifdemo ergebnis/demo.npz --out ergebnis/auftrag-greifdemo.npz
+uvx -p 3.12 --with numpy --with pyyaml python scripts/isaac_render_auftrag.py \
+    spuelmaschine --slot 1 --out ergebnis/auftrag-spuelmaschine.npz
+uvx -p 3.12 --with numpy --with pyyaml python scripts/isaac_render_auftrag.py \
+    ausraeumen ergebnis/ausraeumen.npz --video-s 50 --out ergebnis/auftrag-ausraeumen.npz
+# 2. Rendern (Isaac-Sim-venv, headless): PNG je Bild + render.json + messung.json
+scripts/isaac_render.sh <auftrag.npz> <name> [--von A --bis B] [--modus rt|pt] [--subframes 8]
+# 3. Kodieren (ffmpeg): H.264, yuv420p, +faststart, mit Einblendung (Phase, Simzeit)
+uvx -p 3.12 --with numpy --with pyyaml --with pillow python scripts/isaac_render_video.py \
+    <ordner mit bild_*.png> --auftrag ergebnis/auftrag-greifdemo.npz --out ergebnis/greifdemo-isaac.mp4
+```
+
+`ergebnis/demo.npz` entsteht wie in §6 (`scripts/run_greifen.sh --cpu demo
+--aufzeichnen ergebnis/demo.npz`). Der Auftrag enthält keine Meshes; die
+ReBeL-Meshes liest Schritt 2 aus `$RAEUMWERK_ASSETS` (Standard
+`$RAEUMWERK_HOME/assets`, `scripts/fetch_assets.sh`). Ein relativer Auftragspfad
+in Schritt 2 liegt unter `$RAEUMWERK_ISAAC_RENDER_RUNS` (Standard
+`$RAEUMWERK_HOME/runs/isaac_render`), dort entsteht auch `<name>/`.
+
+Was Schritt 2 tut (`scripts/isaac_render.py`):
+
+- URDF aus `rebel_model` mit den Visual-Meshes schreiben und mit dem
+  URDF-Importer von Isaac Sim (Bibliothek `urdf_usd_converter`, liegt im
+  Isaac-Sim-venv) nach USD wandeln; `--roboter eigen` baut die Glieder
+  stattdessen direkt aus den COLLADA-Dateien.
+- Physik aus: RigidBody-/Articulation-APIs entfernt, Gelenke deaktiviert, keine
+  PhysicsScene, Kollisionsquader unsichtbar.
+- Materialien als MDL: OmniPBR (Arm igus-anthrazit mit orangen Ringen an den
+  Gelenkfugen, Schiene Alu, Tisch/Arbeitsplatte hell, Edelstahl, Korb),
+  OmniGlass für die Gläser (geschlossene Wand mit Boden). Kuppellicht, Sonne
+  mit weicher Schattenkante, Flächenlicht, ACES-Tonemapping.
+- Je Bild die Weltposen aus dem Auftrag als lokale Transformationen setzen
+  (der Importer schachtelt die Glieder), Kamera setzen, rendern über den
+  Replicator-RGB-Annotator (`rep.orchestrator.step(rt_subframes=…)`).
+  `render.json` enthält Zeiten und den Replay-Fehler (gesetzte gegen
+  gelesene Weltlage der Glieder), `messung.json` RAM-/VRAM-Spitze des
+  Prozessbaums und neue Listener außerhalb localhost (dann Exit 9).
+- `--modus rt` ist RTX Real-Time, `--modus pt` Path Tracing (für Standbilder,
+  `--spp`, `--subframes`). `--jedes N` rendert nur jedes N-te Bild (Probe).
+
+**Geteilter GPU-Rechner:** Schritt 2 nur über die Warteschlange bzw. den Lock,
+in Stücken von höchstens 30 min (Aufträge zuvor nach
+`$RAEUMWERK_ISAAC_RENDER_RUNS` auf den GPU-Rechner kopieren):
+
+```bash
+scripts/submit_gpu.sh -t 15 --sync isaac-probe -- \
+    scripts/isaac_render.sh auftrag-greifdemo.npz probe --von 360 --bis 361
+scripts/submit_gpu.sh -t 30 --sync isaac-greifdemo -- \
+    scripts/isaac_render.sh auftrag-greifdemo.npz greifdemo --subframes 8
+```
+
+Zuerst eine Probe mit einem Bild, dann das Video. Bequemer in einem
+Warteschlangenplatz: `scripts/isaac_render_paket.sh auftrag-greifdemo.npz
+auftrag-spuelmaschine.npz <präfix> [budget_min] [mitte] [auftrag-ausraeumen.npz]`
+rendert Probe, beide Path-Tracing-Standbilder, ein Probebild des Ausräumens und
+beide Videos; fertige Schritte und Bilder werden beim nächsten Stück
+übersprungen (`submit_gpu.sh --weiter-rc 3`). `scripts/isaac_render_alles.sh`
+macht auf einem Rechner ohne ssh alles von den Assets bis zum MP4. Auf einer
+RTX 3090 braucht ein Bild 1280×720 mit 8 Subframes etwa 0,25 s, ein
+Isaac-Start rund 10 s; RAM-Spitze etwa 6 GB. Messwerte (Renderzeit,
+RAM-/VRAM-Spitze) stehen in `docs/STATUS.md`. Die PNGs, USDs und Videos
+bleiben außerhalb des Repos. Tests ohne Isaac: `tests/test_isaac_render.py`;
+der echte Render-Test läuft nur mit `RAEUMWERK_RUN_GPU_SMOKE=1` und dem
+Isaac-Sim-venv.
