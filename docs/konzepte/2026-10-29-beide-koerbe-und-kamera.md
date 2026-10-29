@@ -442,3 +442,291 @@ Wegpunkt.
 - [K9] Bosch, RackMatic 3 Stufen bis 5 cm: https://media3.bosch-home.com/Documents/specsheet/en-XN/SMS43D08ME.pdf
 - [K10] igus ReBeL-Getriebe Baugröße 80/105: https://www.igus.eu/automation/robot-types/cobot/rebel-gearbox-construction-kit ; https://www.igus.ca/info/rebel-gearbox-system ; RBTX 105: https://rbtx.com/en-US/components/accessories/rebel-fully-integrated-shaft-gearbox-size-105
 - [K11] Ensenso-Handbuch, Hand-Eye Calibration: https://manual.ensenso.com/latest/guides/multi-camera-setups-and-calibrations/handeyecalibration.html
+
+## 13. Machbarkeit: ReBeL frontal vor der Maschine (Z-Achse bzw. stationär)
+
+Stand: 29.10.2026. **Nur Machbarkeitsprüfung, kein Produktcode.** Frage des
+Owners: Der ReBeL steht frontal vor der offenen Maschine, zieht die Körbe selbst
+heraus, schiebt sie wieder ein und entlädt von vorn wie ein Mensch. Geprüft sind
+zwei Aufbauten: **A „Z-Achse frontal“** (ReBeL auf einer vertikalen
+Linearachse) und **B „stationär“** (ReBeL fest montiert, ohne Achse, Fuß
+zwischen den Körben). Verglichen wird mit dem heutigen Aufbau (Schiene
+senkrecht zur Front bei x = 0,78 m, Podest). Die Rechnungen stammen aus
+Überschlagsskripten außerhalb des Repos. Sie nutzen `rebel_model` und
+`spuelmaschine/erreichbarkeit.py` unverändert und ersetzen nur die 7. Achse
+(Achse entlang z bzw. gesperrt).
+
+### 13.1 Kurzfassung
+
+- **A (Z-Achse frontal) geht, mit Einschränkungen.** Der Roboter zieht beide
+  Körbe über 0,45 m heraus und schiebt sie wieder ein. Er erreicht die Teller
+  links und rechts gleich gut (15/20, heute 9/20, links 0/8). Die Glasplätze
+  der linken Korbhälfte sind erstmals erreichbar (6/16 statt 3/16). Die
+  Momente aus dem Zug liegen unter dem igus-Nennmoment. Die Ablage auf der
+  Arbeitsplatte liegt außer Reichweite (0/4). Er legt deshalb auf einem Tisch
+  bzw. Tablett neben sich ab (4/4).
+- **Das Zugfenster ist schmal.** Nur mit dem Fuß 0,55–0,60 m vor der Front
+  schafft der Arm den ganzen Auszug. Bei 0,50 m stößt der Fuß an den
+  ausgezogenen Korb, ab 0,65 m reißt der Weg ab bzw. trifft der Fuß die Tür.
+  Gegriffen wird die Frontstrebe 0,20 m seitlich vom Fuß (x 0,50 bzw. 0,10),
+  nicht mittig. Beim Unterkorb fährt die Z-Achse während des Zugs mit
+  (0,13 → 0,31 m).
+- **B (stationär) geht nicht.**
+  - Keine Fußhöhe zieht beide Körbe ganz. Bei 0,35 m fehlt dem Oberkorb der
+    letzte Zentimeter (0,44 m). Bei 0,375 m fehlt dem Unterkorb der erste
+    Zentimeter ab „ganz eingeschoben“.
+  - Mit dieser Fußhöhe erreicht der Arm nur 2–4 der 16 Glasplätze und
+    0–7 der 20 Teller. Erst bei 0,40 m sind es 6/16 und 10/20, dann fehlen
+    beim Unterkorb aber 4–5 cm. Ohne Z-Achse fehlt der Hub für den
+    Telleraushub.
+  - Der Fuß steht im Schwenkbereich der Tür. Die Maschine lässt sich mit
+    montiertem Roboter nicht schließen.
+  - Gekippte Montage bringt nichts: 45° voll gerechnet ergibt Slots 2/16,
+    Teller 1/20 und keinen Korbzug. 90° scheitert schon im Vorfilter
+    (Ablage 1/8).
+- **Grenzen, die kein Aufbau löst:** Die hinterste Tellerreihe und die
+  hinterste Glasreihe (0,04 bzw. 0,02 m vor der Front bei 0,45 m Auszug)
+  liegen unter der Plattenkante. Die äußeren Glasreihen (12 cm von der
+  Korbwand) scheitern am 150 mm breiten Greiferkörper.
+- **Empfehlung:** A ist dem heutigen Aufbau bei den Zielen überlegen (Teller
+  links, Korbzug beider Körbe mit kleinem Moment). Der Preis dafür:
+  Ablage auf einem Tablett statt auf der Platte, Roboter und Säule stehen vor
+  der Maschine (Parkhöhe nötig), und die vertikale Achse braucht Bremse und
+  synchrone Ansteuerung. Beides ist bei igus nicht als Produkt belegt (§13.6).
+  B verwerfen. Vor einem Umbau die igus-Frage klären (§13.8).
+
+### 13.2 Modell und Ziele
+
+| Größe | A: Z-Achse frontal | B: stationär | heute |
+|---|---|---|---|
+| Fuß (x; y) m | 0,30; 0,60 (Maschinenmitte, Türende) | 0,30; 0,55 | Schiene ab (0,78; 0,06), senkrecht zur Front |
+| Höhe | Achse 0–1,0 m gerechnet (Fußunterkante 0,02–1,02 m) | Fuß 0,25–0,45 m gerastert, gewählt 0,35 m | Podest 0,40 bzw. 0,65 m |
+| Ausrichtung | Gesicht zur Maschine | dito; gekippt 45°/90° geprüft | Schiene 1,0 m Hub |
+| Halterung (Hindernis) | Säule 0,10 × 0,20 m hinter dem Fuß, Schlittenplatte 0,25 × 0,25 m | Konsole von der linken Schrankfront (Balken 0,10 m breit in Fußhöhe) | Podest |
+| Ablage neben dem Roboter | Tisch 0,28 × 0,28 m rechts, Höhe 0,86 m (Variante 0,60 m) | Tablett 0,28 × 0,28 m hinter dem Fuß, in Fußhöhe | – |
+
+Raster (Vorfilter Reichweite, dann volle Prüfung):
+- A: Fußabstand zur Front 0,50–1,00 m, seitlich x −0,10…0,70 m (0 bis
+  ±0,40 m Versatz zur Maschinenmitte). Gier spielt bei senkrechter Achse nur
+  für die Säulenlage eine Rolle (J1 dreht ±179°).
+- B: Fußabstand 0,50–1,00 m, x wie A, Fuß 0,25–0,45 m, Kippung 0/45/90°.
+- Volle IK mit Kollision nur für die besten Lagen, für den Korbzug zusätzlich
+  das Raster 0,55–0,75 m.
+
+Ziele, gleich für alle Aufbauten:
+- **Glasplätze:** 16 im ausgezogenen Oberkorb, 4 Reihen (x 0,12 / 0,24 /
+  0,36 / 0,48 m, Teilung 0,12 m wie heute) mal 4 Tiefen (0,09–0,39 m hinter
+  der Korbfront). Die Gläser stehen in allen Plätzen und gelten als
+  Hindernis.
+- **Teller:** 20 Griffe wie in §6.3 (x 0,10–0,50 × 4 Tiefen), Vorposition
+  10 cm, Aushub 30 cm. „Links“ bedeutet x ≤ 0,20 m, „rechts“ x ≥ 0,40 m.
+- **Korbzug:** waagerechter Zangengriff an der oberen Frontstrebe, Werkzeug
+  zeigt in die Maschine. 8 cm Anfahrt, dann 0,45 m Zug in 1-cm-Schritten. Der
+  Korb fährt in der Kollisionsprüfung mit (Szene je 1 cm). Einschieben ist
+  derselbe Weg rückwärts. Geprüft ist der Weg in beiden Richtungen; gilt
+  einer, ist der Hub zusammenhängend machbar.
+- **Ablage:** 4 Punkte auf der Arbeitsplatte (wie heute) und 4 Punkte auf
+  Tisch bzw. Tablett.
+- **Kollisionen:** 5 mm Rand gegen Tür, Korbgitter, eingeschobenen zweiten
+  Korb, Korpus, Platte, Halterung, Ablage und Selbstkollision. IK-Fehler
+  < 1 mm, Gelenksprung ≤ 10° je Wegpunkt.
+
+### 13.3 Abdeckung der Ziele
+
+| Zielgruppe | heute (Podest 0,40 / 0,65 m) | **A: Z-Achse frontal** | B: stationär (Fuß 0,35 m; 0,40 m) |
+|---|---|---|---|
+| Glasplätze Oberkorb (16) | 3/16 / 3/16 (links 0/8, rechts 3/8) | **6/16 (links 3/8, rechts 3/8)** | 2/16; 6/16 bei 0,40 m |
+| davon innere Reihen x 0,24/0,36 (8) | 3/8 | **6/8** | 2/8; 6/8 |
+| Teller Unterkorb (20) | 9/20 / 3/20 (links 0/8) [§6.3] | **15/20 (links 6/8, rechts 6/8)** | 0/20 (30-cm-Aushub reißt oben ab); 10/20 bei 0,40 m |
+| Unterkorb ziehen 0,45 m und einschieben | nur bei Podest 0,20 m [§6.2] | **ja** (Griff x 0,50) | ja bei 0,35 m; ab 0,375 m nur 0,44 m (die ersten 1–5 cm ab „eingeschoben“ fehlen) |
+| Oberkorb ziehen 0,45 m und einschieben | ja, die 7. Achse zieht [§6.2] | **ja** (Griff x 0,50 und x 0,10) | bei 0,35 m nur 0,44 m; ja ab 0,375 m |
+| Ablage Arbeitsplatte (4) | 4/4 bei 0,65 m; 0/4 bei 0,40 m | **0/4** (212–362 mm zu weit) | 0/4 (394–514 mm zu weit) |
+| Ablage neben dem Roboter (4) | – | **4/4** (Tisch 0,86 m; ebenso bei 0,60 m) | 4/4 (Tablett in Fußhöhe) |
+
+Lesart:
+- **Ausfälle bei A:**
+  - Die hinterste Tellerreihe (y 0,04 m, 26–61 mm außer Reichweite) und die
+    hinterste Glasreihe (y 0,02 m) liegen unter der Plattenkante (y 0,05 m).
+    Sie scheitern bei jedem Aufbau.
+  - Die äußeren Glasreihen x 0,12 und 0,48 m scheitern am Greiferkörper
+    (150 mm in Schließrichtung) an der Korbwand. Quer gedreht trifft er die
+    Nachbargläser (Teilung 0,10 m). Das ist eine Grenze des Greifers, nicht
+    des Aufbaus.
+  - Erreichbar sind damit alle Plätze, die mit diesem Greifer überhaupt gehen.
+- **Lage der Z-Achse:**
+  - Bei 0,50 m vor der Front erreicht der Arm geometrisch alles (Vorfilter:
+    16/16 Slots, 20/20 Teller). Der Korbzug scheitert dort aber, weil Fuß und
+    Schlitten den ausgezogenen Korb bzw. die Tür treffen.
+  - Ab 0,65 m reißt der Zugweg ab (Arm ganz eingefaltet) oder der Fuß trifft
+    beim Unterkorb die Tür.
+  - Mittig gegriffen (x 0,30) gelang der Zug bei 0,50 m und bei 0,65–0,75 m
+    nicht. Bei 0,55 und 0,60 m ist dieser Fall nicht zu Ende gerechnet. Am
+    Ende stünde das Handgelenk (y 0,64 m) über dem eigenen Fuß.
+  - 0,60 m ist der beste Kompromiss.
+- **B nach Höhe:**
+  - 0,35 m: Unterkorb ja, Oberkorb 0,44 m, Slots 2/16, Teller 0/20 (der
+    30-cm-Aushub reißt 2–7 cm vor dem Ende ab).
+  - 0,375 m: Oberkorb ja, Unterkorb ab 1 cm Auszug, Slots 4/16, Teller 7/20.
+  - 0,40 m: Oberkorb ja, Unterkorb ab 5 cm, Slots 6/16, Teller 10/20.
+  - 0,45 m: Oberkorb ja, Unterkorb ab 13 cm.
+  - Die Abrisse liegen alle am Anfang: Der Griff am ganz eingeschobenen Korb
+    gelingt nicht durchgehend.
+  - Gekippt 45° (Fuß 0,45 m, y 0,60 m): Slots 2/16, Teller 1/20, kein Korbzug.
+  - Bei 0,30–0,35 m trafen eine seitliche Ablage und die Konsole den Unterarm
+    beim Unterkorbzug. Das Tablett steht deshalb hinter dem Fuß.
+
+### 13.4 Momente beim Korbzug (igus-Grenzen)
+
+Die Momente sind `tau = Jᵀ F` über den ganzen Zugweg gerechnet, das Maximum je
+Gelenk. Die Kraft wirkt waagerecht entlang der Werkzeugachse.
+
+Grenzen [K10]:
+- J1–J3 Baugröße 105: Nennmoment 10–15 Nm, Maximum 12,5–20 Nm.
+- J4–J6 Baugröße 80: Nennmoment 2 Nm, Maximum 2,5–3 Nm.
+- Annahme wie §6.2: J1–J3 Baugröße 105, J4–J6 Baugröße 80.
+
+Die Pressemitteilung zum Marktstart nennt abweichend 25 Nm (105) bzw. 3 Nm
+(80) bei 6 U/min [K12].
+
+| Zug | Aufbau | J1 | J2 | J3 | J4–J6 | Urteil (Zug allein ≤ Nennmoment) |
+|---|---|---|---|---|---|---|
+| 20 N | A Unterkorb / Oberkorb | 4,0 / 4,0 | 3,7 / 1,0 | 4,5 / 2,7 | 0,0 | **geht** |
+| 30 N | A Unterkorb / Oberkorb | 6,0 / 6,0 | 5,6 / 1,5 | 6,7 / 4,0 | 0,0 | **geht** |
+| 20 N | B Unterkorb (0,35 m) / Oberkorb (0,40 m) | 4,0 / 4,0 | 5,9 / 2,0 | 4,5 / 4,2 | 0,0 | geht |
+| 30 N | B Unterkorb / Oberkorb | 6,0 / 6,0 | 8,8 / 3,1 | 6,7 / 6,2 | 0,0 | geht |
+| 20 N | heute, Oberkorb (7. Achse zieht) [§6.2] | 5,6–9,6 | ≤ 0,6 | ≤ 0,6 | ≤ 0,6 | geht |
+
+Befunde:
+- **Das Handgelenk bleibt frei.** Die Zugkraft läuft entlang der
+  Werkzeugachse durch J5. J4–J6 tragen 0 Nm.
+- **Griff von oben scheidet aus.** Mit senkrechtem Greifer läge J5 0,21 m
+  über der Strebe. Das ergäbe 20 N × 0,21 m ≈ 4,1 Nm, bei 30 N 6,2 Nm, über
+  dem Maximum der Baugröße 80. Bei A und B lag die eingeschobene Korbfront
+  für den Griff von oben zudem meist außer Reichweite (9–259 mm).
+- **J1** trägt 4 bzw. 6 Nm, weil der Griff 0,20 m seitlich vom Fuß liegt.
+- **Eigengewicht.** Das Modell belastet J2 schon ohne Zug mit
+  13,3–14,9 Nm (Gliedmassen geschätzt, `config/robot.yaml:47-56`).
+  - Mit Zug kommt J2 bei A auf 18,4 Nm (20 N) bzw. 20,2 Nm (30 N), bei B
+    auf 19,2 bzw. 22,1 Nm.
+  - Das liegt am oberen Ende bzw. über dem igus-Maximum von 12,5–20 Nm.
+  - Der ReBeL trägt laut Datenblatt aber 2 kg am Arm. Die
+    Massenaufteilung ist eine Annahme.
+  - Urteil: Der Zug allein geht. Die Summe mit Eigengewicht ist bei 30 N
+    knapp und muss am Gerät gemessen werden (§13.8).
+- **Last der Z-Achse:** 85 N statisch (Arm, Greifer, Schlitten), dazu
+  vertikale Anteile des Zugs ≈ 0.
+
+### 13.5 Nötiger Hub
+
+Fußunterkante je Aufgabe (aus den IK-Lösungen, A bei y 0,60 m):
+
+| Aufgabe | Fuß m |
+|---|---|
+| Unterkorb ziehen | 0,13–0,31 (fährt während des Zugs mit) |
+| Oberkorb ziehen | 0,17–0,28 |
+| Teller greifen und 30 cm ausheben | 0,28 → 0,60 (fährt beim Aushub mit) |
+| Glasplätze | 0,41–0,58 |
+| Ablage Tisch 0,86 m | 0,85–0,91 |
+| Ablage Tisch 0,60 m | 0,59–0,65 |
+| Parken über dem Tür-Schwenkbereich (Fußkante außerhalb Radius 0,64 m) | ≥ 0,65 |
+
+- **Nötiger Hub:** 0,13–0,91 m, also **0,78 m** mit Ablage auf
+  Arbeitshöhe. Mit Tablett auf 0,60 m sind es 0,13–0,65 m, also **0,52 m**.
+- Die igus-Achse gibt es mit 500 mm Hub oder mehr (§13.6). Die
+  500-mm-Variante reicht knapp nicht, die 1000-mm-Variante ja.
+
+### 13.6 Platz, Kosten, Sicherheit
+
+| Größe | heute | A: Z-Achse frontal | B: stationär |
+|---|---|---|---|
+| Platz in der Küche | Podest 1,36 × 0,26 m rechts neben der Tür, 0,65 m hoch; Front der Maschine bleibt frei | Säule + Schlitten ≈ 0,30 × 0,45 m direkt vor der Maschine (y 0,48–0,86 m), Säule ~1,6 m hoch; Tisch 0,28 × 0,28 m daneben | Konsole quer vor der Maschine in 0,35 m Höhe; Tablett 0,28 × 0,28 m dahinter |
+| Tür schließen mit Roboter | geht (Roboter seitlich) | geht, wenn der Roboter auf ≥ 0,65 m parkt | **geht nicht**: Fuß bei y 0,46–0,64 m, z 0,35 m liegt im Schwenkbereich |
+| Mensch an der Maschine | frei | Säule steht im Stehplatz vor der Maschine | Konsole und Roboter im Weg |
+| Achse | ReBeL-Bundle mit ZLW-20200 (Hub 1000 mm), iRC, synchron: 10.499,07 € inkl. Roboter, Achsanteil ≈ 5.529 € gegen ReBeL allein 4.970 € [Q17][Q18] | **Preis für eine vertikale igus-Achse mit iRC-Anbindung nicht gefunden.** Dasselbe ZLW-Bundle senkrecht montiert kostete 10.499,07 € (1000 mm) bzw. 10.369,23 € (500 mm) [Q17]. Ob igus den senkrechten Einbau mit Haltebremse freigibt, ist nicht belegt (Datenblatt: Werte „in horizontaler Einbaulage“ [K13]). Hubsäule „AI Lift“ auf RBTX: 2.340,00 € netto (500 mm), Hub 500–1000 mm, Modbus TCP, 80 mm/s, ±1 mm, eingefahren Hub/2 + 283 mm [K14] | keine Achse; Konsole Eigenbau, Preis offen |
+| Bewertung der Hubsäule | – | nicht synchron mit dem Arm (Modbus, nicht iRC). Eingefahren 0,53 m (500 mm Hub): Fuß 0,13 m nur mit Winkel nach unten. Der Teller-Aushub (0,3 m Z-Fahrt) müsste dann der Arm allein leisten. Nicht gerechnet | – |
+| Sicherheit | wie bisher (§ Hardware) | Vertikale Last 85 N fällt bei Stromausfall ohne Bremse. Quetschstellen Schlitten ↔ Tür/Korb. Roboter arbeitet im Stehplatz | Roboter in Kniehöhe im Schwenkbereich der Tür, Quetschgefahr beim Schließen |
+
+### 13.7 Kamera
+
+Ausgewertet mit dem Kamerawerkzeug aus §3. Der Arm steht in der Greifpose
+(Glasplatz links, x 0,24 m) bzw. beim Teller links. Säule und Tisch sind
+Hindernisse.
+
+| B57-Lage (A) | Oberkorb: Slots % | Geschirr % (≤ 0,8 m) | Unterkorb: Geschirr % (≤ 0,8 m) | Abstand m |
+|---|---|---|---|---|
+| fest oben vor der Säule (0,30; 0,70; 1,35) | 59 | 75 (0) | 67 (0) | 0,9–1,5 |
+| fest über dem Roboter (0,30; 0,55; 1,20) | 61 | 82 (48) | 70 (0) | 0,7–1,3 |
+| fest seitlich rechts (0,60; 0,65; 1,15) | 40 | 65 (28) | 79 (0) | 0,7–1,4 |
+| auf dem Z-Schlitten, 0,80 m über dem Fuß | 54 | 59 (8) | 90 (0) | 0,8–1,4 |
+| **Ausleger von der Säule (0,55; 0,35; 1,10)** | **88** | **81 (75)** | **99 (44)** | 0,56–0,94 |
+
+- **Beste Lage:** die B57 fest an einem Ausleger von der Säule, dieselbe
+  Kamerapose wie in §4.
+  - Simulierte Messung (Oberkorb): Korbpose 0,06 mm, Gläser über RGB plus
+    Glasmaß 0,4–4,9 mm.
+  - Simulierte Messung (Unterkorb): Korbpose 4,2 mm, Teller 0,9–1,7 mm.
+  - Der frontale Arm verdeckt in der Greifpose 19 % des Geschirrs (§4: 0 %
+    ohne Arm). Die Regel „erst schauen, dann greifen“ bleibt.
+- **Ausleger und Arm.** Der Ausleger liegt in 1,10 m Höhe über dem Arbeitsraum.
+  Bei Ablage auf 0,86 m reicht der Arm bis ~1,3 m und kann ihn treffen. Das
+  ist nicht geprüft. Mit Tablett auf 0,60 m bleibt der Arm darunter.
+- **Mitfahrende B57.** Auf dem Z-Schlitten fährt sie mit, ist aber 0,8–1,4 m
+  entfernt, außerhalb der 0,8 m der Farbvariante.
+- **D405** über dem Greifer unter 30°, Vorposition 10 cm über Glas 1, Arm
+  frontal: Zielslot 90 % sichtbar, Zielglas 63 % in 0,19–0,28 m. Tiefe am
+  Zielglas 3,6 mm, Greifer im Bild 29 %. Das deckt sich mit §4.3, die
+  Nahsicht hängt nicht vom Aufbau ab.
+
+### 13.8 Empfehlung und offene Punkte
+
+1. **A weiter verfolgen, B verwerfen.**
+   - A erreicht die Teller links und rechts.
+   - A zieht beide Körbe mit dem Arm, das Handgelenk bleibt dabei ohne
+     Moment.
+   - Ablage auf einem Tablett neben dem Roboter auf etwa 0,60 m. Das spart
+     Hub (0,52 statt 0,78 m) und hält den Arm unter dem Kameraausleger.
+2. **Vor dem Bau bei igus klären:**
+   - Darf die ZLW-20200 (bzw. eine andere iRC-taugliche Achse) senkrecht mit
+     ~10 kg Last betrieben werden?
+   - Gibt es dafür Haltebremse und Preis?
+   - Ohne synchrone Achse sind der Unterkorbzug (Z fährt 0,18 m mit) und der
+     Telleraushub (0,3 m) neu zu rechnen.
+3. **Messen am Gerät:**
+   - J2-Moment im Eigengewicht (die Summe mit 30 N Zug liegt am Maximum).
+   - Zugkraft der Körbe (Frage 3 in §8).
+4. **Nicht gerechnet:**
+   - Dynamik.
+   - Durchbiegung der Säule unter 20–30 N Zug in 0,3–0,6 m Höhe.
+   - Weg Korb → Ablage mit getragenem Teller.
+   - Kollision Arm ↔ Kameraausleger.
+   - Rackmatic-Stufen (±2,5 cm Oberkorb).
+
+Bilder (Übersicht A und B, Posen Unterkorb ziehen, Oberkorb ziehen, Teller
+links hinten, Ablage, kritischste Pose B, Kameraperspektiven B57 und D405)
+liegen außerhalb des Repos und gehen als Artefakt an den Owner.
+
+### 13.9 Verworfen
+
+- **Mittiger Griff an der Korbfront (x 0,30)** bei frontalem Fuß: Am Ende des
+  Zugs stünde das Handgelenk über dem eigenen Fuß. Bei 0,65–0,70 m reißt der
+  Weg nach 0,33–0,36 m ab.
+- **Griff von oben für den Zug:** J5-Moment 4,1 Nm bei 20 N, über dem
+  Maximum der Baugröße 80. Der Korb ist eingeschoben außer Reichweite.
+- **Z-Achse bei 0,50 m vor der Front:** Fuß trifft den ausgezogenen Korb
+  bzw. die Tür.
+- **Z-Achse ab 0,70 m:** Zugweg reißt ab, die Slots fallen auf 8/16
+  (Vorfilter).
+- **Stationär gekippt (45°/90°):** keine Lage mit Korbzug, Slots 2/16, Teller
+  1/20.
+- **Stationär mit seitlichem Tablett** in Fußhöhe: Unterarm trifft es beim
+  Unterkorbzug.
+- **Hubsäule ohne Synchronisation** als einzige Lösung: Nicht gerechnet. Ihre
+  Mindesthöhe von 0,53 m liegt über der Fußhöhe von 0,13 m, die der
+  Unterkorbzug braucht.
+
+### 13.10 Quellen zu §13 (abgerufen 29.10.2026)
+
+- [K12] igus-Pressemitteilung zum ReBeL, 16.03.2022 (Getriebe 80/105: 3 bzw. 25 Nm bei 6 U/min): https://presse.igus.de/der-rebel-der-automatisierung-smarter-igus-cobot-fuer-4-970-euro/
+- [K13] igus drylin ZLW, technische Daten (Werte „in horizontaler Einbaulage“): https://igus.eu/drive-technology/linear-axes-with-toothed-belts/technical-data
+- [K14] RBTX, Cobot-Hubsäule AI Lift (RBTX-BUS-0001, 2.340,00 € netto, 500 mm): https://rbtx.de/de-DE/components/profiles-more/cobot-lifting-column-ai-lift-500 ; Datenblatt Baumeister & Schack: https://a.storyblok.com/f/298593/x/ad1cc75250/13_ai-lift-baumeister-rev06.pdf
+- [Q17], [Q18] wie `docs/hardware-auswahl.md`.
