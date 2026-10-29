@@ -4,5 +4,6 @@
 * ``plan``      Zustandsmaschine Vorposition -> ... -> Rueckzug, IK je Wegpunkt
 * ``bewertung`` Erfolg/Fehlergruende eines Versuchs aus den Messwerten
 
-Der Simulator-Teil (Newton) steht in ``scripts/demo_greifen.py``.
+Der Simulator-Teil (Newton) steht in ``greifen.sim_newton`` (braucht Newton/Warp),
+die Demo in ``scripts/demo_greifen.py``.
 """
