@@ -1,4 +1,6 @@
 # Aufbau "Z-Achse frontal": ReBeL auf einer vertikalen Linearachse frontal vor
+# Vorgabe: Raeumwerk macht nur den Oberkorb. Die Unterkorb-Ziele (Teller, Zug)
+# stehen hier nur fuer den Abgleich mit Konzept-Spec §13.
 # der offenen Maschine (Konzept-Spec §13, Variante A). Fuss 0,60 m vor der
 # Front, Maschinenmitte; Saeule hinter dem Fuss, Tisch rechts daneben.
 #   raeumwerk aufbau beispiele/z-achse-frontal.yaml

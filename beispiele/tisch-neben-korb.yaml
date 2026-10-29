@@ -1,0 +1,121 @@
+# Owner-Frage: Tisch neben dem ausgezogenen Korb, welche Hoehe? Beste Lage aus dem Raster.
+# Vorgabe: Raeumwerk macht nur den Oberkorb.
+#   raeumwerk aufbau beispiele/tisch-neben-korb.yaml
+name: Tisch neben dem ausgezogenen Oberkorb (beste Höhe 0.50 m)
+roboter:
+  ursprung_xyz_m:
+  - 0.75
+  - 0.35
+  - 0.5
+  gier_grad: 180.0
+achse:
+  richtung: keine
+  schiene: platte
+masse:
+  glashalter:
+    reihen_x_m:
+    - 0.48
+    - 0.36
+    - 0.24
+    - 0.12
+    slots_je_reihe: 4
+hindernisse:
+- name: podest
+  gruppe: tisch
+  lo:
+  - 0.62
+  - 0.14999999999999997
+  - 0.0
+  hi:
+  - 1.2
+  - 0.55
+  - 0.5
+- name: tisch_1
+  glas_mitte:
+  - 0.97
+  - 0.27
+  - 0.555
+- name: tisch_2
+  glas_mitte:
+  - 0.97
+  - 0.43
+  - 0.555
+- name: tisch_3
+  glas_mitte:
+  - 1.09
+  - 0.27
+  - 0.555
+- name: tisch_4
+  glas_mitte:
+  - 1.09
+  - 0.43
+  - 0.555
+erlaubt:
+- base_link|podest
+- rail|podest
+- carriage|podest
+halter_beruehrt: &id001
+- tisch_1
+- tisch_2
+- tisch_3
+- tisch_4
+ik:
+  zufallsstarts_bei_fehlschlag: 12
+ziele:
+  slots:
+    oberkorb_auszug_m: 0.45
+    gier_grad:
+    - 0
+    - 180
+    einsetzen: true
+  teller:
+    korb: oberkorb
+    auszug_m: 0.45
+    praefix: oteller
+    x_m:
+    - 0.15
+    - 0.45
+    tiefe_m:
+    - 0.07
+    - 0.13
+    - 0.19
+    - 0.25
+    rand_ueber_boden_m: 0.19
+    greif_unter_rand_m: 0.02
+    vorposition_m: 0.1
+    aushub_m: 0.15
+    gier_grad:
+    - 90
+    - 0
+    glashalter: false
+    last_kg: 0.35
+  zug:
+    koerbe:
+    - oberkorb
+    x_m:
+    - 0.1
+    - 0.5
+    griffe:
+    - waagerecht
+    richtungen:
+    - aus
+    - ein
+  ablage:
+    platte: false
+    glaeser: *id001
+    gier_grad:
+    - 0
+    - 90
+    - 180
+    - 270
+momente:
+  zugkraft_n:
+  - 20
+  - 30
+beschreibung: ReBeL fest auf einem Tisch seitlich neben der Maschine, Oberkorb ausgezogen;
+  beste Lage aus dem Raster Tischhöhe 0,20–0,90 m, Seite, Abstand, Tiefe.
+vergleich:
+  slots: 4
+  teller: 4
+  ablage_extra: 4
+  zug_oberkorb: false

@@ -345,15 +345,33 @@ class APruefer(Pruefer):
         return out
 
     def zu_weit(self, p: np.ndarray) -> float:
+        """> 0: der TCP-Punkt (Greifer senkrecht) liegt um so viel ausserhalb des Arbeitsraums,
+        fuer jede Stellung der 7. Achse: weiter als ``arm`` oder naeher als die Mindestreichweite
+        ``arm_min`` (Gelenk 3 am Anschlag) an Gelenk 2."""
         w = (self.Tinv @ np.append(np.asarray(p, float) + [0.0, 0.0, self.hand], 1.0))[:3]
         j2 = self.j2_0.copy()
         j7 = self.chain.by_name["axis7"]
-        if self._achsvektor is not None and self.achse != "keine":
-            ax = self.chain.by_name["axis7"].axis
-            ax = ax / np.linalg.norm(ax)
+        if self.achse != "keine" and j7.upper - j7.lower > 1e-9:
+            ax = j7.axis / np.linalg.norm(j7.axis)
             s = float(np.clip(np.dot(w - j2, ax), j7.lower, j7.upper))
-            j2 = j2 + s * ax
-        return float(np.linalg.norm(w - j2) - self.arm)
+            d_min = float(np.linalg.norm(w - (j2 + s * ax)))
+            d_max = max(float(np.linalg.norm(w - (j2 + t * ax))) for t in (j7.lower, j7.upper))
+        else:
+            d_min = d_max = float(np.linalg.norm(w - j2))
+        return max(d_min - self.arm, self.arm_min - d_max)
+
+    @property
+    def arm_min(self) -> float:
+        """Kleinster Abstand Gelenk 2 -> Gelenk 5 (Gelenk 3 an der Grenze, ~0,19 m)."""
+        if not hasattr(self, "_arm_min"):
+            q = self.chain.zero()
+            i3 = self.chain.index["joint3"]
+            werte = []
+            for g in (self.chain.lower[i3], self.chain.upper[i3]):
+                q[i3] = g
+                werte.append(float(np.linalg.norm(self.chain.fk(q, "link_5")[:3, 3] - self.chain.fk(q, "link_2")[:3, 3])))
+            self._arm_min = min(werte)
+        return self._arm_min
 
     def lage_konflikte(self) -> List[str]:
         if self.podest is None:
@@ -419,16 +437,13 @@ class Loeser:
             if a.size == 0:
                 break
             qn, pe, re, ok = self.k.ik_batch(T[a, i], q[a], USE)
-            # Nachloesen mit Zufallsstarts mitten im Weg: Ein Zufallsstart, der konvergiert,
-            # springt (fast sicher > Gelenksprung-Grenze) und der Weg scheitert ohnehin; nur ein
-            # knapp nicht konvergierter Punkt (Fehler <= ik_max) kann mit dem Nachloesen anders
-            # ausgehen ('nicht_ok' wie Pruefer.weg) und wird deshalb wie bisher nachgeloest.
-            if nachloesen == "nicht_ok":
-                nach = ~ok & (pe <= ik_max)
-                if nach.any():
-                    b = np.nonzero(nach)[0]
-                    q2, pe2, re2, ok2 = self.loese(T[a[b], i], q[a[b]], rng, 3)
-                    qn[b], pe[b], ok[b] = q2, pe2, ok2
+            # Nachloesen wie die bisherigen Pruefungen: Zufallsstarts landen oft im selben
+            # IK-Ast (kein Sprung), wenn der Warmstart an einer Grenze haengen bleibt.
+            nach = (pe > ik_max) if nachloesen == "ungenau" else ~ok
+            if nach.any():
+                b = np.nonzero(nach)[0]
+                q2, pe2, re2, ok2 = self.loese(T[a[b], i], q[a[b]], rng, 3)
+                qn[b], pe[b], ok[b] = q2, pe2, ok2
             if i and i not in sprung_ohne:
                 sp = np.max(np.abs((qn - q[a])[:, self.ia]), axis=1)
                 sprung[a] = np.maximum(sprung[a], sp)
@@ -450,8 +465,9 @@ def _ergebnis(name: str, xyz, **kw) -> Dict[str, Any]:
 
 
 def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier: Sequence[float],
-                seed: int, versuche: int = 6) -> Dict[str, Any]:
-    """Wie ``Pruefer.pruefe_ziel``, nur alle Startposen eines Gierwinkels als Batch."""
+                seed: int, versuche: int = 6, einsetzen: bool = False) -> Dict[str, Any]:
+    """Wie ``Pruefer.pruefe_ziel``, nur alle Startposen eines Gierwinkels als Batch.
+    ``einsetzen``: Slot zusaetzlich in Gegenrichtung (Glas getragen hinab in den Platz)."""
     g = p.sc["greifen"]
     rng = np.random.default_rng(seed)
     tcp_z = float(g["tcp_ueber_glasrand_m"])
@@ -483,7 +499,14 @@ def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier:
         Q0all[:, p.ifg] = offen
         Tv = L.ziele(R, [p_vor])[0]
         Tp = L.ziele(R, punkte)
-        for stueck in STUECKE(len(Q0all)):
+        extra = int(p.A.d.get("ik", {}).get("zufallsstarts_bei_fehlschlag", 12))
+        for stueck in STUECKE(len(Q0all)) + ([None] if extra > 0 else []):
+            if stueck is None:  # alle Startposen gescheitert: Zufallsstarts nachlegen (eigener Strom)
+                r2 = np.random.default_rng(int(rng.integers(2 ** 31)))
+                Qx = np.array([p.chain.random_q(r2, USE) for _ in range(extra)])
+                Qx[:, p.ifg] = offen
+                Q0all = np.vstack([Q0all, Qx])
+                stueck = np.arange(len(Q0all) - extra, len(Q0all))
             qv, pe, _, ok = L.loese(np.repeat(Tv[None], len(stueck), axis=0), Q0all[stueck], rng, 3)
             gut = ok & (pe <= p.ik_max)
             if not gut.any():
@@ -507,6 +530,8 @@ def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier:
                     q[p.ifg] = offen
                     if i < len(ab) and (art == "slot" or i == letzt):
                         hits += p.kollisionen(q, gegriffen=glas)
+                        if einsetzen and art == "slot" and i < letzt:
+                            hits += p.kollisionen(q, gegriffen=glas, getragen=p._mitgefuehrt(glas, q, p_greif))
                     else:
                         hits += p.kollisionen(q, gegriffen=glas, getragen=p._mitgefuehrt(glas, q, p_greif))
                 hits = sorted(set(hits))
@@ -537,7 +562,15 @@ def pruefe_weg(p: APruefer, R: np.ndarray, punkte: List[np.ndarray], rng, ignori
     Q0 = np.array(st)
     Q0[:, p.ifg] = p.cfg.finger_hub
     T = L.ziele(R, punkte)
-    for stueck in STUECKE(len(Q0)):
+    extra = int(p.A.d.get("ik", {}).get("zufallsstarts_bei_fehlschlag", 12))
+    stuecke = STUECKE(len(Q0)) + ([None] if extra > 0 else [])
+    for stueck in stuecke:
+        if stueck is None:  # alle Startposen gescheitert: Zufallsstarts nachlegen (eigener Strom)
+            r2 = np.random.default_rng(int(rng.integers(2 ** 31)))
+            Qx = np.array([p.chain.random_q(r2, USE) for _ in range(extra)])
+            Qx[:, p.ifg] = p.cfg.finger_hub
+            Q0 = np.vstack([Q0, Qx])
+            stueck = np.arange(len(Q0) - extra, len(Q0))
         qv, pe, _, ok = L.loese(np.repeat(T[0][None], len(stueck), axis=0), Q0[stueck], rng, 3)
         idx = np.nonzero(pe <= p.ik_max)[0]
         if idx.size == 0:
@@ -638,6 +671,9 @@ def aufgaben(d: Dict[str, Any]) -> List[Dict[str, Any]]:
                 out.append({"gruppe": "ablage", "ziel": f"platte_{i + 1}", "i": i})
         for n in cfg.get("glaeser", []):
             out.append({"gruppe": "ablage", "ziel": n, "glas": n})
+        if cfg.get("seitgriff"):
+            for i in range(len(A.m0["ablage"]["punkte_xy_m"])):
+                out.append({"gruppe": "ablage", "ziel": f"seit_{i + 1}", "seit": i})
     if "teller" in z:
         for name, pt in teller_ziele(A, z["teller"]):
             out.append({"gruppe": "teller", "ziel": name, "xyz": _r(pt, 4)})
@@ -671,9 +707,12 @@ def rechne(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
         cfg = z["slots"] or {}
         p = A.pruefer(float(cfg.get("oberkorb_auszug_m", 0.45)), 0.0)
         gl = p.glaeser_korb[a["i"]]
-        return pruefe_glas(p, a["ziel"], gl, "slot", [float(v) for v in cfg.get("gier_grad", [0.0, 180.0])], a["i"])
+        return pruefe_glas(p, a["ziel"], gl, "slot", [float(v) for v in cfg.get("gier_grad", [0.0, 180.0])], a["i"],
+                           einsetzen=bool(cfg.get("einsetzen", False)))
     if g == "ablage":
         cfg = z["ablage"] or {}
+        if "seit" in a:
+            return rechne_seitgriff(A, a)
         p = A.pruefer(0.0, 0.0)
         gl = p.glaeser_ablage[a["i"]] if "i" in a else p.extra_glaeser[a["glas"]]
         seed = a.get("i", 0) if "i" in a else len(p.glaeser_ablage) + list(p.extra_glaeser).index(a["glas"])
@@ -683,6 +722,39 @@ def rechne(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
     if g == "zug":
         return rechne_zug(A, a)
     raise ValueError(g)
+
+
+def r_seit() -> np.ndarray:
+    """Greifer waagerecht in -y (zur Wand), Finger schliessen entlang x (Seitgriff am stehenden Glas)."""
+    z = np.array([0.0, -1.0, 0.0])
+    y = np.array([1.0, 0.0, 0.0])
+    return np.column_stack([np.cross(y, z), y, z])
+
+
+def rechne_seitgriff(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
+    """Ablage im Seitgriff (Glas aufrecht): TCP in Glasmitte-Hoehe, 10 cm waagerecht von vorn
+    anfahren, 2 cm absenken. Hintere Reihe zuerst: in der Szene stehen nur die schon
+    abgestellten Glaeser (weiter hinten bzw. in derselben Reihe links) und das Zielglas."""
+    cfg = A.d["ziele"]["ablage"]
+    pkt = [list(map(float, v)) for v in A.m0["ablage"]["punkte_xy_m"]]
+    x, y = pkt[a["seit"]]
+    schon = [pp for pp in pkt if pp[1] < y - 1e-9 or (abs(pp[1] - y) < 1e-9 and pp[0] < x - 1e-9)]
+    p = A.pruefer(0.0, 0.0, {"ablage": {"punkte_xy_m": schon + [[x, y]]}})
+    ziel_name = f"ablage_{len(schon) + 1}"
+    zap = p.szene.arbeitsplatte_z
+    mitte = float(cfg.get("griff_hoehe_m", 0.055))
+    pt = np.array([x, y, zap + mitte + 0.02])
+    pts = linie(pt + [0, float(cfg.get("anfahrt_m", 0.10)), 0], pt) + linie(pt, pt - [0, 0, 0.02])[1:]
+    rng = np.random.default_rng(5 + a["seit"])
+
+    def ign(link, h):
+        return h == ziel_name and link in FINGER_GREIF
+
+    res, qs = pruefe_weg(p, r_seit(), pts, rng, ign)
+    res["q"] = None if qs is None else _r(qs[-1], 5)
+    if qs is not None:
+        res["eigen"] = eigen(p, qs[-1], float(cfg.get("last_kg", 0.25)))
+    return {"ziel": a["ziel"], "xyz": [x, y, round(zap + mitte, 3)], **res}
 
 
 def rechne_teller(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
@@ -851,6 +923,7 @@ def lauf(d: Dict[str, Any], jobs: Optional[int] = None, cache: Optional[Path] = 
         konfl[f"oberkorb {zust[0]:.2f} / unterkorb {zust[1]:.2f}"] = A.pruefer(*zust).lage_konflikte()
     return {"name": d.get("name", ""), "beschreibung": d.get("beschreibung", ""), "aufbau": d,
             "code": ch, "lage_konflikte": konfl, "gruppen": gr, "abdeckung": abdeckung(gr),
+            "abgleich": abgleich(d, abdeckung(gr)),
             "laufzeit_s": round(time.monotonic() - t0, 1), "gerechnet": len(offen), "aus_cache": len(alle) - len(offen),
             "rechenzeit_je_gruppe_s": {k: round(v, 1) for k, v in zeiten.items()}, "jobs": jobs}
 
@@ -866,7 +939,8 @@ def abdeckung(gr: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
             continue
         if g == "ablage":
             for teil, sel in (("ablage_platte", lambda r: r["ziel"].startswith("platte_")),
-                              ("ablage_extra", lambda r: not r["ziel"].startswith("platte_"))):
+                              ("ablage_seitgriff", lambda r: r["ziel"].startswith("seit_")),
+                              ("ablage_extra", lambda r: not r["ziel"].startswith(("platte_", "seit_")))):
                 rr = [r for r in rows if sel(r)]
                 if rr:
                     out[teil] = {"ok": sum(r["ok"] for r in rr), "n": len(rr)}
@@ -876,6 +950,19 @@ def abdeckung(gr: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
 
 
 # --- Bericht ------------------------------------------------------------------------------
+
+def abgleich(d: Dict[str, Any], abd: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Vergleich mit den Referenzwerten aus ``vergleich`` im YAML (frueher gerechnete Pruefungen)."""
+    out = []
+    for k, soll in (d.get("vergleich") or {}).items():
+        ist = abd.get(k, {}).get("ok")
+        if isinstance(soll, bool):
+            diff = 0 if bool(ist) == soll else 1
+        else:
+            diff = None if ist is None else int(ist) - int(soll)
+        out.append({"gruppe": k, "referenz": soll, "werkzeug": ist, "abweichung": diff})
+    return out
+
 
 def bericht_md(e: Dict[str, Any]) -> str:
     z = [f"# Erreichbarkeit: {e['name']}", ""]
@@ -894,6 +981,10 @@ def bericht_md(e: Dict[str, Any]) -> str:
             z.append(f"| {g} | {v['ok']}/{v['n']} |")
         else:
             z.append(f"| {g} | {'ja' if v['ok'] else 'nein'} ({v['wege_ok']} Wege: {', '.join(v['gelungen']) or '–'}) |")
+    if e.get("abgleich"):
+        z += ["", "## Abgleich mit der Referenz", "", "| Zielgruppe | Referenz | Werkzeug | Abweichung |", "|---|---|---|---|"]
+        for r in e["abgleich"]:
+            z.append(f"| {r['gruppe']} | {r['referenz']} | {r['werkzeug']} | {r['abweichung']} |")
     for g, rows in e["gruppen"].items():
         z += ["", f"## {g}", "", "| Ziel | ok | Grund | Achse 7 m | s |", "|---|---|---|---|---|"]
         for r in rows:

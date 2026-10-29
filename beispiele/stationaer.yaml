@@ -1,0 +1,58 @@
+# Aufbau "stationaer": ReBeL fest montiert ohne Achse, frontal vor der Maschine,
+# Vorgabe: Raeumwerk macht nur den Oberkorb. Die Unterkorb-Ziele (Teller, Zug)
+# stehen hier nur fuer den Abgleich mit Konzept-Spec §13.
+# Fuss zwischen den Koerben (Konzept-Spec §13, Variante B, Fuss 0,35 m).
+#   raeumwerk aufbau beispiele/stationaer.yaml
+name: Stationaer frontal (Fuss 0,35 m)
+beschreibung: >-
+  ReBeL ohne Achse, Fuss (0,30; 0,55) auf 0,35 m (Schlittenplatte 0,02 m darunter),
+  Gesicht zur Maschine. Konsole von der linken Schrankfront in Fusshoehe,
+  Tablett 0,28 x 0,28 m hinter dem Fuss in Fusshoehe.
+roboter:
+  ursprung_xyz_m: [0.30, 0.55, 0.33]
+  gier_grad: -90
+achse:
+  richtung: keine
+  schiene: platte
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+hindernisse:
+  - {name: podest, gruppe: konsole, lo: [-0.12, 0.50, 0.27], hi: [0.36, 0.60, 0.33]}
+  - {name: tisch, gruppe: tisch, lo: [0.16, 0.77, 0.32], hi: [0.44, 1.05, 0.35]}
+  - {name: tisch_1, glas_mitte: [0.24, 0.85, 0.405]}
+  - {name: tisch_2, glas_mitte: [0.24, 0.97, 0.405]}
+  - {name: tisch_3, glas_mitte: [0.36, 0.85, 0.405]}
+  - {name: tisch_4, glas_mitte: [0.36, 0.97, 0.405]}
+erlaubt: ["base_link|podest"]
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180]}
+  teller:
+    korb: unterkorb
+    auszug_m: 0.45
+    x_m: [0.10, 0.20, 0.30, 0.40, 0.50]
+    tiefe_m: [0.04, 0.16, 0.28, 0.40]
+    rand_ueber_boden_m: 0.26
+    greif_unter_rand_m: 0.01
+    vorposition_m: 0.10
+    aushub_m: 0.30
+    gier_grad: [90, 0]
+  zug:
+    koerbe: [unterkorb, oberkorb]
+    x_m: [0.50, 0.10]
+    griffe: [waagerecht]
+    richtungen: [aus, ein]
+  ablage:
+    platte: true
+    glaeser: [tisch_1, tisch_2, tisch_3, tisch_4]
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]
+# Referenz (Konzept-Spec §13.3, Spalte B bei 0,35 m): Slots 2/16, Teller 0/20,
+# Unterkorbzug ja, Oberkorbzug nein (nur 0,44 m), Ablage Platte 0/4, Tablett 4/4.
+vergleich:
+  slots: 2
+  teller: 0
+  zug_unterkorb: true
+  zug_oberkorb: false
+  ablage_platte: 0
+  ablage_extra: 4
