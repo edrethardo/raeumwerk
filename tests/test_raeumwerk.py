@@ -151,6 +151,24 @@ def test_run_refuses_other_config_in_same_dir(tmp_path):
     assert lauf.run(_exp(tmp_path, seed=99), run, log=lambda s: None) == lauf.EXIT_AUFRUF
 
 
+def test_run_teile_parallel_auf_einem_run_dir(tmp_path):
+    """--teil K/N: zwei Prozesse gleichzeitig auf einem Run-Verzeichnis, jeder seine
+    Versuche; das Manifest verliert keine Stuecke, am Ende fertig mit allen Versuchen."""
+    run, e = tmp_path / "run", _exp(tmp_path)
+    env = dict(os.environ, RAEUMWERK_ATTRAPPE_WAND_S="0.5", RAEUMWERK_EXPERIMENT_RUNS=str(tmp_path))
+    procs = [subprocess.Popen([sys.executable, "-m", "raeumwerk", "run", str(e), "--run-dir", str(run),
+                               "--teil", f"{k}/2"], cwd=REPO, env=env, stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True) for k in range(2)]
+    outs = [p.communicate(timeout=120)[0] for p in procs]
+    assert [p.returncode for p in procs] == [0, 0], outs
+    m = lauf.lies_manifest(run)
+    assert m["status"] == "fertig" and m["versuche_fertig"] == m["versuche_geplant"] == 4
+    teile = {s["teil"]: s["versuche"] for s in m["stuecke"]}
+    assert teile == {"0/2": [0, 2], "1/2": [1, 3]}
+    assert len((run / "messwerte.csv").read_text().splitlines()) == 5
+    assert lauf.run(e, run, log=lambda s: None, teil=(2, 2)) == lauf.EXIT_AUFRUF
+
+
 def test_run_rejects_chunk_over_30_minutes(tmp_path):
     assert lauf.run(_exp(tmp_path), tmp_path / "run", max_minuten=31, log=lambda s: None) == lauf.EXIT_AUFRUF
 

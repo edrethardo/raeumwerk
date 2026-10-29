@@ -143,3 +143,48 @@ scripts/submit_gpu.sh -t 10 --weiter-rc 3 --sync beispiel -- \
 `REVISION`) nach `REMOTE_REPO`; dort muss einmal eine eigene `config/local.env`
 mit `RAEUMWERK_HOME` liegen. Jedes Stück läuft als eigene Unit mit
 Laufzeitgrenze; zwischen den Stücken ist die Karte für andere frei.
+
+## 8. Spülmaschine ausräumen (4 Gläser)
+
+Der ReBeL holt vier kopfüber stehende Gläser aus dem Oberkorb, greift sie auf
+einer kleinen Zwischenablage seitlich um, dreht sie mit Gelenk 6 um und stellt
+sie aufrecht auf die Arbeitsplatte. Erklärung und Messwerte:
+`docs/ausraeumen.md`.
+
+```bash
+scripts/run_ausraeumen.sh --cpu demo        # 4 Gläser, fester Seed (CPU ~45 min)
+scripts/run_ausraeumen.sh --cpu negativ     # Glas 1 klemmt im zu schmalen Halter -> "nicht_aus_dem_korb"
+scripts/run_ausraeumen.sh --cpu demo --glaeser 1   # nur das erste Glas (~10 min)
+uvx -p 3.12 --with numpy --with pyyaml python scripts/demo_ausraeumen.py --art demo --out ergebnis/plan --nur-plan
+                                            # nur planen, ohne Newton (~3 min)
+```
+
+Ergebnis unter `$RAEUMWERK_AUSRAEUMEN_RUNS/<Zeitstempel>/<art>/` (Standard
+`$RAEUMWERK_HOME/runs/ausraeumen`): `versuch-00.json` mit `bewertung.glaeser[]`
+(je Glas Erfolg, Gründe, Zielfehler, Kippung, Kontakte, Nachbarverschiebung),
+`zusammenfassung.json`, `lauf.log`, `ss-ltnp.txt`. Exit 0: Demo 4/4, bzw.
+Negativtest erkannt.
+
+Variationslauf (je Glas ±5 mm und ±3°, Korbauszug ±1 cm, 10 Versuche) über
+`raeumwerk run`; auf der CPU in mehreren Prozessen auf einem Run-Verzeichnis
+(`--teil K/N`, je Prozess die Versuche mit `nr % N == K`):
+
+```bash
+for k in 0 1 2; do
+  scripts/raeumwerk --cpu run experimente/ausraeumen_variation.yaml --run-dir ausraeumen-1 --teil $k/3 --max-minuten 30 &
+done; wait                                   # ein Versuch ~45-60 min CPU; Exit 3 = Stueck zu Ende, nochmal starten
+scripts/raeumwerk report ausraeumen-1
+```
+
+Auf einem geteilten GPU-Rechner wie in §7 über `scripts/submit_gpu.sh`
+(`--weiter-rc 3`). Video:
+
+```bash
+scripts/run_ausraeumen.sh --cpu demo --aufzeichnen ergebnis/ausraeumen.npz
+uvx -p 3.12 --with numpy --with pyyaml --with matplotlib \
+  python scripts/render_ausraeumen.py ergebnis/ausraeumen.npz --out ergebnis/ausraeumen.mp4 --standbild ergebnis/bild.png
+```
+
+Mit `RAEUMWERK_ASSETS` (ReBeL-Meshes, `scripts/fetch_assets.sh`) zeigt das
+Video die igus-Optik, sonst die Kollisionsquader. Newton-Tests:
+`RAEUMWERK_RUN_NEWTON=1 RAEUMWERK_NEWTON_PYTHON=<Python mit Newton> pytest -q tests/test_ausraeumen.py -k newton`.

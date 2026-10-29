@@ -99,5 +99,32 @@ class Attrappe:
                 "messung": m, "bewertung": bew, "device": self.device, "attrappe": True}
 
 
+class AusraeumSimulator:
+    """Backend ``ausraeumen``: 4 Glaeser aus dem Oberkorb (``ausraeumen.ablauf``), Newton.
+
+    Die IK-Warmstarts kommen aus dem Nennplan (einmal je Prozess geplant),
+    damit jeder Versuch dieselben Haltungen je Stelle sucht."""
+
+    def __init__(self, exp: ex.Experiment, device=None):
+        from ausraeumen import ablauf, konfig, sim_newton
+        from rebel_model.config import load
+
+        self.cfg, self.urdf, self.chain = ablauf.roboter(load(exp.pfad(exp.roboter)), konfig.load(exp.pfad(exp.szene)))
+        self.ctx = sim_newton.kontext(device)
+        self.device = self.ctx["device"]
+        self.versionen = sim_newton.versionen()
+        self.merk = None
+
+    def versuch(self, nr: int, parameter: Dict[str, float]) -> Dict[str, Any]:
+        from ausraeumen import ablauf, konfig
+
+        if self.merk is None:
+            _, self.merk = ablauf.versuch(-1, "nennplan", konfig.Abweichung(), None, self.cfg, self.chain, self.urdf,
+                                          nur_plan=True)
+        rec, _ = ablauf.versuch(nr, "experiment", ablauf.abweichung_aus(parameter), self.ctx, self.cfg, self.chain,
+                                self.urdf, self.merk)
+        return ablauf.fuer_run(rec, parameter)
+
+
 def erzeugen(exp: ex.Experiment, backend: str, device=None):
-    return {"newton": NewtonSimulator, "attrappe": Attrappe}[backend](exp, device)
+    return {"newton": NewtonSimulator, "attrappe": Attrappe, "ausraeumen": AusraeumSimulator}[backend](exp, device)
