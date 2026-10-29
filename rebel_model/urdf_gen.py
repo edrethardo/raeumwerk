@@ -147,7 +147,7 @@ def build_urdf(cfg: Optional[RobotConfig] = None, payload_kg: float = 0.0,
     offsets = [j1] + [ln for (_, ln, _) in seg[:5]]
     for gel, parent, child, off in zip(cfg.gelenke, parents, [x[0] for x in seg], offsets):
         b.joint(gel.name, "revolute", parent, child, (0.0, 0.0, off), axis=gel.achse,
-                lower=gel.unten, upper=gel.oben, effort=a["moment_nm"], velocity=vel)
+                lower=gel.unten, upper=gel.oben, effort=gel.max_moment[1], velocity=vel)
 
     # --- Greifer ---------------------------------------------------------
     kl, kb, kt = g["koerper_laenge_m"], g["koerper_breite_m"], g["koerper_tiefe_m"]

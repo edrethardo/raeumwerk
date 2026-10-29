@@ -1,0 +1,60 @@
+# Aufbau "Z-Achse frontal": ReBeL auf einer vertikalen Linearachse frontal vor
+# der offenen Maschine (Konzept-Spec §13, Variante A). Fuss 0,60 m vor der
+# Front, Maschinenmitte; Saeule hinter dem Fuss, Tisch rechts daneben.
+#   raeumwerk aufbau beispiele/z-achse-frontal.yaml
+name: Z-Achse frontal
+beschreibung: >-
+  ReBeL auf vertikaler Achse (Hub 0-1,0 m, Fussunterkante 0,02-1,02 m), Fuss
+  (0,30; 0,60), Gesicht zur Maschine. Saeule 0,20 x 0,10 m hinter dem Fuss,
+  Ablage auf einem Tisch 0,28 x 0,28 m rechts in 0,86 m Hoehe.
+roboter:
+  ursprung_xyz_m: [0.30, 0.60, 0.0]   # Achsursprung (Schlittenplatte bei Hub 0)
+  gier_grad: -90                      # Roboter-x zeigt in die Maschine (-y)
+achse:
+  richtung: z
+  hub_m: 1.0
+  schiene: platte                     # nur Schlittenplatte 0,25 x 0,25 x 0,02 m, keine liegende Schiene
+masse:                                # Ueberschreibungen von config/spuelmaschine.yaml
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+hindernisse:
+  # Name "podest" = Halterung des Roboters (Lagekonflikt-Pruefung, Schiene darf aufliegen)
+  - {name: podest, gruppe: saeule, lo: [0.20, 0.76, 0.0], hi: [0.40, 0.86, 1.60]}
+  - {name: tisch, gruppe: tisch, lo: [0.54, 0.46, 0.83], hi: [0.82, 0.74, 0.86]}
+  - {name: tisch_1, glas_mitte: [0.62, 0.54, 0.915]}
+  - {name: tisch_2, glas_mitte: [0.62, 0.66, 0.915]}
+  - {name: tisch_3, glas_mitte: [0.74, 0.54, 0.915]}
+  - {name: tisch_4, glas_mitte: [0.74, 0.66, 0.915]}
+erlaubt: ["base_link|podest"]         # der Fuss sitzt auf dem Schlitten an der Saeule
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180]}
+  teller:
+    korb: unterkorb
+    auszug_m: 0.45
+    x_m: [0.10, 0.20, 0.30, 0.40, 0.50]
+    tiefe_m: [0.04, 0.16, 0.28, 0.40]   # hinter der ausgezogenen Korbfront
+    rand_ueber_boden_m: 0.26             # Teller D 26 cm stehend
+    greif_unter_rand_m: 0.01
+    vorposition_m: 0.10
+    aushub_m: 0.30
+    gier_grad: [90, 0]
+  zug:
+    koerbe: [unterkorb, oberkorb]
+    x_m: [0.50, 0.10]                   # Frontstrebe 0,20 m seitlich vom Fuss
+    griffe: [waagerecht]
+    richtungen: [aus, ein]
+    anfahrt_m: 0.08
+  ablage:
+    platte: true
+    glaeser: [tisch_1, tisch_2, tisch_3, tisch_4]
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]
+# Referenz (Konzept-Spec §13.3, Spalte A): Slots 6/16, Teller 15/20,
+# Unterkorb- und Oberkorbzug ja, Ablage Platte 0/4, Tisch 4/4.
+vergleich:
+  slots: 6
+  teller: 15
+  zug_unterkorb: true
+  zug_oberkorb: true
+  ablage_platte: 0
+  ablage_extra: 4

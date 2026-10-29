@@ -3,6 +3,7 @@
     raeumwerk run <experiment.yaml> [--run-dir DIR] [--max-minuten M] [--device cpu] [--backend attrappe]
     raeumwerk report <run-dir> [--json] [--nicht-schreiben]
     raeumwerk next <run-dir> [--out datei.yaml]
+    raeumwerk aufbau <aufbau.yaml> [--jobs N] [--out DIR] [--cache DIR | --kein-cache] [--gruppen ...] [--ohne-bilder]
 
 Keine Netzwerkschnittstelle: Steuerung nur ueber Argumente, Dateien und die
 GPU-Warteschlange (``scripts/submit_gpu.sh``). Exit-Codes von ``run`` siehe
@@ -19,6 +20,38 @@ from typing import List, Optional
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
+
+
+def _aufbau(a) -> int:
+    import os
+    import time
+
+    from spuelmaschine import aufbau
+
+    t = time.monotonic()
+    pfad = Path(a.aufbau)
+    if not pfad.is_file():
+        print(f"FEHLER: Aufbau-Datei fehlt: {pfad}", file=sys.stderr)
+        return 2
+    try:
+        d = aufbau.lade_yaml(pfad)
+    except (ValueError, KeyError) as e:
+        print(f"FEHLER in {pfad}: {e}", file=sys.stderr)
+        return 2
+    cache = None
+    if not a.kein_cache:
+        cache = Path(a.cache) if a.cache else Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "raeumwerk" / "aufbau"
+    out = Path(a.out) if a.out else Path(f"aufbau-{pfad.stem}")
+    e = aufbau.lauf(d, jobs=a.jobs, cache=cache, gruppen=a.gruppen, log=lambda s: print(s, flush=True))
+    if not a.ohne_bilder and d.get("bilder", True):
+        from spuelmaschine import aufbau_bilder
+
+        e["bilder"] = aufbau_bilder.zeichne_alle(d, e, out)
+    e["laufzeit_gesamt_s"] = round(time.monotonic() - t, 1)
+    aufbau.schreibe(e, out)
+    print(aufbau.bericht_md(e).split("\n## ")[1].split("\n## ")[0] if "\n## " in aufbau.bericht_md(e) else "")
+    print(f"Ergebnis: {out / 'ergebnis.md'} ({e['laufzeit_gesamt_s']} s)")
+    return 0
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -39,8 +72,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     n = sub.add_parser("next", help="neuen Parametervorschlag aus Fehlversuchen ableiten")
     n.add_argument("run")
     n.add_argument("--out", default=None, help="Zieldatei (Standard <run>/vorschlag.yaml)")
+    au = sub.add_parser("aufbau", help="Erreichbarkeit einer Aufbau-Variante (IK, Kollision, Momente)")
+    au.add_argument("aufbau", help="Aufbau-Beschreibung (YAML, Beispiele in beispiele/)")
+    au.add_argument("--jobs", type=int, default=None, help="Prozesse (Standard: alle Kerne)")
+    au.add_argument("--out", default=None, help="Ausgabeordner (Standard: aufbau-<Dateiname>)")
+    au.add_argument("--cache", default=None, help="Cache-Ordner (Standard: ~/.cache/raeumwerk/aufbau)")
+    au.add_argument("--kein-cache", action="store_true", help="ohne Cache rechnen (nichts lesen, nichts schreiben)")
+    au.add_argument("--gruppen", nargs="+", default=None, help="nur diese Zielgruppen (slots teller zug ablage)")
+    au.add_argument("--ohne-bilder", action="store_true", help="keine PNGs zeichnen")
     a = ap.parse_args(argv)
 
+    if a.cmd == "aufbau":
+        return _aufbau(a)
     if a.cmd == "run":
         from . import lauf
         teil = None
