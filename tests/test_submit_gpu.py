@@ -205,6 +205,9 @@ def _warte(bed, frist=FRIST):
     (["x", "--", "/bin/sh"], "unter scripts/"),
     (["x", "--", "scripts/../../etc/passwd"], "kein .."),
     (["x", "--", "scripts/fehlt.sh"], "Skript fehlt"),
+    (["-t"], "braucht einen Wert"),
+    (["--weiter-rc"], "braucht einen Wert"),
+    (["--max-stuecke"], "braucht einen Wert"),
 ])
 def test_submit_rejects_bad_calls(umgebung, args, text):
     proc = _submit(umgebung, "lock", *args)

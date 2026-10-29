@@ -44,11 +44,12 @@
 set -uo pipefail
 
 minuten=30; weiter_rc=; max_stuecke=20; sync=0; warten=1
+need_arg() { [ $# -ge 2 ] || { echo "Option $1 braucht einen Wert" >&2; exit 2; }; }
 while [ $# -gt 0 ]; do
   case "$1" in
-    -t) minuten=${2:-}; shift 2 ;;
-    --weiter-rc) weiter_rc=${2:-}; shift 2 ;;
-    --max-stuecke) max_stuecke=${2:-}; shift 2 ;;
+    -t) need_arg "$@"; minuten=$2; shift 2 ;;
+    --weiter-rc) need_arg "$@"; weiter_rc=$2; shift 2 ;;
+    --max-stuecke) need_arg "$@"; max_stuecke=$2; shift 2 ;;
     --sync) sync=1; shift ;;
     --nicht-warten) warten=0; shift ;;
     -h|--help) sed -n '2,45p' "$0"; exit 0 ;;
