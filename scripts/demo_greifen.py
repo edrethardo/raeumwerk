@@ -44,6 +44,9 @@ def main() -> int:
     ap.add_argument("--device", default=None)
     ap.add_argument("--versuche", type=int, default=None, help="nur die ersten N Versuche (zum Ausprobieren)")
     ap.add_argument("--seed", type=int, default=0, help="Seed der IK-Neustarts")
+    ap.add_argument("--aufzeichnen", default=None, metavar="DATEI.npz",
+                    help="Posen aller Koerper (30 Bilder je Simsekunde) speichern, fuer scripts/render_video.py;"
+                         " bei mehreren Versuchen Nummer im Dateinamen (-NN)")
     args = ap.parse_args()
 
     out_dir = Path(args.out)
@@ -79,7 +82,14 @@ def main() -> int:
         meta["device"] = ctx["device"]
         wand_sum = 0.0
         for v in liste:
-            rec = sim_newton.versuch_ausfuehren(ctx, v, planer)
+            rec_pfad = None
+            if args.aufzeichnen:
+                rec_pfad = Path(args.aufzeichnen)
+                if len(liste) > 1:
+                    rec_pfad = rec_pfad.with_name(f"{rec_pfad.stem}-{v.nr:02d}{rec_pfad.suffix}")
+            rec = sim_newton.versuch_ausfuehren(ctx, v, planer, aufzeichnen=rec_pfad)
+            if rec_pfad:
+                print("AUFZEICHNUNG", rec_pfad, flush=True)
             print("PLAN", json.dumps({"nr": v.nr, "ok": rec["plan"]["ok"], "fehler": rec["plan"]["fehler"],
                                       "dauer_s": rec["dauer"]["ablauf_sim_s"]}), flush=True)
             wand_sum += rec["dauer"]["wand_sim_s"]

@@ -81,8 +81,10 @@ class Versuchslauf:
     Tisch), Welt 0 war korrekt; siehe docs/greifdemo.md.
     """
 
-    def __init__(self, ctx, versuch, plan):
+    def __init__(self, ctx, versuch, plan, aufzeichnen_fps=None):
         self.ctx, self.v, self.pl = ctx, versuch, plan
+        self.aufzeichnen_fps = aufzeichnen_fps
+        self.aufzeichner = None
 
     def bauen(self):
         c = self.ctx
@@ -141,6 +143,7 @@ class Versuchslauf:
         b.add_ground_plane(cfg=shape_cfg(k["reibung_boden"]))
         robot_shapes = {s for s in range(b.shape_count) if b.shape_body[s] in robot_bodies}
         self.model = b.finalize(device=c["device"])
+        self.body_label = [l.split("/")[-1] for l in b.body_label]
         self.qi, self.di = qi, di
         self.glas_b, self.glas_s, self.tisch = glas_b, glas_s, tisch
         self.robot_shapes, self.finger_shapes = robot_shapes, finger_shapes
@@ -250,10 +253,16 @@ class Versuchslauf:
 
         nsteps = int(math.ceil(pl.dauer / dt))
         ifg = chain.index["finger_left"]
+        rec = None
+        if self.aufzeichnen_fps:
+            from .aufzeichnung import Aufzeichner
+            rec = self.aufzeichner = Aufzeichner(dt, self.aufzeichnen_fps)
         t_sim0 = time.monotonic()
         for step in range(nsteps):
             t_now = step * dt
             q, qd, ph = pl.sample(t_now)
+            if rec is not None and rec.faellig(step):
+                rec.add(t_now, st0.body_q.numpy(), ph)
             self.roboter.setze_soll({n: q[chain.index[n]] for n in arm}, {n: qd[chain.index[n]] for n in arm})
             self.greifer.setze_soll(q[ifg], qd[ifg])
             control.joint_target_q.assign(self.tq)
@@ -267,6 +276,8 @@ class Versuchslauf:
             self.zustand = st0
         pipeline.collide(st0, contacts)
         messen(nsteps * dt, "ende")
+        if rec is not None and rec.faellig(nsteps):
+            rec.add(nsteps * dt, st0.body_q.numpy(), "ende")
         wp.synchronize()
         self.wand_s = time.monotonic() - t_sim0
         self.sim_s = nsteps * dt
@@ -281,16 +292,31 @@ class Versuchslauf:
         return m
 
 
-def versuch_ausfuehren(ctx, v, planer) -> dict:
-    """Plant, simuliert und bewertet einen Versuch; liefert den JSON-Datensatz."""
+def versuch_ausfuehren(ctx, v, planer, aufzeichnen=None, aufzeichnen_fps=30.0) -> dict:
+    """Plant, simuliert und bewertet einen Versuch; liefert den JSON-Datensatz.
+
+    ``aufzeichnen``: Pfad einer ``.npz``; dann werden die Posen aller Koerper
+    mit ``aufzeichnen_fps`` Bildern je Simsekunde gespeichert (greifen.aufzeichnung).
+    """
     sz = ctx["sz"]
     t_v = time.monotonic()
     pl = planer.plane(v)
     t_plan = time.monotonic() - t_v
-    lauf = Versuchslauf(ctx, v, pl)
+    lauf = Versuchslauf(ctx, v, pl, aufzeichnen_fps if aufzeichnen else None)
     lauf.bauen()
     m = lauf.fahren()
     bew = bewertung.bewerte(m, sz.bewertung)
+    if aufzeichnen:
+        lauf.aufzeichner.speichern(aufzeichnen, lauf.body_label, jsonable({
+            "tisch_mitte_xy_m": sz.tisch["mitte_xy_m"], "tisch_groesse_m": sz.tisch["groesse_m"],
+            "glas_radius_m": sz.glas_radius, "glas_hoehe_m": float(sz.glas["hoehe_m"]),
+            "start_xy_m": list(v.start_xy), "ziel_xy_m": list(v.ziel_xy),
+            "phasen_s": {p: [a, b] for p, (a, b) in pl.phase_zeiten().items()},
+            "erfolg": bew["erfolg"], "gruende": bew["gruende"],
+            "zielfehler_xy_m": m["zielfehler_xy_m"], "kippung_end_grad": m["kippung_end_grad"],
+            "kippung_max_grad": m["kippung_max_grad"], "hub_max_m": m["hub_max_m"],
+            "ziel_toleranz_m": float(sz.bewertung["ziel_toleranz_m"]),
+            "kippung_grenze_grad": float(sz.bewertung["kippung_max_grad"])}))
     return jsonable({
         "versuch": v.as_dict(),
         "erfolg": bew["erfolg"], "gruende": bew["gruende"], "gruende_text": bew["texte"],
