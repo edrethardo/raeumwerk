@@ -13,21 +13,30 @@ im Repo, sie ist ein Erzeugnis):
 |---|---|---|---|---|
 | igus Datenblatt „ReBeL 6 DOF“ (`technical data sheet ReBeL 6DOF_EN.pdf`, igus.com, Downloads) | Maße 252/237/297/126 mm, Kerzenhöhe 912 mm, Reichweite 664 mm (660 mm Gelenk 2 → Flansch), Gelenkgrenzen, 45 °/s, 8,2 kg, 2 kg Nutzlast, ±1 mm, Fuß Ø180 mm, Flansch Ø43 mm | igus-Nutzungsbedingungen, keine Weitergabe-Freigabe | sha256 `02b8d7af4a3c971ba93d29cb9cb2cd06510e1b87c2b01422bf8c0e218b12ea49` | nein, `scripts/fetch_assets.sh` |
 | CommonplaceRobotics/iRC_ROS (Hersteller der ReBeL-Steuerung, von igus verlinkt), `irc_ros_description/urdf/robots/igus_rebel_6dof_00.description.xacro` | Achsrichtungen (J1 um −z), Höhe Fuß → J1 (100 mm), J5 → J6 (120,8 mm), Vergleichsmodell für den FK-Abgleich | Apache-2.0 (`LICENSE`, `package.xml`) | Commit `41701e6df3398087d217f0f478622e60f694de41` (2025-05-21); sha256 xacro `31d92942…1a16f8`, `_01` `76489bd9…b52f`, LICENSE `ffcc552b…5ef9f` | nein (nur Zahlenwerte im Test, mit Quellenangabe); Dateien über `scripts/fetch_assets.sh` |
+| CommonplaceRobotics/iRC_ROS, `irc_ros_description/meshes/igus_rebel_6dof_00/Joint0.dae` … `Joint6.dae` | Visual-Meshes des ReBeL (nur Optik in Render und Video, §6) | Apache-2.0 (Repo-`LICENSE`, `package.xml`); Herkunft der Geometrie nicht dokumentiert (COLLADA aus `ctmconv`, 2023-01-02) | Commit wie oben; sha256 Joint0 `146b8890…d92ad9`, Joint1 `d85b816d…526e79`, Joint2 `36e29bd2…ef1f5f`, Joint3 `b8f4d321…41cc35`, Joint4 `e097f7b7…eb0acb`, Joint5 `8ae70e27…dfb1c9`, Joint6 `d68b1b8f…1e4f59` (vollständig in `scripts/fetch_assets.sh`) | nein, `scripts/fetch_assets.sh` (siehe unten) |
+| igus CAD-Portal (`igus-cad.com`, CADClick) und TraceParts: STEP/STL von ReBeL 6 DOF (REBEL-6DOF-01) und drylin ZLW-20200 / 7. Achse | nicht genutzt | Download nur über das Portal mit Formular bzw. Anmeldung und Bedingungen; kein Account angelegt, nichts akzeptiert | — | nein |
 | igus Produktseite „7th axis for ReBeL“ (ZLW-20200S-7TH-REBEL-01-&lt;Hub&gt;) | Hub 500–3000 mm, 0,3 m/s, Wiederholgenauigkeit 0,3 mm | Webseite, nur Zahlenwerte übernommen | — | nein |
 | igus Produktseite „Lightweight Parallel Gripper for ReBeL“ (0-LCA-GRI-0100) | Greifbereich 100 mm, maximale Öffnung 105 mm | Webseite, nur Zahlenwerte übernommen | — | nein |
 
 Offizielle URDF von igus selbst wurde nicht gefunden (Suche: igus-Website,
-GitHub, ROS-Pakete); igus-CAD-Daten stehen unter eigenen Bedingungen und
-werden nicht genutzt. Das ROS-Paket von CommonplaceRobotics (iRC_ROS) ist die
-herstellernahe Beschreibung. Meshes
-werden **nicht** genutzt: Visuals und Kollisionen sind eigene Quader, damit
-keine fremden Assets ins öffentliche Repo kommen.
+GitHub, ROS-Pakete). igus-CAD-Daten (STEP/STL) gibt es nur über das
+igus-CAD-Portal bzw. TraceParts mit Formular/Anmeldung und eigenen
+Bedingungen; sie werden nicht genutzt. Das ROS-Paket von CommonplaceRobotics
+(iRC_ROS) ist die herstellernahe Beschreibung und bringt Meshes des ReBeL mit.
+**Physik und Kollision** bleiben eigene Quader. Die iRC_ROS-Meshes dienen nur
+der **Optik** (§6) und kommen **nicht ins Repo**: Apache-2.0 würde die
+Weitergabe zwar erlauben, aber woher die Geometrie stammt (vermutlich aus
+Hersteller-CAD), ist nirgends dokumentiert. Deshalb werden sie wie die anderen
+Assets nur lokal über `scripts/fetch_assets.sh` geholt. Für die 7. Achse
+(drylin ZLW-20200) und den Greifer gibt es keine frei ladbaren Meshes; sie
+bleiben eigene Quader.
 
 `scripts/fetch_assets.sh` legt die Dateien nach `$RAEUMWERK_ASSETS`
 (Standard `$RAEUMWERK_HOME/assets`) und bricht bei falscher Prüfsumme ab
 (Exit 5). Mit gesetztem `RAEUMWERK_ASSETS` prüft
 `test_cpr_numbers_in_fetched_asset`, dass die im Test benutzten
-iRC_ROS-Zahlen wirklich in der geholten Datei stehen.
+iRC_ROS-Zahlen wirklich in der geholten Datei stehen, und
+`tests/test_visual_mesh.py` prüft die Ausrichtung der Meshes (§6).
 
 ## 2. Kinematische Kette
 
@@ -135,3 +144,65 @@ in den 4 freien Posen keine Durchdringung. Übersicht: `docs/STATUS.md`.
   rechte Finger steht unter Schwerkraft rund 0,4 mm hinter dem linken.
 - Das Modell kennt keine Getriebeelastizität, kein Spiel und keine Reibung;
   das ReBeL-Datenblatt nennt ±1 mm Wiederholgenauigkeit.
+
+## 6. Optik: ReBeL-Meshes (nur lokal)
+
+`rebel_model/visual_mesh.py` ordnet jedem Armglied sein iRC_ROS-Mesh zu,
+`build_urdf(cfg, mesh_dir=…)` (CLI `python -m rebel_model.urdf_gen --meshes
+<Ordner>`) schreibt es als `<visual>` in die URDF. Nur die Visuals ändern
+sich: Massen, Gelenke und Kollisionsquader bleiben gleich
+(`test_urdf_mit_meshes_aendert_nur_visuals`), und die Simulation ruft
+`build_urdf` weiter ohne Meshes auf.
+
+| Glied | Mesh | Lage im Linkframe |
+|---|---|---|
+| base_link | Joint0 | unverändert (Fuß 0…100 mm = J1) |
+| link_1 | Joint1 | z × 152/149 (J1 → J2: Datenblatt 152 mm, Mesh 149 mm) |
+| link_2 | Joint2 | z × 237/238,4 (Oberarm) |
+| link_3 | Joint3 | z × 1,054: schließt die Fuge zum J4-Mesh (Unterarm Datenblatt 297 mm, Mesh 289 mm) |
+| link_4 | Joint4 | unverändert, J5 des Meshes liegt auf unserem J5 |
+| link_5 | Joint5 | unverändert (J5 → J6 120,8 mm in beiden) |
+| link_6 | Joint6 | um 4 mm nach oben, Flanschscheibe endet am Flansch |
+
+Die Linkframes von iRC_ROS liegen in den Gelenken und sind bei gleicher Pose
+gleich orientiert wie unsere (Umrechnung §2), deshalb gibt es keine Drehung,
+nur eine Streckung entlang der Gliedachse. `visual_mesh.ausrichtung()` misst
+nach, wie gut jedes Mesh auf unseren Gelenken sitzt: Bei den y-Gelenken
+(J2, J3, J5) wird ein Kreis an die Außenkontur des Gehäuses gelegt und sein
+Mittelpunkt mit dem Gelenk verglichen. Bei den z-Gelenken wird die
+Querschnittsmitte gegen die Achse gemessen. Dazu kommen die Stirnflächen
+und die Fuge J3/J4. Gemessen mit den Dateien oben (`test_ausrichtung_mesh_zu_gelenken`,
+Grenze 5 mm):
+
+| Glied | größter Fehler |
+|---|---|
+| base_link | 0,00 mm (J1-Achse, Fuß, Stirn) |
+| link_1 | 1,45 mm (J2-Gehäuse) |
+| link_2 | 0,57 mm (J3-Gehäuse; J2 0,53 mm) |
+| link_3 | 3,79 mm (J3-Gehäuse, Folge der Streckung um 5,4 %) |
+| link_4 | 0,36 mm (J5-Gehäuse) |
+| link_5 | 0,36 mm (J5-Gehäuse) |
+| link_6 | 0,00 mm |
+
+Die Gegenprobe (`test_ausrichtung_erkennt_versatz`) verschiebt das Oberarm-Mesh
+um 8 mm, und dann schlägt die Messung an. Ohne Assets werden die drei
+Asset-Tests übersprungen.
+
+`scripts/render_video.py` nimmt die Meshes, wenn sie lokal liegen
+(`--optik auto`, Standard; `mesh` erzwingt sie, `quader` schaltet sie ab).
+Es dezimiert sie per Vertex-Clustering auf höchstens 1100 Dreiecke je Glied und
+färbt sie anthrazit mit orangen Ringen an den Gelenkfugen wie beim echten
+ReBeL. Dafür werden die Dreiecke an den Ringkanten zweimal geviertelt. Je Bild
+sind das 19 043 Dreiecke (bevor die Rückseiten wegfallen). Gerendert wird in
+6 Prozessen (`--jobs`), ffmpeg setzt die Abschnitte ohne Neukodierung zusammen.
+Gemessen für die Demo (24,0 s, 721 Bilder, 1280×720, 8 Kerne): mit Meshes
+38,5 s Wandzeit, mit Quadern 15,2 s (6 Prozesse) bzw. 36,8 s (1 Prozess).
+Ohne Meshes zeigt das Video die Quader.
+Schiene und Greifer bleiben Quader: Ein CAD der 7. Achse gibt es nur über
+das igus-Portal.
+
+Isaac Sim (zweiter Rechner mit RTX-GPU) könnte die Mesh-URDF
+(`urdf_gen --meshes`) mit dem URDF-Importer laden und fotorealistisch
+rendern. Gebaut ist das nicht, denn es braucht einen Lauf auf dem zweiten
+Rechner, die Annahme der NVIDIA-EULA und die Meshes dort. Das ist nicht mit
+wenig Aufwand zu machen.

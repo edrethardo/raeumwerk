@@ -165,7 +165,7 @@ def test_meshes_dezimiert_klein_genug():
     d = _assets()
     for x in vm.zuordnung(load()):
         v, f = vm.dae_laden(d / x.datei)
-        nv, nf, _ = vm.dezimieren_bis(v, f, 1500)
-        assert 0 < len(nf) <= 1500
+        nv, nf, _ = vm.dezimieren_bis(v, f, 1100)  # wie render_video.MAX_DREIECKE_JE_MESH
+        assert 0 < len(nf) <= 1100
         # Huelle bleibt: Ausdehnung aendert sich um hoechstens 5 mm
         assert np.all(np.abs((nv.max(0) - nv.min(0)) - (v.max(0) - v.min(0))) < 0.005)
