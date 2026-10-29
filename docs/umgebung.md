@@ -56,7 +56,7 @@ Interface-Adressen (`<iface>:port`) und gibt keinen Rechnernamen aus.
 | Isaac Lab | **3.0.0** (Release 3.0 ist Standard der Doku; Newton ist Standard-Backend, läuft ohne Isaac Sim) | https://docs.nvidia.com/isaaclab/isaac-lab/installation |
 | Newton | 1.6.1 (in Isaac Sim 6.2 gepinnt); Isaac Lab 3.0 bringt sein Newton selbst mit, installierte Version siehe §4 | https://newton-physics.github.io/newton/latest/guide/installation.html |
 
-Die im Ticket genannten Versionen (Isaac Sim 6.2, Isaac Lab 3.0) existieren so.
+Die geplanten Versionen (Isaac Sim 6.2, Isaac Lab 3.0) existieren so.
 
 **Isaac Sim 6.2 Systemanforderungen** (x86_64, https://docs.isaacsim.omniverse.nvidia.com/6.2.0/installation/requirements.html):
 
