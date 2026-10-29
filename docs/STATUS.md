@@ -20,3 +20,13 @@ jeweiligen Rechner (siehe `docs/umgebung.md`).
 | Isaac Sim unter Last (paralleler fremder GPU-Job, 16 GB RAM) | experimentell | nicht gemessen: die Läufe hatten die Karte und den RAM exklusiv; Erststart-Spitze 11,2 GB RAM lässt neben einem parallelen Job kaum Platz |
 | Isaac Lab Tasks/Training mit Newton | experimentell | nur `import isaaclab` + direkte Newton-API im Smoke, kein Isaac-Lab-Task gestartet |
 | Agent Skills / MCP | bewertet, nicht eingesetzt | `docs/bewertung-agent-tools.md` |
+| ReBeL-Modell (6 DOF + 7. Achse + Parallelgreifer) aus `config/robot.yaml`, Quellen/Lizenzen | nachgewiesen | `docs/robotermodell.md`; `test_config_every_value_has_source`, `test_urdf_structure` |
+| Referenzunterlagen per `scripts/fetch_assets.sh` mit sha256 (nicht im Repo) | nachgewiesen | 4/4 Dateien ok auf beiden Rechnern; `test_cpr_numbers_in_fetched_asset` grün mit `RAEUMWERK_ASSETS` |
+| Kinematiktests ohne GPU | nachgewiesen | `uvx -p 3.10 … pytest -q tests`: 44 passed, 3 skipped; FK 6 Datenblattposen < 1 µm; IK-Rundlauf 60 Posen max. 0,0099 mm / 0,001°, mit 7. Achse 50 Punkte < 1 mm; Hülle 660 mm; FK gegen iRC_ROS max. 14,7 mm (andere Längen, erklärt) |
+| Selbstkollision erkannt (CPU-Quadertest) | nachgewiesen | `test_self_collision_detected` (2 Posen innerhalb der Grenzen), `test_self_collision_free_poses` (6 Posen ohne Treffer) |
+| Newton: Modell laden, Massen (8,2 kg + 1,5 kg Nutzlast), Grenzen, Mimic | nachgewiesen | `runs/rebel/20261029T025400Z/rebel.json` (RTX 3090, Newton 1.6.1, warp 1.17.0, MuJoCo-Warp 3.12.0): Grenzenfehler 0, 1 Mimic-Constraint |
+| Newton: FK gleich der numpy-FK | nachgewiesen | gleicher Lauf: 55 Posen, max. 0,34 µm |
+| Newton: alle 7 Achsen + Greifer gefahren, Ziel mit Toleranz erreicht | nachgewiesen | gleicher Lauf, 16 Ziele: Drehgelenke max. 0,18° (J2 unter Last), Achse 7 max. 0,0001 mm, Finger < 0,001 mm, gespiegelter Finger 0,38 mm hinter dem Ziel (< 1 mm); 78 s Simzeit in 246 s Wandzeit, dt 2 ms |
+| Newton: Selbstkollision an, selbstschneidende Pose erkannt | nachgewiesen | gleicher Lauf: 4 freie Posen ohne Durchdringung, 2 Schnittposen mit 3 bzw. 11 Paaren (bis 81 mm tief), deckungsgleich mit dem CPU-Test |
+| Kein neuer Listener außerhalb localhost während des Newton-Laufs | nachgewiesen | `runs/rebel/20261029T025400Z/ss-ltnp.txt`: nur die schon vorher offenen Ports 22 und 8000 (fremde Dienste) |
+| Modellwerte Momentgrenze 40 Nm, Massenaufteilung, Greifer-/Schienenmaße | experimentell | Annahmen in `config/robot.yaml`, am echten Gerät nachzumessen |
