@@ -1,0 +1,196 @@
+{
+  "schema": "raeumwerk-run/1",
+  "run": "beispiel-abnahme",
+  "name": "beispiel",
+  "erstellt": "2026-10-29T05:21:11Z",
+  "experiment_datei": "experimente/beispiel.yaml",
+  "git": {
+    "sha": "5325df13d58387927ed081235cc8500ae7a03927",
+    "dirty": false,
+    "quelle": "REVISION"
+  },
+  "konfig_hash": "9ae127f40c888836a1454561c5e1d9f36e298cd8736d7ce13811e5ecd4c62ded",
+  "dateien_sha256": {
+    "experiment": "5cc606d69e4005ae2eb5df8d24e302b329cfb1687850b2ef4ce2ac2635d1a116",
+    "szene": "3d784ee2ccc64d312054440c7773e3293f4fb546071dfb270ef6757974875f91",
+    "roboter": "14352588ab934ce43072c5c6794a7c20c1a061bf7cb89cc61dbcbc238d4a3af7"
+  },
+  "experiment": {
+    "name": "beispiel",
+    "backend": "newton",
+    "szene": "config/scene.yaml",
+    "roboter": "config/robot.yaml",
+    "versuche": 8,
+    "seed": 31,
+    "parameter": {
+      "greif_versatz_y_m": {
+        "bereich": [
+          -0.035,
+          0.035
+        ]
+      },
+      "greifkraft_n": {
+        "bereich": [
+          2.0,
+          20.0
+        ]
+      },
+      "reibung_finger": {
+        "bereich": [
+          0.2,
+          1.0
+        ]
+      },
+      "reibung_glas": {
+        "fest": 0.2
+      }
+    },
+    "stueck": {
+      "max_minuten": 25.0
+    },
+    "beschreibung": "Greifkraft, Fingerreibung und Greifpunkt gestreut, rutschiges Glas"
+  },
+  "backend": "newton",
+  "seed": 31,
+  "parameter_standard": {
+    "glas_x_m": 0.55,
+    "glas_y_m": 0.35,
+    "greif_versatz_x_m": 0.0,
+    "greif_versatz_y_m": 0.0,
+    "greif_versatz_z_m": 0.0,
+    "reibung_finger": 1.0,
+    "reibung_glas": 0.6,
+    "reibung_tisch": 0.5,
+    "greifkraft_n": 20.0
+  },
+  "versuche_geplant": 8,
+  "versuche_plan": [
+    {
+      "nr": 0,
+      "parameter": {
+        "greif_versatz_y_m": -0.034141,
+        "greifkraft_n": 4.023179,
+        "reibung_finger": 0.51427,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 1,
+      "parameter": {
+        "greif_versatz_y_m": 0.01287,
+        "greifkraft_n": 4.496437,
+        "reibung_finger": 0.289955,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 2,
+      "parameter": {
+        "greif_versatz_y_m": -0.018774,
+        "greifkraft_n": 15.636665,
+        "reibung_finger": 0.317921,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 3,
+      "parameter": {
+        "greif_versatz_y_m": 0.016846,
+        "greifkraft_n": 13.919,
+        "reibung_finger": 0.309263,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 4,
+      "parameter": {
+        "greif_versatz_y_m": 0.002496,
+        "greifkraft_n": 10.059517,
+        "reibung_finger": 0.530056,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 5,
+      "parameter": {
+        "greif_versatz_y_m": 0.034744,
+        "greifkraft_n": 3.676005,
+        "reibung_finger": 0.216293,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 6,
+      "parameter": {
+        "greif_versatz_y_m": 0.030786,
+        "greifkraft_n": 9.253025,
+        "reibung_finger": 0.358798,
+        "reibung_glas": 0.2
+      }
+    },
+    {
+      "nr": 7,
+      "parameter": {
+        "greif_versatz_y_m": -0.011878,
+        "greifkraft_n": 8.568105,
+        "reibung_finger": 0.96409,
+        "reibung_glas": 0.2
+      }
+    }
+  ],
+  "versionen": {
+    "newton": "1.6.1",
+    "warp-lang": "1.17.0",
+    "mujoco": "3.12.0",
+    "mujoco-warp": "3.12.0",
+    "numpy": "2.5.4",
+    "python": "3.12.14",
+    "raeumwerk": "0.1.0",
+    "plattform": "x86_64"
+  },
+  "device": "cuda:0",
+  "status": "fertig",
+  "versuche_fertig": 8,
+  "erfolge": 1,
+  "stuecke": [
+    {
+      "nr": 0,
+      "start": "2026-10-29T05:21:11Z",
+      "ende": "2026-10-29T05:23:09Z",
+      "budget_min": 2.0,
+      "versuche": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "grund_ende": "Budget: 118 s + ~31 s > 120 s",
+      "wand_s": 118.01
+    },
+    {
+      "nr": 1,
+      "start": "2026-10-29T05:23:11Z",
+      "ende": "2026-10-29T05:24:42Z",
+      "budget_min": 2.0,
+      "versuche": [
+        4,
+        5,
+        6
+      ],
+      "grund_ende": "Budget: 91 s + ~31 s > 120 s",
+      "wand_s": 91.18
+    },
+    {
+      "nr": 2,
+      "start": "2026-10-29T05:25:15Z",
+      "ende": "2026-10-29T05:25:45Z",
+      "budget_min": 2.0,
+      "versuche": [
+        7
+      ],
+      "grund_ende": "alle Versuche fertig",
+      "wand_s": 30.92
+    }
+  ],
+  "letzte_aenderung": "2026-10-29T05:25:45Z"
+}

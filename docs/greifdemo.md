@@ -9,7 +9,8 @@ Belegte Zahlen: `docs/STATUS.md`.
 | Szene, Kontakt- und Greifparameter, Toleranzen | `config/scene.yaml` |
 | Zustandsmaschine und IK-Wegpunkte | `greifen/plan.py` |
 | Bewertung und Fehlergründe | `greifen/bewertung.py` |
-| Newton-Lauf, Messung, JSON | `scripts/demo_greifen.py` |
+| Newton-Lauf, Messung | `greifen/sim_newton.py` (über die Schnittstellen aus `raeumwerk/backends/`, `docs/architektur.md`) |
+| Demo, JSON | `scripts/demo_greifen.py` |
 | Runner (ein Befehl), Abnahmejob | `scripts/run_greifen.sh`, `scripts/job_greifen.sh` |
 | Tests (ohne GPU und mit Backend) | `tests/test_greifen.py` |
 

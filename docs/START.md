@@ -96,3 +96,35 @@ Nicht umgesetzt. Ein headless gerendertes Video bräuchte entweder Isaac Sim (Ki
 Beides ist mehr Aufwand, als der Auftrag für diesen Punkt vorsieht. Statt
 Bildern liegt in `versuch-NN.json` unter `messung.phasen_ende` die Glaslage am
 Ende jeder Phase.
+
+## 7. Experimente: `raeumwerk run`, `report`, `next`
+
+Parameterstudien (Greifpunkt, Reibung, Greifkraft, Glaslage) mit N Versuchen,
+fortsetzbar und in Stücken. Aufbau und Dateiformate: `docs/architektur.md`.
+
+```bash
+scripts/raeumwerk --cpu run experimente/beispiel.yaml --run-dir beispiel-1   # Weg A, CPU (~2 min je Versuch)
+scripts/raeumwerk run experimente/beispiel.yaml --run-dir beispiel-1         # Weg B, GPU-venv (~30 s je Versuch)
+scripts/raeumwerk report beispiel-1      # Erfolge, Kollisionen, Fehlergründe -> bericht.md/.json
+scripts/raeumwerk next beispiel-1        # Parametervorschlag -> vorschlag.yaml
+scripts/raeumwerk run <run>/vorschlag.yaml --run-dir beispiel-2
+```
+
+Ein Name ohne `/` liegt unter `$RAEUMWERK_EXPERIMENT_RUNS` (Standard
+`$RAEUMWERK_HOME/runs/experimente`). Bricht ein Lauf ab oder endet ein Stück
+(`--max-minuten`, Exit 3), setzt derselbe Befehl bei den fehlenden Versuchen
+fort. `report` und `next` brauchen nur `python3`.
+
+**Geteilter GPU-Rechner:** nie direkt starten, sondern vom steuernden Rechner
+über `scripts/submit_gpu.sh` (externe GPU-Warteschlange oder GPU-Lock, Werte in
+`config/local.env`, siehe `config/local.env.example`):
+
+```bash
+scripts/submit_gpu.sh -t 10 --weiter-rc 3 --sync beispiel -- \
+    scripts/raeumwerk run experimente/beispiel.yaml --run-dir beispiel-1 --max-minuten 8
+```
+
+`--sync` kopiert den Stand (alle Dateien aus `git ls-files` und eine Datei
+`REVISION`) nach `REMOTE_REPO`; dort muss einmal eine eigene `config/local.env`
+mit `RAEUMWERK_HOME` liegen. Jedes Stück läuft als eigene Unit mit
+Laufzeitgrenze; zwischen den Stücken ist die Karte für andere frei.

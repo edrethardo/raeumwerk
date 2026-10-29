@@ -11,7 +11,8 @@ Vorschlag (keine Optimierung, kein Training; Regeln in fester Reihenfolge):
 1. ``bereich``-Parameter mit mindestens zwei Erfolgen: neuer Bereich = kleinster
    bis groesster Erfolgswert (Fehlversuche ausserhalb fallen weg).
 2. ``bereich``-Parameter mit genau einem Erfolg: Bereich halber Breite um ihn.
-3. Ohne Erfolg Regeln nach dem haeufigsten Fehlergrund:
+3. Ohne Erfolg Regeln nach dem haeufigsten Fehlergrund, fuer den es eine Regel
+   gibt (``nicht_am_ziel`` ist meist nur Folge und hat keine):
    ``nicht_gegriffen`` -> Greifpunktversatz-Bereiche zur Mitte halbieren;
    ``gefallen`` -> untere Grenze von ``greifkraft_n``/``reibung_*`` auf die Mitte heben;
    ``kollision_arm_tisch`` -> ``greif_versatz_z_m`` um 5 mm anheben;
@@ -148,7 +149,9 @@ def vorschlag(run: Path | str) -> Dict[str, Any]:
                 begr.append(f"{name}: nur Werte mit Erfolg {behalten} (Regel 4)")
 
     if not erfolge and recs:
-        haupt = next(iter(b["fehlergruende"]), None)
+        mit_regel = ("nicht_gegriffen", "gefallen", "kollision_arm_tisch", "durchdringung", "planung_fehlgeschlagen")
+        # haeufigster Grund, fuer den es eine Regel gibt (nicht_am_ziel ist fast immer Folge)
+        haupt = next((g for g in b["fehlergruende"] if g in mit_regel), None)
 
         def zur_mitte(name: str, ziel: float) -> None:
             s = neu_p.get(name)

@@ -1,0 +1,386 @@
+{
+  "versuch": {
+    "nr": 3,
+    "art": "experiment",
+    "start_xy_m": [
+      0.55,
+      0.35
+    ],
+    "ziel_xy_m": [
+      0.85,
+      0.33
+    ],
+    "greif_versatz_m": [
+      0.0,
+      0.016846,
+      0.0
+    ]
+  },
+  "erfolg": false,
+  "gruende": [
+    "nicht_gegriffen",
+    "nicht_am_ziel"
+  ],
+  "gruende_text": [
+    "Glas wurde nicht angehoben (nicht gegriffen)",
+    "Glas steht nicht innerhalb der Toleranz am Ziel"
+  ],
+  "position": {
+    "start_m": [
+      0.550000011920929,
+      0.3499999940395355,
+      0.2150000035762787
+    ],
+    "ende_m": [
+      0.5490208864212036,
+      0.3535955846309662,
+      0.21487988531589508
+    ],
+    "ziel_xy_m": [
+      0.85,
+      0.33
+    ],
+    "fehler_xy_m": 0.30190259757868115
+  },
+  "kippung_grad": {
+    "ende": 0.0998263560649725,
+    "max": 14.497982320501663
+  },
+  "dauer": {
+    "ablauf_sim_s": 14.445,
+    "phasen_s": {
+      "start": [
+        0.0,
+        0.3
+      ],
+      "vorposition": [
+        0.3,
+        1.491
+      ],
+      "anfahrt": [
+        1.491,
+        2.818
+      ],
+      "greifen": [
+        2.818,
+        4.591
+      ],
+      "anheben": [
+        4.591,
+        5.918
+      ],
+      "verfahren": [
+        5.918,
+        9.043
+      ],
+      "absetzen": [
+        9.043,
+        10.344
+      ],
+      "loesen": [
+        10.344,
+        12.116
+      ],
+      "rueckzug": [
+        12.116,
+        13.445
+      ],
+      "nachlauf": [
+        13.445,
+        14.445
+      ]
+    },
+    "wand_sim_s": 29.33,
+    "wand_planung_s": 1.14
+  },
+  "plan": {
+    "ok": true,
+    "fehler": [],
+    "tcp_soll_m": {
+      "greifen": [
+        0.55,
+        0.366846,
+        0.248
+      ],
+      "vorposition": [
+        0.55,
+        0.366846,
+        0.348
+      ],
+      "anheben": [
+        0.55,
+        0.366846,
+        0.348
+      ],
+      "verfahren": [
+        0.85,
+        0.346846,
+        0.348
+      ],
+      "absetzen": [
+        0.85,
+        0.346846,
+        0.25
+      ],
+      "rueckzug": [
+        0.85,
+        0.346846,
+        0.35
+      ]
+    },
+    "ik_max_fehler_m": 2.891907632471999e-06,
+    "tisch_abstand_min_m": 0.05799986458340575
+  },
+  "modell": {
+    "glas_masse_kg": 0.2500000298023224,
+    "dt_s": 0.002
+  },
+  "messung": {
+    "hub_max_m": 0.007297128438949585,
+    "transport_min_hub_m": -0.00012101233005523682,
+    "tisch_durchdringung_max_m": 0.0,
+    "finger_durchdringung_max_m": 0.002123588463291526,
+    "glas_v_max_m_s": 0.25047685485333204,
+    "kippung_max_grad": 14.497982320501663,
+    "gelenk_folgefehler_max": {
+      "axis7": 3.600356271481475,
+      "joint1": 0.002217307002086879,
+      "joint2": 0.8066054263674228,
+      "joint3": 0.7654058026464478,
+      "joint4": 0.0018420937648955073,
+      "joint5": 0.7922255231433928,
+      "joint6": 0.00020358706536574236,
+      "finger_left": 1.1546291680371925
+    },
+    "phasen_ende": {
+      "start": {
+        "t_s": 0.3,
+        "glas_m": [
+          0.54992,
+          0.34995,
+          0.21488
+        ],
+        "kippung_grad": 0.097,
+        "oeffnung_m": 0.105,
+        "finger_links_rechts_m": [
+          0.05,
+          0.05
+        ]
+      },
+      "vorposition": {
+        "t_s": 1.5,
+        "glas_m": [
+          0.54992,
+          0.34994,
+          0.21488
+        ],
+        "kippung_grad": 0.103,
+        "oeffnung_m": 0.105,
+        "finger_links_rechts_m": [
+          0.05,
+          0.05
+        ]
+      },
+      "anfahrt": {
+        "t_s": 2.82,
+        "glas_m": [
+          0.54993,
+          0.34995,
+          0.21488
+        ],
+        "kippung_grad": 0.097,
+        "oeffnung_m": 0.105,
+        "finger_links_rechts_m": [
+          0.05,
+          0.05
+        ]
+      },
+      "greifen": {
+        "t_s": 4.6,
+        "glas_m": [
+          0.54994,
+          0.34992,
+          0.21492
+        ],
+        "kippung_grad": 0.069,
+        "oeffnung_m": 0.06981,
+        "finger_links_rechts_m": [
+          0.03241,
+          0.0324
+        ]
+      },
+      "anheben": {
+        "t_s": 5.92,
+        "glas_m": [
+          0.54902,
+          0.3536,
+          0.21488
+        ],
+        "kippung_grad": 0.099,
+        "oeffnung_m": 0.06108,
+        "finger_links_rechts_m": [
+          0.02804,
+          0.02804
+        ]
+      },
+      "verfahren": {
+        "t_s": 9.05,
+        "glas_m": [
+          0.54902,
+          0.35359,
+          0.21488
+        ],
+        "kippung_grad": 0.099,
+        "oeffnung_m": 0.06108,
+        "finger_links_rechts_m": [
+          0.02804,
+          0.02804
+        ]
+      },
+      "absetzen": {
+        "t_s": 10.35,
+        "glas_m": [
+          0.54902,
+          0.3536,
+          0.21488
+        ],
+        "kippung_grad": 0.099,
+        "oeffnung_m": 0.06108,
+        "finger_links_rechts_m": [
+          0.02804,
+          0.02804
+        ]
+      },
+      "loesen": {
+        "t_s": 12.12,
+        "glas_m": [
+          0.54902,
+          0.3536,
+          0.21488
+        ],
+        "kippung_grad": 0.101,
+        "oeffnung_m": 0.10496,
+        "finger_links_rechts_m": [
+          0.04998,
+          0.04998
+        ]
+      },
+      "rueckzug": {
+        "t_s": 13.45,
+        "glas_m": [
+          0.54902,
+          0.35359,
+          0.21488
+        ],
+        "kippung_grad": 0.099,
+        "oeffnung_m": 0.105,
+        "finger_links_rechts_m": [
+          0.05,
+          0.05
+        ]
+      },
+      "nachlauf": {
+        "t_s": 14.446,
+        "glas_m": [
+          0.54902,
+          0.3536,
+          0.21488
+        ],
+        "kippung_grad": 0.099,
+        "oeffnung_m": 0.105,
+        "finger_links_rechts_m": [
+          0.05,
+          0.05
+        ]
+      }
+    },
+    "nan": false,
+    "startlage_m": [
+      0.550000011920929,
+      0.3499999940395355,
+      0.2150000035762787
+    ],
+    "plan_ok": true,
+    "plan_fehler": [],
+    "endlage_m": [
+      0.5490208864212036,
+      0.3535955846309662,
+      0.21487988531589508
+    ],
+    "ziel_xy_m": [
+      0.85,
+      0.33
+    ],
+    "stehhoehe_soll_m": 0.215,
+    "kippung_end_grad": 0.0998263560649725,
+    "zielfehler_xy_m": 0.30190259757868115
+  },
+  "bewertung": {
+    "erfolg": false,
+    "gruende": [
+      "nicht_gegriffen",
+      "nicht_am_ziel"
+    ],
+    "texte": [
+      "Glas wurde nicht angehoben (nicht gegriffen)",
+      "Glas steht nicht innerhalb der Toleranz am Ziel"
+    ],
+    "kriterien": {
+      "planung_fehlgeschlagen": {
+        "ok": true,
+        "wert": []
+      },
+      "simulation_instabil": {
+        "ok": true,
+        "wert": false
+      },
+      "nicht_gegriffen": {
+        "ok": false,
+        "wert": 0.007297128438949585,
+        "grenze": ">= 0.08"
+      },
+      "gefallen": {
+        "ok": true,
+        "wert": {
+          "end_z_m": 0.21487988531589508,
+          "soll_z_m": 0.215,
+          "transport_min_hub_m": -0.00012101233005523682
+        },
+        "grenze": "|z - soll| <= 0.005, Transport-Hub >= 0.08"
+      },
+      "gekippt": {
+        "ok": true,
+        "wert": 0.0998263560649725,
+        "grenze": "< 10.0"
+      },
+      "nicht_am_ziel": {
+        "ok": false,
+        "wert": 0.30190259757868115,
+        "grenze": "<= 0.01"
+      },
+      "kollision_arm_tisch": {
+        "ok": true,
+        "wert": 0.0,
+        "grenze": "<= 0.0001"
+      },
+      "durchdringung": {
+        "ok": true,
+        "wert": 0.002123588463291526,
+        "grenze": "<= 0.003"
+      },
+      "weggeschossen": {
+        "ok": true,
+        "wert": 0.25047685485333204,
+        "grenze": "<= 1.0"
+      }
+    }
+  },
+  "device": "cuda:0",
+  "parameter": {
+    "greif_versatz_y_m": 0.016846,
+    "greifkraft_n": 13.919,
+    "reibung_finger": 0.309263,
+    "reibung_glas": 0.2
+  },
+  "wand_gesamt_s": 30.57
+}

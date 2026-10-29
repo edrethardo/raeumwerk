@@ -1,0 +1,21 @@
+# Beispiel-Experiment fuer `raeumwerk run` (docs/architektur.md, docs/START.md).
+#
+# Glas greifen wie in der Greifdemo, aber mit gestreuten Parametern:
+# Greifkraft, Reibung des Fingerbelags, Greifpunkt quer zur Schliessrichtung.
+# Das Glas ist rutschiger als in der Demo (Reibwert 0,2), damit schwacher
+# Griff und weit daneben liegender Greifpunkt als Fehlversuche auftauchen.
+# Ein Versuch dauert auf einer RTX 3090 etwa 30 s, auf der CPU etwa 2 min.
+name: beispiel
+beschreibung: "Greifkraft, Fingerreibung und Greifpunkt gestreut, rutschiges Glas"
+backend: newton
+szene: config/scene.yaml
+roboter: config/robot.yaml
+versuche: 8
+seed: 31
+parameter:
+  greifkraft_n: {bereich: [2.0, 20.0]}
+  reibung_finger: {bereich: [0.2, 1.0]}
+  reibung_glas: {fest: 0.2}
+  greif_versatz_y_m: {bereich: [-0.035, 0.035]}
+stueck:
+  max_minuten: 25
