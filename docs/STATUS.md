@@ -1,6 +1,6 @@
 # Status Räumwerk
 
-Stand: 2026-10-29. „nachgewiesen“ steht nur da, wo ein Test oder Log es zeigt.
+Stand: 2026-10-30. „nachgewiesen“ steht nur da, wo ein Test oder Log es zeigt.
 Laufpfade sind relativ zu `RAEUMWERK_RUNS` bzw. `RAEUMWERK_HOME` auf dem
 jeweiligen Rechner (siehe `docs/umgebung.md`).
 
@@ -81,3 +81,9 @@ jeweiligen Rechner (siehe `docs/umgebung.md`).
 | `beispiele/stationaer.yaml`, `beispiele/heute.yaml` gleich §13 | nachgewiesen | stationär kalt 5:02 min, heute 1:13 min (8 Prozesse); 0 Abweichungen |
 | `beispiele/auf-maschine.yaml` (C2) gegen §14 | nachgewiesen, 1 Gruppe abweichend | kalt 2:18 min; Teller 3/8, Zug ja, Ablage 0/4 bzw. Seitgriff 1/4 gleich; Glasplätze 4/16 statt 2/16 (zwei Plätze nur über Zufallsstarts, ohne Zusatzstarts 3/16) |
 | Gelenkmomente in `config/robot.yaml` nach igus (statt 40 Nm Annahme) | nachgewiesen | `test_gelenkgrenzen_aus_igus_quelle`; Baugrößen-Zuordnung J1–J3 105, J4–J6 80 bleibt Annahme |
+| Eigene 100-mm-Finger: CAD (build123d, STEP/STL), PA12-SLS 17,5 g je Finger, Sicherheit ≥ 3,9 bei 20 N | nachgewiesen (Rechnung) | `tests/test_finger.py`; Balkenrechnung `python -m finger.festigkeit --md`; `docs/finger.md` §1–2; Lochbild/Greifkraft bei igus offen (§5) |
+| Finger im Aufbau A1-S1, Gläser (Newton, 7 N) | teilweise, 1/8 | Glas 3 Erfolg (Zielfehler 4,45 mm, Kippung 0,10°, Finger 2,86 mm); Glas 4 `durchdringung` 3,07–3,57 mm; Gläser 1, 2, 5–8 nicht planbar (Aufbau: IK neben dem Fuß, Glasneigung, Plattenkollision); `docs/finger.md` §3 |
+| Variation Glas 3 (5 Läufe, ±5 mm/±3°, Korbauszug 0…−1 cm) und Negativtest (verklemmt) | nachgewiesen, 5/5; Negativ erkannt | Zielfehler 4,47–4,77 mm, Finger ≤ 2,88 mm; Negativ `nicht_aus_dem_korb` (Aushub 0 mm); `test_variation_zieht_den_korb_nie_ueber_den_anschlag` |
+| Finger im Aufbau A1-S1, Teller (Randgriff, Ständer) | fehlgeschlagen, 0/6 | Teller 1 und 4: Aushub 192 mm, dann Pendeln in der Hand (2° → 22°) und Absturz bei der Querfahrt; Randgriff 18 mm hält nicht gegen Drehen in der Tellerebene; Startlage im Ständer korrigiert (`tests/test_finger_sim.py`) |
+| Newton auf der Laptop-GPU (`--device cuda`) | nachgewiesen | gleiche Ergebnisse wie CPU (Glas 3: 3,07 statt 3,06 mm, 4,15 statt 4,32 mm), 313 s statt 2 510 s Wandzeit |
+| J2-Moment mit CAD-Fingermasse | nachgewiesen (Modell), über Grenze | `raeumwerk aufbau` A1: J2 max. 12,52 Nm (Gläser) / 12,58 Nm (Teller), vorher 13,0 / 13,06 Nm; igus max. 12,5 Nm; `test_aufbau_beispiel_rechnet_mit_der_cad_masse` |

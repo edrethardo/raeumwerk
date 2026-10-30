@@ -706,6 +706,7 @@ def versuch(art: str, nr: int, abw: konfig.Abweichung, ctx=None, nur_plan: bool 
                 "statisch": [{"name": k.name, "gruppe": k.gruppe, "mitte": k.mitte, "halb": k.halb, "rot": k.rot}
                              for k in list(w.statisch) + list(lauf.zusatz) if k.name != "boden"],
                 "objekte": [{"name": k.name, "form": k.form, "halb": k.halb} for k in w.glas_start],
+                "glas_radius_m": w.glas_r, "glas_hoehe_m": w.glas_h, "ablage_m": [k.mitte for k in w.glas_ziel],
                 "phasen_s": [[s.phase, s.t0, s.t0 + s.dauer] for s in plan.segmente],
                 "erfolg": bew["erfolg"], "erfolge": bew["erfolge"]}
         lauf.aufzeichner.speichern(aufzeichnen, lauf.body_label, sn.jsonable(meta))

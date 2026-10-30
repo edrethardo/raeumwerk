@@ -84,7 +84,9 @@ teller:
   wulst_segmente: {wert: 24, src: annahme}                # Randwulst als Kapselring
   halter_hoehe_m: {wert: 0.06, src: annahme}              # Tellerstaebe im Korb und im Staender
   halter_x_m: {wert: 0.05, src: annahme}                  # Staebe +-5 cm neben der Tellermitte
-  halter_luft_m: {wert: 0.003, src: annahme}              # je Seite zum Wulst
+  # je Seite zum Wulst; 3 mm liessen den Teller 3,9 Grad an die Staebe lehnen, der absenkende
+  # Finger streifte die Oberkante und drehte ihn (Newton, Teller 1); 1 mm: Aushub 192 mm erreicht
+  halter_luft_m: {wert: 0.001, src: annahme}
   halter_stab_m: {wert: 0.004, src: annahme}
   vorposition_m: {wert: 0.10, src: szenario}
   aushub_m: {wert: 0.20, src: annahme}                    # Tellerunterkante 20 cm ueber dem Korbboden
