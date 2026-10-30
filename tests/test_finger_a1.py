@@ -57,6 +57,13 @@ def test_szene_a1_glaeser_in_den_erreichbaren_plaetzen(f):
     assert f.p["greifkraft"]["sim_n"] == pytest.approx(7.0)
 
 
+def test_variation_zieht_den_korb_nie_ueber_den_anschlag():
+    import numpy as np
+
+    ws = [a1.abweichung(8, np.random.default_rng(s)).korbauszug_delta_m for s in range(200)]
+    assert max(ws) <= 0.0 and min(ws) >= -0.01 and min(ws) < -0.005
+
+
 def test_szene_a1_teller_hochkant_in_haltern(f):
     sz = a1.szenario()
     A = a1.aufbau(sz, f)

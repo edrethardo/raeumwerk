@@ -67,8 +67,9 @@ def abweichung(n: int, rng: Optional[np.random.Generator] = None, versatz=0.005,
                verklemmt: Optional[int] = None) -> konfig.Abweichung:
     if rng is None:
         return konfig.Abweichung([(0.0, 0.0)] * n, [0.0] * n, 0.0, verklemmt)
+    # Korbauszug: der Korb steht am Anschlag (voll ausgezogen), Abweichung nur nach innen
     return konfig.Abweichung([tuple(float(v) for v in rng.uniform(-versatz, versatz, 2)) for _ in range(n)],
-                             [float(v) for v in rng.uniform(-gier, gier, n)], float(rng.uniform(-auszug, auszug)),
+                             [float(v) for v in rng.uniform(-gier, gier, n)], -abs(float(rng.uniform(-auszug, auszug))),
                              verklemmt)
 
 
