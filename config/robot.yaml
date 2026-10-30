@@ -23,7 +23,7 @@ quellen:
     igus ReBeL-Getriebebaukasten Baugroesse 80/105 (Nennmoment 2 bzw. 10-15 Nm,
     Maximum 2,5-3 bzw. 12,5-20 Nm), https://www.igus.eu/automation/robot-types/cobot/rebel-gearbox-construction-kit
     und RBTX 105 https://rbtx.com/en-US/components/accessories/rebel-fully-integrated-shaft-gearbox-size-105
-    (Zusammenfassung in docs/hardware-auswahl.md und der Konzept-Spec, Quelle K10)
+    (Zusammenfassung in docs/hardware-auswahl.md und docs/konzepte/2026-10-29-beide-koerbe-und-kamera.md, Quelle K10)
 
 arm:
   # Abstaende in der Kerzenpose (alle Gelenke 0, Arm senkrecht), entlang z
