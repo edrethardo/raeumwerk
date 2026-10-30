@@ -1,0 +1,84 @@
+# Greiferkatalog fuer den ReBeL: Angebote von igus (Sets fuer den ReBeL) und vom RBTX-Marktplatz
+# mit ReBeL-Anschluss. Preise sind Listenpreise der Webshops (EUR, Stand siehe `stand`),
+# "unklar" = auf den Seiten nicht angegeben (Technikdaten werden dort per JavaScript geladen).
+# `aufbau:` = Ueberschreibungen fuer `greifer:` in einer Aufbau-Beschreibung (raeumwerk aufbau);
+# Masse/Koerper, die nicht im Datenblatt stehen, sind als Naeherung gekennzeichnet.
+stand: 2026-10-30
+quellen:
+  igus_gri: https://www.igus.eu/product/0-LCA-GRI-0100
+  rbtx_gri: https://rbtx.de/de-DE/components/electric-gripper/rebel-gripper
+  igus_zimmer: https://www.igus.eu/product/zimmer-gripper
+  rbtx_zimmer: https://rbtx.de/de-DE/components/end-effectors/2-jaw-parallel-gripper-for-rebel-cobot-gep2006
+  zimmer_ds: https://a.storyblok.com/f/298593/x/4b219832d6/mer_gd_pg_gep2006io-12-b-01__sde__apd__v1.pdf
+  igus_egp: https://www.igus.eu/product/rebel-cobot-gripper-set
+  rbtx_egp: https://rbtx.de/de-DE/components/end-effectors/schunk-egp-40-electric-gripper
+  rbtx_egk: https://rbtx.com/en-US/components/end-effectors/parallelgripper-egk-25-electric
+  igus_slz: https://www.igus.eu/product/REBEL-EQU-SLZ-100
+  rbtx_slz: https://rbtx.de/de-DE/components/end-effectors/cobotpump-rob-set-ecbpmi-igus
+  rbtx_hand: https://rbtx.de/de-DE/components/end-effectors/igus-rebel-finger-gripper
+  rbtx_adapter: https://rbtx.com/en-US/components/accessories/universal-adapter-iso-50
+
+greifer:
+  igus_gri_0100:
+    name: igus ReBeL-Greifer 0-LCA-GRI-0100 (RBTX-IGUS-0231)
+    art: elektrisch, 2 Backen parallel
+    hub: Greifbereich 100 mm, Oeffnung max. 105 mm
+    greifkraft: unklar
+    masse: unklar (Versandgewicht 0,5 kg)
+    bauhoehe_flansch_tcp: unklar (Annahme Koerper 50 mm + Finger)
+    koerperbreite: unklar (Annahme 150 mm)
+    ansteuerung: digitale I/O am ReBeL
+    eigene_finger: ja (Backen; zulaessige Laenge/Masse bei igus erfragen)
+    preis_eur: 1954.07
+    quelle: [igus_gri, rbtx_gri]
+    aufbau: {finger_laenge_m: 0.10, finger_masse_kg: 0.083, griff_ab_spitze_m: 0.03}   # mit eigenen 100-mm-Fingern
+  zimmer_gep2006io:
+    name: Zimmer GEP2006IO-12-B (igus-Set REBEL-EQU-ZIM-100 ohne / -101, -102 mit Fingern)
+    art: elektrisch, 2 Backen parallel, mechanische Selbsthemmung, IP40
+    hub: 6 mm je Backe (12 mm gesamt)
+    greifkraft: 40-145 N in 4 Stufen
+    masse: 0,19 kg
+    finger_max: Backenlaenge max. 60 mm, Backenmasse max. 0,05 kg
+    bauhoehe_flansch_tcp: Naeherung ~0,08 m Koerper + Adapter (aus der Zeichnung)
+    koerperbreite: Naeherung ~85 x 45 mm (aus der Zeichnung)
+    ansteuerung: digitale I/O am ReBeL (24 V)
+    eigene_finger: ja, aber nur formschluessig fuer einen Glasdurchmesser (12 mm Hub)
+    preis_eur: {set_ohne_finger: 1380.65, set_mit_fingern: 1537.59, greifer_rbtx: 1231.10}
+    quelle: [igus_zimmer, rbtx_zimmer, zimmer_ds]
+    aufbau: {koerper_breite_m: 0.085, koerper_tiefe_m: 0.045, koerper_laenge_m: 0.081, masse_kg: 0.29,
+             finger_laenge_m: 0.06, finger_masse_kg: 0.025, hub_gesamt_m: 0.012, max_oeffnung_m: 0.087,
+             griff_ab_spitze_m: 0.03}
+  schunk_egp:
+    name: SCHUNK EGP-25 / EGP-40 / EGP-64 (igus-Set REBEL-EQU-SNK-120 / -110, -112 / -130)
+    art: elektrisch, 2 Backen parallel
+    hub: EGP-40 6 mm je Backe; EGP-25, EGP-64 unklar
+    greifkraft: EGP-40 140 N
+    masse: EGP-40 0,32 kg
+    ansteuerung: digitale I/O am ReBeL
+    eigene_finger: ja (Prismenfinger als Set -112)
+    preis_eur: {egp25_set: 1057.96, egp40_set: 1134.06, egp40_set_prismenfinger: 1239.80, egp64_set: 1527.92, egp40_rbtx: 715.00}
+    quelle: [igus_egp, rbtx_egp]
+  schunk_egk25:
+    name: SCHUNK EGK 25 (RBTX, ReBeL ueber Universal-Adapter ISO-50)
+    art: elektrisch, 2 Backen parallel
+    hub: 26,5 mm je Backe
+    greifkraft: bis 50 N
+    masse: 0,58 kg (+ Adapter 0,1 kg)
+    ansteuerung: unklar fuer den ReBeL (kein igus-Set)
+    preis: 2900 USD (rbtx.com), Adapter 163,50 USD
+    quelle: [rbtx_egk, rbtx_adapter]
+  schmalz_cobotpump:
+    name: Schmalz CobotPump ROB-SET ECBPMi IGUS (igus-Set REBEL-EQU-SLZ-100)
+    art: Vakuum, elektrischer Vakuumerzeuger
+    nutzlast: 3 kg, -600 mbar
+    masse: 0,225 kg (RBTX), 230 g (igus)
+    ansteuerung: elektrische Schnittstelle am ReBeL
+    preis_eur: {igus_set: 1227.25, rbtx: 1180.00}
+    quelle: [igus_slz, rbtx_slz]
+  igus_rebel_hand:
+    name: igus ReBeL Hand 0-REBEL-HAND (RBTX-IGUS-0227)
+    art: elektrisch, 4 Finger (humanoid)
+    greifkraft: 18 N
+    masse: 0,45 kg
+    preis_eur: 1893.36
+    quelle: [rbtx_hand]

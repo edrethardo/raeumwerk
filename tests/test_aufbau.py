@@ -345,6 +345,8 @@ def test_werkzeugachse_der_reichweite_gleich_greifachse(z_aufbau, monkeypatch, k
 @pytest.mark.parametrize("datei,erwartet", [
     ("z-achse-frontal.yaml", {"slots": (6, 16), "teller": (15, 20)}),
     ("z-achse-oberkorb-finger100.yaml", {"slots": (12, 16), "teller": (8, 8)}),
+    ("auf-maschine-korb-aus-finger100.yaml", {"slots": (8, 16), "teller": (6, 8)}),
+    ("tisch-frontal-korb-aus-finger100.yaml", {"slots": (12, 16), "teller": (8, 8)}),
 ])
 def test_beispiel_ergebnis_regression(datei, erwartet):
     """Voller Lauf der Beispiele: Slots und Teller muessen die dokumentierten Werte liefern."""
@@ -352,3 +354,28 @@ def test_beispiel_ergebnis_regression(datei, erwartet):
     e = AU.lauf(d, jobs=None, cache=None, gruppen=["slots", "teller"], log=lambda *_: None)
     for gruppe, (ok, n) in erwartet.items():
         assert (e["abdeckung"][gruppe]["ok"], e["abdeckung"][gruppe]["n"]) == (ok, n), (datei, gruppe)
+
+
+def test_greiferkatalog_quellen_und_aufbau():
+    """config/greifer.yaml: jeder Greifer nennt bekannte Quellen; `aufbau`-Ueberschreibungen sind
+    gueltige Greiferparameter und ergeben einen rechenbaren Aufbau mit plausiblem TCP."""
+    import yaml
+
+    kat = yaml.safe_load((REPO / "config" / "greifer.yaml").read_text(encoding="utf-8"))
+    assert kat["stand"] and kat["greifer"]
+    erlaubt = set(load_robot().greifer) | {"griff_ab_spitze_m"}
+    basis = AU.lade_yaml(REPO / "beispiele" / "tisch-frontal-korb-aus-finger100.yaml")
+    for name, g in kat["greifer"].items():
+        assert g["name"] and g["quelle"], name
+        assert all(q in kat["quellen"] and kat["quellen"][q].startswith("https://") for q in g["quelle"]), name
+        if "aufbau" not in g:
+            continue
+        assert set(g["aufbau"]) <= erlaubt, (name, set(g["aufbau"]) - erlaubt)
+        d = copy.deepcopy(basis)
+        d["greifer"] = dict(g["aufbau"])
+        A = AU.Aufbau(AU.normalisiere(d))
+        gr = A.cfg.greifer
+        tcp = float(gr["tcp_ab_flansch_m"])
+        assert tcp == pytest.approx(float(gr["koerper_laenge_m"]) + float(gr["finger_laenge_m"])
+                                    - float(g["aufbau"]["griff_ab_spitze_m"]))
+        assert 0.05 < tcp < 0.20, (name, tcp)
