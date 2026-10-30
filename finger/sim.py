@@ -50,6 +50,18 @@ class FingerLauf(sn.Lauf):
         return formen
 
 
+RX_SCHEIBE = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])  # Scheibenachse z -> y
+
+
+def teller_koerper_rot(rot_planung) -> np.ndarray:
+    """Koerperdrehung des Tellers aus der Planungsform (Zylinder, Achse = Tellernormale).
+
+    Im Koerpersystem liegt die Normale entlang y (``RX_SCHEIBE``); ein Teller im
+    Staender (Normale x) muss deshalb um z gedreht starten, sonst steckt er quer in
+    den Staenderstaeben und die Simulation fliegt beim ersten Schritt auseinander."""
+    return np.asarray(rot_planung, float) @ RX_SCHEIBE.T
+
+
 class TellerLauf(FingerLauf):
     def bauen(self):
         # Teller: Kraft ueber die Fingersteifigkeit (Ziel "ganz zu", Kontakt an der Fahne)
@@ -75,10 +87,11 @@ class TellerLauf(FingerLauf):
         v_kapsel = math.pi * wulst * wulst * seg + 4.0 / 3.0 * math.pi * wulst ** 3
         dichte = float(t["masse_kg"]) / (v_scheibe + n * v_kapsel)
         cfg = shape_cfg(si["reibung_glas"], dichte)
-        Rx = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])  # Scheibenachse z -> y
+        Rx = RX_SCHEIBE
         for i, g in enumerate(self.w.glas_start):
             # Koerpersystem: z senkrecht (hochkant, Kippung wie beim Glas), Tellernormale y
-            bi = b.add_body(xform=wp.transform(tuple(float(v) for v in g.mitte), quat_aus_matrix(np.eye(3))), label=g.name)
+            bi = b.add_body(xform=wp.transform(tuple(float(v) for v in g.mitte), quat_aus_matrix(teller_koerper_rot(g.rot))),
+                            label=g.name)
             s0 = b.add_shape_cylinder(bi, xform=wp.transform((0.0, 0.0, 0.0), quat_aus_matrix(Rx)), radius=rr,
                                       half_height=fahne, cfg=cfg, label=f"{g.name}_fahne")
             self.glas_b.append(bi)
