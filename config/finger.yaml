@@ -1,0 +1,129 @@
+# Eigene 100-mm-Finger fuer den igus ReBeL-Greifer 0-LCA-GRI-0100 (docs/finger.md).
+#
+# Ein Satz Parameter fuer CAD (finger/cad.py, build123d), Balkenrechnung
+# (finger/festigkeit.py) und Kollisionsform der Simulation (finger/kollision.py).
+# Jeder Wert hat `src` (Schluessel aus `quellen`) oder ist `annahme`.
+#
+# Fingersystem (mm): Ursprung Mitte der Anschlussflaeche an der Backe, z zur
+# Spitze (Fingerachse = Werkzeugachse), y in Schliessrichtung zum Greifgut
+# (Innenseite), x quer (Fingerbreite). Innenbezugsebene y = 0: die Kanten der
+# V-Kontur; der Finger liegt bei y <= 0, die Auflagen ragen darueber hinaus.
+
+quellen:
+  igus_gri: >-
+    igus 0-LCA-GRI-0100 Produktseite (https://www.igus.eu/product/0-LCA-GRI-0100):
+    Greifbereich 100 mm, Oeffnung max. 105 mm; Greifkraft, Backenmasse und
+    Lochbild dort nicht angegeben (Anfrage an igus offen)
+  auftrag: >-
+    Auftrag: Laenge 100 mm, Breite 15-20 mm, V-Kontur selbstzentrierend fuer
+    Glas 65-85 mm, Taschen fuer 2-mm-Auflagen, Kerbe/Lippe fuer den Tellerrand
+    (Randdicke 3-6 mm), Greifkraft 10-20 N, Sicherheit >= 2
+  ausraeumen: >-
+    config/ausraeumen.yaml: Greifkraft 10 N je Finger, Glas 75 mm, Griffpunkt
+    30 mm hinter der Spitze (config/greifer.yaml, aufbau)
+  eos_pa2200: >-
+    EOS Werkstoffdatenblatt PA 2200 (PA12, Lasersintern): E 1650 MPa,
+    Zugfestigkeit 48 MPa (x/y) bzw. 42 MPa (z), Dichte 0,93 g/cm3
+  prusament_petg: >-
+    Prusament PETG Technical Datasheet (2021): E 1,5 GPa, Streckgrenze 47 MPa
+    (liegend gedruckt), Lagenhaftung 18 MPa, Waermeformbestaendigkeit 68 Grad C
+    (0,45 MPa), Dichte 1,27 g/cm3
+  en_aw_6082: >-
+    EN AW-6082 T6 (EN 755-2, Strangpressprofil): Rp0,2 >= 250 MPa, E 70 GPa,
+    Dichte 2,70 g/cm3
+
+geometrie:
+  laenge_mm: {wert: 100.0, src: auftrag}             # Anschlussflaeche -> Spitze
+  breite_mm: {wert: 18.0, src: auftrag}              # quer zur Schliessrichtung (Ziel 15-20)
+  # Dicke in Schliessrichtung: duenn, wo der Finger zwischen die Nachbarglaeser
+  # taucht (Spitze bis ~55 mm dahinter), zur Wurzel hin dicker (Biegemoment)
+  dicke_spitze_mm: {wert: 10.0, src: annahme}
+  dicke_wurzel_mm: {wert: 14.0, src: annahme}
+  verjuengung_bis_mm: {wert: 45.0, src: annahme}      # z, ab hier Dicke der Spitze
+  kanten_radius_mm: {wert: 1.0, src: annahme}         # Aussenkanten gerundet (Kerbwirkung, Glas)
+
+anschluss:
+  # ANNAHME, bis igus Zeichnung/Lochbild liefert: Finger stirnseitig an die
+  # Backe geschraubt (2 x M4 entlang der Fingerachse, Kopf von der Fingerseite).
+  platte_dicke_mm: {wert: 8.0, src: annahme}         # z 0 .. 8
+  platte_tiefe_mm: {wert: 24.0, src: annahme}        # in -y (nach aussen), Platz fuer die Schraubenkoepfe
+  loch_anzahl: {wert: 2, src: annahme}
+  loch_abstand_mm: {wert: 14.0, src: annahme}        # entlang y
+  loch_mitte_y_mm: {wert: -12.0, src: annahme}
+  loch_d_mm: {wert: 4.5, src: annahme}               # M4 Durchgang mittel (ISO 273)
+  senkung_d_mm: {wert: 8.0, src: annahme}            # Zylinderkopf ISO 4762 M4: Kopf 7 mm
+  senkung_tiefe_mm: {wert: 4.5, src: annahme}
+  # Lage der Finger-Innenbezugsebene zur Backen-Innenflaeche (nach innen positiv):
+  # bei ganz geschlossenem Greifer (5 mm) liegen die Bezugsebenen 2 mm auseinander
+  innen_versatz_mm: {wert: 1.5, src: annahme}
+
+v_kontur:
+  # Flache V-Nut ueber die Breite, Fingerachse entlang: das Glas (Zylinder parallel
+  # zur Fingerachse) liegt auf zwei Linien je Finger statt auf einer
+  winkel_grad: {wert: 8.0, src: annahme}             # Flanke gegen die Bezugsebene
+  von_mm: {wert: 40.0, src: annahme}                 # z-Bereich
+  bis_mm: {wert: 100.0, src: annahme}                # durchgehend bis zur Spitze (auch die Lippe)
+
+auflage:
+  # Weiche Auflagen (TPU 85A oder Silikon, 2 mm) in Taschen auf beiden V-Flanken
+  dicke_mm: {wert: 2.0, src: auftrag}
+  taschen_tiefe_mm: {wert: 1.5, src: annahme}        # Auflage steht 0,5 mm ueber der Flanke
+  breite_mm: {wert: 7.0, src: annahme}               # je Flanke, entlang der Flanke
+  steg_mitte_mm: {wert: 1.0, src: annahme}           # Steg zwischen den Taschen (halbe Breite)
+  von_mm: {wert: 43.0, src: annahme}
+  bis_mm: {wert: 85.0, src: annahme}
+
+teller:
+  # Spitze: Lippe (Klemmflaeche fuer die Tellerfahne) und darueber eine Kerbe,
+  # in der der Randwulst liegt: der Teller haengt formschluessig auf den Lippen.
+  # Randmasse sind ANNAHME (Auftrag 3-6 mm, keine Quelle gefunden).
+  lippe_laenge_mm: {wert: 5.0, src: annahme}         # z 95 .. 100
+  kerbe_laenge_mm: {wert: 8.0, src: annahme}         # z 87 .. 95, Wulst bis 6 mm
+  kerbe_tiefe_mm: {wert: 2.5, src: annahme}          # hinter die Bezugsebene
+  kerbe_radius_mm: {wert: 1.0, src: annahme}         # Kerbgrund gerundet
+  fase_spitze_mm: {wert: 1.5, src: annahme}          # Einlauffase an der Lippe
+  fahne_dicke_mm: {wert: 3.0, src: auftrag}          # Tellerfahne unter dem Wulst
+  wulst_dicke_mm: {wert: 5.0, src: auftrag}          # Randwulst (3-6 mm)
+  # Griff: Spitze so weit unter der Tellerkante, dass der Wulst in der Kerbe liegt
+  spitze_unter_rand_mm: {wert: 10.0, src: annahme}
+
+greifkraft:
+  sim_n: {wert: 10.0, src: ausraeumen}               # je Finger, wie das Ausraeumen
+  rechnung_n: {wert: [10.0, 20.0], src: auftrag}
+  griffpunkt_ab_spitze_mm: {wert: 30.0, src: ausraeumen}
+
+festigkeit:
+  # Lastfaelle der Balkenrechnung (finger/festigkeit.py)
+  dynamik_faktor: {wert: 2.0, src: annahme}          # Anfahren/Bremsen, Stoss beim Absetzen
+  glas_masse_kg: {wert: 0.25, src: ausraeumen}
+  teller_masse_kg: {wert: 0.35, src: annahme}        # wie aufbau last_kg (Oberkorb-Dessertteller)
+  teller_radius_mm: {wert: 95.0, src: annahme}       # Durchmesser 19 cm
+  kt_kerbe: {wert: 2.0, src: annahme}                # Kerbformzahl Kerbgrund (r 1 mm)
+  kt_wurzel: {wert: 1.5, src: annahme}               # Uebergang Anschlussplatte (Radius 2 mm)
+  sicherheit_min: {wert: 2.0, src: auftrag}
+
+werkstoffe:
+  pa12_sls:
+    name: {wert: "PA12, Lasersintern (PA 2200)", src: eos_pa2200}
+    e_mpa: {wert: 1650.0, src: eos_pa2200}
+    festigkeit_mpa: {wert: 42.0, src: eos_pa2200}     # kleinster Wert (z-Richtung)
+    abminderung: {wert: 0.7, src: annahme}            # Feuchte, Waerme (Geschirr bis ~60 Grad C), Alterung
+    dichte_g_cm3: {wert: 0.93, src: eos_pa2200}
+  petg_fdm:
+    name: {wert: "PETG, FDM (Prusament)", src: prusament_petg}
+    e_mpa: {wert: 1500.0, src: prusament_petg}
+    festigkeit_mpa: {wert: 18.0, src: prusament_petg}  # Lagenhaftung: Biegung quer zu den Lagen moeglich
+    abminderung: {wert: 0.7, src: annahme}
+    dichte_g_cm3: {wert: 1.27, src: prusament_petg}
+  alu_6082:
+    name: {wert: "Aluminium EN AW-6082 T6, gefraest", src: en_aw_6082}
+    e_mpa: {wert: 70000.0, src: en_aw_6082}
+    festigkeit_mpa: {wert: 250.0, src: en_aw_6082}
+    abminderung: {wert: 1.0, src: annahme}
+    dichte_g_cm3: {wert: 2.70, src: en_aw_6082}
+  gewaehlt: {wert: pa12_sls, src: annahme}            # Begruendung in docs/finger.md
+
+kontakt:
+  # Reibwerte fuer die Simulation (Annahmen, wie Greifdemo/Ausraeumen)
+  reibung_auflage: {wert: 1.0, src: ausraeumen}       # TPU/Silikon auf Glas, trocken
+  reibung_finger: {wert: 0.3, src: annahme}           # PA12 auf Glas/Porzellan (Lippe, Kanten)

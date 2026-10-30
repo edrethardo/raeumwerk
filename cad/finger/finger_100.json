@@ -1,0 +1,33 @@
+{
+ "volumen_finger_mm3": 18864.6,
+ "volumen_auflage_mm3": 568.5,
+ "volumen_naeherung_mm3": 18950.4,
+ "massen_g": {
+  "pa12_sls": 17.5,
+  "petg_fdm": 24.0,
+  "alu_6082": 50.9
+ },
+ "huelle_mm": {
+  "min": [
+   -9.0,
+   -24.0,
+   0.0
+  ],
+  "max": [
+   9.0,
+   0.0,
+   100.0
+  ]
+ },
+ "merkmale": [
+  "schaft",
+  "v_kontur",
+  "auflage_taschen",
+  "kerbe",
+  "kerbe_radius",
+  "fase_spitze",
+  "lochbild",
+  "aussenkanten_radius"
+ ],
+ "gueltig": true
+}
