@@ -133,6 +133,40 @@ def normalisiere(roh: Dict[str, Any]) -> Dict[str, Any]:
     return d
 
 
+PLATTE_STANDARD_M = (0.25, 0.25)  # Schlittenplatte bei achse.schiene: platte ohne achse.platte_m
+
+
+def platten_mass(achse: Dict[str, Any]) -> Tuple[float, float]:
+    """Kantenlaengen (x, y im Roboterfuss-System) der Halterplatte bei ``schiene: platte``.
+    ``achse.platte_m``: eine Zahl (quadratisch) oder [x, y]; Standard 0,25 x 0,25 m."""
+    v = achse.get("platte_m")
+    if v is None:
+        return PLATTE_STANDARD_M
+    if isinstance(v, (int, float)):
+        v = [v, v]
+    px, py = (float(w) for w in v)
+    if px <= 0 or py <= 0:
+        raise ValueError(f"achse.platte_m {v!r}: Kantenlaengen muessen > 0 sein")
+    return px, py
+
+
+def ueberstand_m(d: Dict[str, Any], kante_y: float) -> float:
+    """Wie weit Fuss bzw. Halterplatte ueber eine Kante bei y = ``kante_y`` (+y = Raum) hinausragen
+    (> 0: Ueberstand, <= 0: Abstand hinter der Kante). Fuss als Quader ``fuss_breite_m``, Platte aus
+    ``platten_mass``, beide um die Gier des Roboters gedreht; nur stehend, ohne Kipp/Neigung."""
+    rob = d["roboter"]
+    if abs(float(rob.get("kipp_grad", 0.0))) > 1e-9 or abs(float(rob.get("neigung_grad", 0.0))) > 1e-9:
+        raise ValueError("ueberstand_m: nur fuer stehende, nicht geneigte Roboter")
+    fb = float(load_robot().arm["fuss_breite_m"])
+    masse_xy = [(fb, fb)]
+    if d["achse"]["schiene"] == "platte":
+        masse_xy.append(platten_mass(d["achse"]))
+    g = math.radians(float(rob.get("gier_grad", 0.0)))
+    y0 = float(rob["ursprung_xyz_m"][1])
+    vorne = max(y0 + 0.5 * (abs(math.sin(g)) * lx + abs(math.cos(g)) * ly) for lx, ly in masse_xy)
+    return vorne - kante_y
+
+
 class Aufbau:
     """Roboter, Kette und Szene einer Aufbau-Beschreibung (YAML als dict)."""
 
@@ -163,6 +197,7 @@ class Aufbau:
         root = ET.fromstring(build_urdf(self.cfg))
         richtung = a["richtung"]
         if a["schiene"] == "platte":  # nur Schlittenplatte unter dem Fuss, Schiene ausgeblendet (1 cm Wuerfel)
+            px, py = platten_mass(a)
             for ln in root.findall("link"):
                 n = ln.get("name")
                 if n not in ("rail", "carriage"):
@@ -173,7 +208,7 @@ class Aufbau:
                         if n == "rail":
                             box.set("size", "0.01 0.01 0.01"); org.set("xyz", "0 0 0.005")
                         else:
-                            box.set("size", "0.25 0.25 0.02"); org.set("xyz", "0 0 0.01")
+                            box.set("size", f"{px:g} {py:g} 0.02"); org.set("xyz", "0 0 0.01")
         for j in root.findall("joint"):
             if j.get("name") != "axis7":
                 continue
@@ -977,10 +1012,28 @@ def lauf(d: Dict[str, Any], jobs: Optional[int] = None, cache: Optional[Path] = 
     for zust in ((0.0, 0.0), (0.45, 0.0), (0.0, 0.45)):
         konfl[f"oberkorb {zust[0]:.2f} / unterkorb {zust[1]:.2f}"] = A.pruefer(*zust).lage_konflikte()
     return {"name": d.get("name", ""), "beschreibung": d.get("beschreibung", ""), "aufbau": d,
-            "code": ch, "lage_konflikte": konfl, "gruppen": gr, "abdeckung": abdeckung(gr),
+            "code": ch, "lage_konflikte": konfl, "ueberstand_kante_m": _ueberstand_platte(A),
+            "gruppen": gr, "abdeckung": abdeckung(gr),
             "abgleich": abgleich(d, abdeckung(gr)),
             "laufzeit_s": round(time.monotonic() - t0, 1), "gerechnet": len(offen), "aus_cache": len(alle) - len(offen),
             "rechenzeit_je_gruppe_s": {k: round(v, 1) for k, v in zeiten.items()}, "jobs": jobs}
+
+
+def _ueberstand_platte(A: Aufbau) -> Optional[float]:
+    """Ueberstand von Fuss/Halterplatte ueber die Arbeitsplatten-Vorderkante (m, > 0 = ragt hinaus),
+    nur fuer einen stehenden Roboter ohne Achse bzw. mit Platte auf Hoehe der Arbeitsplatte, sonst None."""
+    d = A.d
+    rob = d["roboter"]
+    if d["achse"]["richtung"] != "keine" or abs(float(rob.get("kipp_grad", 0.0))) > 1e-9 \
+            or abs(float(rob.get("neigung_grad", 0.0))) > 1e-9:
+        return None
+    platte = next((h for h in A.pruefer(0.0, 0.0).hindernisse if h.name == "arbeitsplatte"), None)
+    if platte is None:
+        return None
+    lo, hi = platte.aabb()
+    if abs(float(rob["ursprung_xyz_m"][2]) - float(hi[2])) > 0.005:  # Fuss steht nicht auf der Platte
+        return None
+    return round(ueberstand_m(d, float(hi[1])), 4)
 
 
 def abdeckung(gr: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
@@ -1029,8 +1082,12 @@ def bericht_md(e: Dict[str, Any]) -> str:
           f"Neigung {rob['neigung_grad']}°; Achse {ach['richtung']} (Hub {ach.get('hub_m')} m)",
           f"- Laufzeit {e['laufzeit_s']} s mit {e['jobs']} Prozessen; {e['gerechnet']} Ziele gerechnet, "
           f"{e['aus_cache']} aus dem Cache; Code-Stand {e['code']}",
-          f"- Lagekonflikte der Halterung: {json.dumps(e['lage_konflikte'], ensure_ascii=False)}", "",
-          "## Abdeckung", "", "| Zielgruppe | erreicht |", "|---|---|"]
+          f"- Lagekonflikte der Halterung: {json.dumps(e['lage_konflikte'], ensure_ascii=False)}"]
+    ub = e.get("ueberstand_kante_m")
+    if ub is not None:
+        z.append(f"- Fuss/Halterplatte {'ragen ' + format(ub * 1000, '.0f') + ' mm ueber' if ub > 0.0005 else 'enden ' + format(abs(min(ub, 0.0)) * 1000, '.0f') + ' mm hinter'} "
+                 f"der Arbeitsplatten-Vorderkante")
+    z += ["", "## Abdeckung", "", "| Zielgruppe | erreicht |", "|---|---|"]
     for g, v in e["abdeckung"].items():
         if "n" in v:
             z.append(f"| {g} | {v['ok']}/{v['n']} |")

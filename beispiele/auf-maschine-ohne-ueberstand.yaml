@@ -1,0 +1,60 @@
+# Owner-Vorgabe: Der Roboter darf nicht ueber die Kante der Arbeitsplatte (ueber der Spuelmaschine)
+# hinausragen. Fuss und Halterplatte liegen komplett hinter der Plattenkante (y 0,05); nur der Arm
+# reicht beim Greifen in den ausgezogenen Oberkorb.
+# Beste Lage aus dem Raster (Fussmitte 0,10-0,25 m hinter der Kante, x 0,15-0,45 m, Gier 0/90/180/-90)
+# mit igus-Greifer und eigenen 100-mm-Fingern, nur Oberkorb, Korb fest ausgezogen.
+#   raeumwerk aufbau beispiele/auf-maschine-ohne-ueberstand.yaml
+name: Auf der Maschine ohne Ueberstand, Oberkorb ausgezogen, Finger 100 mm (beste Lage)
+beschreibung: >-
+  ReBeL ohne Achse auf der Arbeitsplatte ueber der Maschine, Fuss (0,35; -0,05) auf 0,86 m, 10 cm
+  hinter der Plattenkante. Halterplatte 0,20 x 0,20 m endet genau an der Kante. Oberkorb fest
+  0,45 m ausgezogen, kein Korbzug. Glasplaetze entnehmen und einsetzen, 8 Dessertteller im
+  Oberkorb, Ablage auf der Platte rechts.
+roboter:
+  ursprung_xyz_m: [0.35, -0.05, 0.86]
+  gier_grad: 0
+  neigung_grad: 0
+achse:
+  richtung: keine
+  schiene: platte
+  # Annahme: ReBeL-Fuss D 180 mm (Datenblatt, config/robot.yaml fuss_breite_m) + 10 mm Rand je
+  # Seite fuer die Verschraubung auf der Platte. Kleinere Platte -> Fuss kann 1 cm naeher an die Kante.
+  platte_m: [0.20, 0.20]
+greifer:
+  finger_laenge_m: 0.10
+  finger_masse_kg: 0.0175       # CAD (cad/finger/finger_100.json): PA12
+  griff_ab_spitze_m: 0.03       # TCP = 0,05 + 0,10 - 0,03 = 0,12 m ab Flansch
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+  ablage:
+    punkte_xy_m: [[0.65, -0.03], [0.77, -0.03], [0.65, -0.15], [0.77, -0.15]]
+hindernisse: []                 # kein Podest: nichts ragt ueber die Kante
+erlaubt: ["rail|arbeitsplatte", "carriage|arbeitsplatte", "base_link|arbeitsplatte"]
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180], einsetzen: true}
+  teller:
+    korb: oberkorb
+    auszug_m: 0.45
+    praefix: teller
+    x_m: [0.15, 0.45]
+    tiefe_m: [0.07, 0.13, 0.19, 0.25]
+    rand_ueber_boden_m: 0.19
+    greif_unter_rand_m: 0.02
+    vorposition_m: 0.10
+    aushub_m: 0.15
+    gier_grad: [90, 0]
+    glashalter: false
+    last_kg: 0.35
+  ablage:
+    platte: true
+    seitgriff: false
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]
+# Gerechnet mit dem Werkzeug: Glasplaetze 8/16 (2, 3, 5, 6, 7, 10, 11, 14), Teller 8/8, Ablage
+# Platte 4/4. Vorher mit Ueberstand (Fuss 5 cm hinter der Kante, Platte 8 cm ueber der Kante):
+# 8/16 und 6/8 (auf-maschine-korb-aus-finger100.yaml).
+vergleich:
+  slots: 8
+  teller: 8
+  ablage_platte: 4

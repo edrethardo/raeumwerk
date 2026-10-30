@@ -246,6 +246,35 @@ def test_yaml_fehler():
         AU.normalisiere({"achse": {"richtung": "w"}})
     with pytest.raises(ValueError):
         AU.normalisiere({"ziele": {"besteck": {}}})
+    with pytest.raises(ValueError):
+        AU.platten_mass({"platte_m": [0.2, 0.0]})
+
+
+# --- Halterplatte und Ueberstand ueber die Arbeitsplattenkante -----------------------
+
+def test_halterplatte_mass_im_urdf():
+    """``achse.platte_m`` setzt den Kollisionsquader der Schlittenplatte; ohne Angabe 0,25 x 0,25 m."""
+    def platte(achse):
+        A = AU.Aufbau(AU.normalisiere({"achse": {"richtung": "keine", "schiene": "platte", **achse}}))
+        return np.asarray(A.chain.links["carriage"].boxes[0][0], float)
+    assert np.allclose(platte({}), [0.25, 0.25, 0.02])
+    assert np.allclose(platte({"platte_m": [0.20, 0.18]}), [0.20, 0.18, 0.02])
+    assert np.allclose(platte({"platte_m": 0.19}), [0.19, 0.19, 0.02])
+
+
+def test_ueberstand_ueber_die_kante():
+    """Fuss (180 mm) und Platte gegen die Kante; Gier 90 Grad tauscht die Plattenkanten."""
+    d = AU.normalisiere({"roboter": {"ursprung_xyz_m": [0.3, -0.05, 0.86]},
+                         "achse": {"richtung": "keine", "schiene": "platte", "platte_m": [0.20, 0.30]}})
+    assert AU.ueberstand_m(d, 0.05) == pytest.approx(0.05)          # Platte 0,30 in y: -0,05 + 0,15 - 0,05
+    d["roboter"]["gier_grad"] = 90
+    assert AU.ueberstand_m(d, 0.05) == pytest.approx(0.0)           # jetzt 0,20 in y
+    d["achse"]["platte_m"] = [0.10, 0.10]                           # kleiner als der Fuss: Fuss zaehlt
+    assert AU.ueberstand_m(d, 0.05) == pytest.approx(-0.01)
+    alt = AU._ueberstand_platte(AU.Aufbau(AU.lade_yaml(REPO / "beispiele" / "auf-maschine-korb-aus-finger100.yaml")))
+    neu = AU._ueberstand_platte(AU.Aufbau(AU.lade_yaml(REPO / "beispiele" / "auf-maschine-ohne-ueberstand.yaml")))
+    assert alt == pytest.approx(0.075)    # alte Lage: Platte ragt 7,5 cm ueber die Kante
+    assert neu <= 0.0                      # Owner-Vorgabe: nichts ragt ueber die Kante
 
 
 # --- Greifergeometrie: Breite, Fingerlaenge, Griffrichtung -------------------------
@@ -346,14 +375,18 @@ def test_werkzeugachse_der_reichweite_gleich_greifachse(z_aufbau, monkeypatch, k
     ("z-achse-frontal.yaml", {"slots": (6, 16), "teller": (15, 20)}),
     ("z-achse-oberkorb-finger100.yaml", {"slots": (12, 16), "teller": (8, 8)}),
     ("auf-maschine-korb-aus-finger100.yaml", {"slots": (8, 16), "teller": (6, 8)}),
+    ("auf-maschine-ohne-ueberstand.yaml", {"slots": (8, 16, {2, 3, 5, 6, 7, 10, 11, 14}), "teller": (8, 8)}),
     ("tisch-frontal-korb-aus-finger100.yaml", {"slots": (12, 16), "teller": (8, 8)}),
 ])
 def test_beispiel_ergebnis_regression(datei, erwartet):
     """Voller Lauf der Beispiele: Slots und Teller muessen die dokumentierten Werte liefern."""
     d = AU.lade_yaml(REPO / "beispiele" / datei)
     e = AU.lauf(d, jobs=None, cache=None, gruppen=["slots", "teller"], log=lambda *_: None)
-    for gruppe, (ok, n) in erwartet.items():
+    for gruppe, (ok, n, *plaetze) in erwartet.items():
         assert (e["abdeckung"][gruppe]["ok"], e["abdeckung"][gruppe]["n"]) == (ok, n), (datei, gruppe)
+        if plaetze:  # erreichte Platznummern (Belegungsplan)
+            erreicht = {int(r["ziel"].split("_")[1]) for r in e["gruppen"][gruppe] if r["ok"]}
+            assert erreicht == plaetze[0], (datei, gruppe, sorted(erreicht))
 
 
 def test_greiferkatalog_quellen_und_aufbau():

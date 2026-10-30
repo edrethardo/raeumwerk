@@ -39,6 +39,11 @@ Die Bilder zeigen die Kollisionsquader (Prüfbilder), keine Renderings.
 | `auf-maschine.yaml` | C2: 7. Achse entlang der Arbeitsplatte, 105° geneigt | Konzept-Spec §14 |
 | `stationaer.yaml` | fest ohne Achse, Fuß 0,35 m | Konzept-Spec §13, Variante B |
 | `heute.yaml` | Schiene senkrecht zur Front, Podest 0,65 m | Konzept-Spec §13, Spalte heute |
+| `auf-maschine-ohne-ueberstand.yaml` | ohne Achse auf der Arbeitsplatte, Fuß 10 cm hinter der Kante, Halterplatte 0,20 × 0,20 m endet an der Kante; Oberkorb ausgezogen, 100-mm-Finger | Gläser 8/16, Teller 8/8 |
+
+Steht der Roboter ohne Achse auf der Arbeitsplatte, nennt der Bericht, wie weit Fuß
+(Quader `fuss_breite_m`) und Halterplatte über die Arbeitsplatten-Vorderkante ragen
+(`ueberstand_kante_m` in `ergebnis.json`, > 0 = ragt hinaus).
 
 Der Block `vergleich:` einer Beschreibung nennt die Referenzwerte; das Werkzeug
 schreibt den Abgleich in den Bericht.
@@ -56,7 +61,8 @@ roboter:
 achse:
   richtung: x                 # x (liegende 7. Achse), y, z (vertikal) oder keine
   hub_m: 1.0
-  schiene: standard           # standard = Schiene aus config/robot.yaml; platte = nur Schlittenplatte 0,25 × 0,25 m
+  schiene: standard           # standard = Schiene aus config/robot.yaml; platte = nur Schlittenplatte (Halterplatte)
+  platte_m: [0.25, 0.25]      # Kantenlaengen der Halterplatte bei schiene: platte (x, y im Fusssystem; Standard 0,25 × 0,25 m)
   podest: false               # true: Podest unter der Schiene wie spuelmaschine.erreichbarkeit
 greifer: {}                   # Überschreibungen von config/robot.yaml → greifer (z. B. koerper_breite_m, finger_laenge_m)
                               # griff_ab_spitze_m: 0.03 → TCP = koerper_laenge + finger_laenge − 0,03 (TCP folgt der Fingerlänge)
