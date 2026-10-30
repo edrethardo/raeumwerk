@@ -76,14 +76,18 @@ def _ausraeum_cfg(sz: Dict[str, Any], f: Finger, art: str) -> Dict[str, Any]:
     a = copy.deepcopy(konfig.load())
     a["ablauf"]["ruhepose_grad"] = dict(sz["ablauf"]["ruhepose_grad"])
     a["ablauf"]["ruhepose_achse7_m"] = 0.0
+    a["planung"].update({k: v for k, v in sz.get("planung", {}).items()})
     a["greifer"]["greifkraft_n"] = float(f.p["greifkraft"]["sim_n"])
     a["greifer"]["finger_breite_m"] = float(sz["greifer"]["finger_breite_m"])
+    if "umdrehen_anteil" in sz["greifer"]:
+        a["greifer"]["umdrehen_anteil"] = float(sz["greifer"]["umdrehen_anteil"])
     if art == "glaeser":
         gl = sz["glaeser"]
         a["ablauf"]["zuordnung"] = [list(v) for v in gl["zuordnung"]]
         a["zwischenablage"]["matten_xy_m"] = [list(v) for v in gl["matten_xy_m"]]
         a["zwischenablage"]["je_ablage"] = list(gl["je_ablage"])
-        a["zwischenablage"]["oberkante_m"] = float(a["zwischenablage"]["oberkante_m"]) + float(gl["matte_sockel_m"])
+        a["zwischenablage"]["oberkante_m"] = float(a["zwischenablage"]["oberkante_m"]) + max(
+            [float(v) for v in gl["matte_sockel_m"]] if isinstance(gl["matte_sockel_m"], list) else [float(gl["matte_sockel_m"])])
         a["zwischenablage"]["vorposition_m"] = float(gl["matte_vorposition_m"])
         a["seitgriff"]["vorposition_m"] = float(gl["seitgriff_vorposition_m"])
         a["seitgriff"]["rueckzug_m"] = float(gl["seitgriff_rueckzug_m"])
@@ -100,7 +104,16 @@ def _statisch(p) -> List[sg.Koerper]:
     return [k for k in p.hindernisse if k.gruppe != "glas" and not k.name.startswith(("slot_", "ablage_"))]
 
 
-def welt_glaeser(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweichung) -> ag.Welt:
+def _erledigt(start: List[sg.Koerper], ziel: List[sg.Koerper], zuordnung, erledigt) -> None:
+    """Schon abgeraeumte Objekte (1-basiert) stehen an ihrem Ablageziel statt im Korb: so
+    wird jedes Objekt der Reihe einzeln geplant und simuliert (Start und Ende Ruhepose)."""
+    ab = {int(s): int(z) for s, z in zuordnung}
+    for i in erledigt or ():
+        z = ziel[ab[int(i)] - 1]
+        start[int(i) - 1] = sg.Koerper(start[int(i) - 1].name, z.gruppe, z.form, z.mitte.copy(), z.halb.copy(), z.rot.copy())
+
+
+def welt_glaeser(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweichung, erledigt=()) -> ag.Welt:
     aus = float(A.d["ziele"]["slots"]["oberkorb_auszug_m"])
     p = A.pruefer(aus + abw.korbauszug_delta_m, 0.0)
     a = _ausraeum_cfg(sz, f, "glaeser")
@@ -111,21 +124,27 @@ def welt_glaeser(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweic
     za = a["zwischenablage"]
     gl_cfg = sz["glaeser"]
     k2, ok_ = float(za["kante_m"]) / 2.0, float(za["oberkante_m"])
-    matten = [sg.quader(f"zwischenablage_{j + 1}", "zwischenablage", (x - k2, y - k2, ok_ - float(za["dicke_m"])),
-                        (x + k2, y + k2, ok_)) for j, (x, y) in enumerate(za["matten_xy_m"])]
     zap = p.szene.arbeitsplatte_z
+    sockel_h = gl_cfg["matte_sockel_m"]
+    n_m = len(za["matten_xy_m"])
+    sockel_h = [float(v) for v in sockel_h] if isinstance(sockel_h, list) else [float(sockel_h)] * n_m
+    d_m = float(za["dicke_m"])
+    oben = [zap + d_m + sockel_h[j] for j in range(n_m)]
+    matten = [sg.quader(f"zwischenablage_{j + 1}", "zwischenablage", (x - k2, y - k2, oben[j] - d_m),
+                        (x + k2, y + k2, oben[j])) for j, (x, y) in enumerate(za["matten_xy_m"])]
     sockel = [sg.quader(f"zwischenablage_sockel_{j + 1}", "zwischenablage", (x - k2, y - k2, zap),
-                        (x + k2, y + k2, ok_ - float(za["dicke_m"]))) for j, (x, y) in enumerate(za["matten_xy_m"])
-              if ok_ - float(za["dicke_m"]) > zap + 1e-6]
+                        (x + k2, y + k2, oben[j] - d_m)) for j, (x, y) in enumerate(za["matten_xy_m"])
+              if oben[j] - d_m > zap + 1e-6]
     start = []
     for i, s in enumerate(sz["glaeser"]["slots"]):
         m_ = p.szene.slots[int(s) - 1]
         dx, dy = abw.glas_versatz_xy_m[i]
         start.append(ag.glas(f"glas_{i + 1}", (m_[0] + dx, m_[1] + dy, m_[2]), ag.KOPFUEBER @ rz(abw.glas_gier_grad[i]), r, h))
-    zap = p.szene.arbeitsplatte_z
-    z_ziel = (ok_ if gl_cfg.get("ablage_auf_matte") else zap) + h / 2.0
-    ziel = [ag.glas(f"glas_{i + 1}", (float(x), float(y), z_ziel), np.eye(3), r, h)
-            for i, (x, y) in enumerate(sz["glaeser"]["ablage_xy_m"])]
+    ziel = []
+    for i, (x, y) in enumerate(sz["glaeser"]["ablage_xy_m"]):
+        z_ziel = (oben[int(gl_cfg["je_ablage"][i])] if gl_cfg.get("ablage_auf_matte") else zap) + h / 2.0
+        ziel.append(ag.glas(f"glas_{i + 1}", (float(x), float(y), z_ziel), np.eye(3), r, h))
+    _erledigt(start, ziel, a["ablauf"]["zuordnung"], erledigt)
     w = ag.Welt(auf, A.lage, p.szene, _statisch(p) + matten + sockel, start, ziel, matten, r, h)
     w.pruefer = p
     return w
@@ -154,7 +173,7 @@ def _halter(name: str, gruppe: str, mitte, t: Dict[str, Any], wulst: float, bode
     return out
 
 
-def welt_teller(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweichung) -> ag.Welt:
+def welt_teller(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweichung, erledigt=()) -> ag.Welt:
     t = sz["teller"]
     cfg_t = A.d["ziele"]["teller"]
     aus = float(cfg_t["auszug_m"])
@@ -194,6 +213,7 @@ def welt_teller(A: AU.Aufbau, sz: Dict[str, Any], f: Finger, abw: konfig.Abweich
         statisch += _halter(f"tellerstaender_{k + 1}", "tellerstaender", (x, y), t, wulst, zap + sb,
                             float(t["staender_halter_hoehe_m"]), normale_x=nx)
         ziel.append(teller_koerper(f"glas_{k + 1}", (x, y, zap + sb + r), r, wulst, normale_x=nx))
+    _erledigt(start, ziel, a["ablauf"]["zuordnung"], erledigt)
     w = ag.Welt(auf, A.lage, p.szene, statisch, start, ziel, [], r, wulst)
     w.pruefer = p
     return w
@@ -310,6 +330,26 @@ class A1Planer(Planer):
                 return [weg] + stuecke, qz, erg
             except PlanFehler as e:
                 letzter = f"{letzter} | ausweichen {d:.2f} m: {e}"
+        # Zwischenpose mit gleicher Greiferlage (z. B. ueber dem Fuss): zwei kurze Gelenkfahrten
+        # statt einer langen, die das getragene Glas zu stark neigt
+        gross = float(self.pl["glas_abstand_ptp_m"])
+        kipp = float(self.pl["glas_kipp_max_grad"])
+        ref = 1.0
+        if z.halt is not None:
+            ref = 1.0 if z.halt.koerper(self.tcp_welt(qa), self.w.glas_r, self.w.glas_h).rot[2, 2] >= 0 else -1.0
+        zp = Lagezustand(z.ruhend, set(), z.halt, z.auflage, gross, set(), kipp, ref)
+        for via in self.sz.get("zwischenposen_m", []):
+            via = np.asarray(via, float)
+            for qv in list(self.kandidaten(qa, via, Ra, rng, None))[:4]:
+                qv[self.ifg] = qa[self.ifg]
+                if self.treffer(qv, zp) or self.ptp_frei(qa, qv, zp):
+                    continue
+                try:
+                    stuecke, qz, erg = super().verbinde(qv, Ra, ziel_p, ziel_R, z, rng, folge,
+                                                        f"{merkname}@via{via.tolist()}" if merkname else None)
+                    return [[qa, qv]] + stuecke, qz, erg
+                except PlanFehler as e:
+                    letzter = f"{letzter} | ueber {np.round(via, 2).tolist()}: {e}"
         raise PlanFehler(letzter)
 
     def treffer(self, q, z: Lagezustand) -> List[str]:
@@ -588,8 +628,22 @@ def _in_der_hand(gp, zeiten, mess) -> float:
 
 # --- Ein Versuch --------------------------------------------------------------------
 
+def urdf_sim(A: AU.Aufbau) -> str:
+    """URDF fuer Newton: MuJoCo verlangt bei der (festen) 7. Achse eine Spanne > 0;
+    1 mm, der Antrieb haelt sie bei 0."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(A._urdf())
+    for j in root.findall("joint"):
+        if j.get("name") == "axis7":
+            lim = j.find("limit")
+            if float(lim.get("upper")) - float(lim.get("lower")) < 1e-6:
+                lim.set("upper", str(float(lim.get("lower")) + 0.001))
+    return ET.tostring(root, encoding="unicode")
+
+
 def versuch(art: str, nr: int, abw: konfig.Abweichung, ctx=None, nur_plan: bool = False, objekte_n: Optional[int] = None,
-            merk=None, sz=None, aufzeichnen=None, zuordnung=None) -> Tuple[Dict[str, Any], Dict]:
+            merk=None, sz=None, aufzeichnen=None, zuordnung=None, erledigt=()) -> Tuple[Dict[str, Any], Dict]:
     from ausraeumen import sim_newton as sn
 
     from . import sim as fs
@@ -598,14 +652,14 @@ def versuch(art: str, nr: int, abw: konfig.Abweichung, ctx=None, nur_plan: bool 
     sz = sz or szenario()
     A = aufbau(sz, f)
     teller = art == "teller"
-    w = (welt_teller if teller else welt_glaeser)(A, sz, f, abw)
+    w = (welt_teller if teller else welt_glaeser)(A, sz, f, abw, erledigt)
     if zuordnung:
         w.aufbau.a["ablauf"]["zuordnung"] = [list(v) for v in zuordnung]
     if objekte_n:
         w.aufbau.a["ablauf"]["zuordnung"] = w.aufbau.a["ablauf"]["zuordnung"][:objekte_n]
     t0 = time.monotonic()
     planer = A1Planer(w, A.cfg, A.chain, sz, f, teller=teller, merk=merk, pruefer=w.pruefer)
-    rec: Dict[str, Any] = {"versuch": {"nr": nr, "art": art, "abweichung": abw.as_dict()},
+    rec: Dict[str, Any] = {"versuch": {"nr": nr, "art": art, "abweichung": abw.as_dict(), "erledigt": list(erledigt or [])},
                            "finger": {"masse_kg": A.cfg.greifer["finger_masse_kg"], "werkstoff": f.gewaehlt},
                            "device": ctx["device"] if ctx else None}
     zo = w.aufbau.a["ablauf"]["zuordnung"]
@@ -624,7 +678,7 @@ def versuch(art: str, nr: int, abw: konfig.Abweichung, ctx=None, nur_plan: bool 
     if nur_plan:
         rec["erfolg"] = None
         return rec, planer.merk
-    lauf = (fs.TellerLauf if teller else fs.FingerLauf)(ctx, w, plan, A.cfg, A.chain, A._urdf(),
+    lauf = (fs.TellerLauf if teller else fs.FingerLauf)(ctx, w, plan, A.cfg, A.chain, urdf_sim(A),
                                                          30.0 if aufzeichnen else None)
     lauf.finger = f
     lauf.sz = sz

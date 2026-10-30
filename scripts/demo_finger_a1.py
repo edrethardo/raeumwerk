@@ -55,6 +55,7 @@ def main() -> int:
     ap.add_argument("--zuordnung", default=None)
     ap.add_argument("--variation", type=int, default=None)
     ap.add_argument("--negativ", type=int, default=None)
+    ap.add_argument("--erledigt", default=None, help="schon abgeraeumte Objekte (1-basiert, Komma), stehen am Ziel")
     ap.add_argument("--aufzeichnen", default=None)
     args = ap.parse_args()
     out = Path(args.out)
@@ -78,8 +79,9 @@ def main() -> int:
             from ausraeumen import sim_newton as sn
             ctx = sn.kontext(args.device)
             meta.update({"device": ctx["device"], "versionen": sn.versionen()})
+        erl = [int(v) for v in args.erledigt.split(",")] if args.erledigt else []
         rec, _ = a1.versuch(args.art, 0, abw, ctx, nur_plan=args.nur_plan, objekte_n=args.objekte, sz=sz,
-                            aufzeichnen=args.aufzeichnen, zuordnung=zo)
+                            aufzeichnen=args.aufzeichnen, zuordnung=zo, erledigt=erl)
         rec["wand_gesamt_s"] = round(time.monotonic() - t0, 1)
         (out / "versuch.json").write_text(json.dumps(rec, ensure_ascii=False, indent=1))
         drucken(rec)

@@ -34,7 +34,9 @@ glaeser:
     wert: [[0.70, -0.25], [0.58, -0.25], [0.70, -0.10], [0.58, -0.10],
            [-0.10, -0.25], [0.02, -0.25], [-0.10, -0.10], [0.02, -0.10]]
     src: annahme
-  matte_sockel_m: {wert: 0.10, src: annahme}
+  # Sockelhoehe je Platz: hinten 5 cm (10 cm: Vorposition ueber der Matte nicht erreichbar),
+  # vorn 10 cm (auf Plattenhoehe kein Umdrehen moeglich); Sondierung docs/finger.md
+  matte_sockel_m: {wert: [0.05, 0.05, 0.10, 0.10, 0.05, 0.05, 0.10, 0.10], src: annahme}
   # nach dem Abstellen 6 cm senkrecht hoch: Fingerspitzen 0,8 cm ueber dem Glasboden
   # (5 cm wie beim Ausraeumen liessen die Finger noch neben dem Glas; 7 cm nicht ueberall erreichbar)
   matte_vorposition_m: {wert: 0.06, src: annahme}
@@ -49,7 +51,24 @@ ablauf:
     wert: {joint1: -90.0, joint2: 10.0, joint3: 90.0, joint4: 0.0, joint5: 80.0, joint6: 0.0}
     src: annahme
 
+planung:
+  # Neigungsgrenze des getragenen Glases bei Gelenkfahrten: 30 statt 20 Grad (Ausraeumen); die
+  # Schwenks vom Korb zum linken Brett neigten das Glas um 20-22 Grad. Ob es in der Hand bleibt,
+  # zeigt die Simulation (Kriterium "gefallen", Wanderung in der Hand)
+  glas_kipp_max_grad: {wert: 30.0, src: annahme}
+  # Zwischenpunkte ueber Start/Ziel einer Gelenkfahrt: der senkrechte Greifer kommt neben dem
+  # Fuss kaum hoeher, daher zusaetzlich ein kleiner Hub (Ausraeumen: 0 / 8 / 16 cm)
+  zwischenhub_m: {wert: [0.0, 0.03, 0.08, 0.16], src: annahme}
+
+# Zwischenposen (TCP, gleiche Greiferlage) fuer lange Gelenkfahrten, die sonst das Glas zu stark
+# neigen: ueber der Korbmitte vorn und beidseits ueber der Platte neben dem Fuss
+zwischenposen_m: {wert: [[0.30, 0.20, 1.05], [0.10, 0.05, 1.08], [0.50, 0.05, 1.08]], src: annahme}
+
 greifer:
+  # Umdrehen (nur Gelenk 6) mit 20 % der Datenblattgeschwindigkeit (Ausraeumen: 30 %): mit
+  # 30 % drueckte das im Seitgriff kippende Glas die Auflagenkante 3,13 mm ins weiche
+  # Kontaktmodell (Grenze 3 mm), Glas 3 im ersten Lauf
+  umdrehen_anteil: {wert: 0.2, src: annahme}
   # Kollisionsquader der Planung (Huelle des Schafts, CAD: 18 mm breit, 10-14 mm dick)
   finger_breite_m: {wert: 0.018, src: finger}
   finger_dicke_m: {wert: 0.014, src: finger}

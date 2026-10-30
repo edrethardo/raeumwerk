@@ -101,3 +101,12 @@ def test_cad_dateien_passen_zu_den_parametern(f):
         p = CAD / n
         assert p.exists() and 0 < p.stat().st_size < 2_000_000
     assert (CAD / "finger_100.step").read_text(errors="ignore").startswith("ISO-10303-21")
+
+
+def test_aufbau_beispiel_rechnet_mit_der_cad_masse(f):
+    """Momente im Aufbau auf der Maschine mit der echten Fingermasse (CAD, gewaehlter Werkstoff)."""
+    from spuelmaschine import aufbau as AU
+
+    info = json.loads((CAD / "finger_100.json").read_text())
+    d = AU.lade_yaml(REPO / "beispiele" / "auf-maschine-korb-aus-finger100.yaml")
+    assert d["greifer"]["finger_masse_kg"] == pytest.approx(info["massen_g"][f.gewaehlt] / 1000.0, abs=0.0005)
