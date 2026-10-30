@@ -246,3 +246,57 @@ def test_yaml_fehler():
         AU.normalisiere({"achse": {"richtung": "w"}})
     with pytest.raises(ValueError):
         AU.normalisiere({"ziele": {"besteck": {}}})
+
+
+# --- Greifergeometrie: Breite, Fingerlaenge, Griffrichtung -------------------------
+
+def test_greifer_tcp_folgt_fingerlaenge():
+    """``griff_ab_spitze_m``: TCP = Koerperlaenge + Fingerlaenge - Abstand; Koerperbreite im URDF."""
+    A = AU.Aufbau(AU.normalisiere({"achse": {"richtung": "keine", "schiene": "platte"},
+                                   "greifer": {"finger_laenge_m": 0.14, "griff_ab_spitze_m": 0.03,
+                                               "koerper_breite_m": 0.07}}))
+    assert A.cfg.greifer["tcp_ab_flansch_m"] == pytest.approx(0.05 + 0.14 - 0.03)
+    p = A.pruefer(0.0, 0.0)
+    assert p.tcp[2] == pytest.approx(0.16)
+    groesse = np.asarray(p.chain.links["gripper_base"].boxes[0][0], float)  # (tiefe, breite, laenge)
+    assert groesse[1] == pytest.approx(0.07) and groesse[2] == pytest.approx(0.05)
+    finger = np.asarray(p.chain.links["finger_left"].boxes[0][0], float)
+    assert finger[2] == pytest.approx(0.14)
+    B = _aufbau_fest()  # ohne Ueberschreibung bleibt robot.yaml
+    assert B.cfg.greifer["tcp_ab_flansch_m"] == pytest.approx(0.08)
+    assert B.cfg.greifer["koerper_breite_m"] == pytest.approx(0.15)
+
+
+def test_r_kipp_neigt_handgelenk_zum_roboter():
+    from spuelmaschine.erreichbarkeit import r_greif
+
+    R0 = r_greif(0.0)
+    assert np.allclose(AU.r_kipp(R0, 0.0, [0.0, 1.0]), R0)
+    for k in (30.0, 45.0, 90.0):
+        R = AU.r_kipp(R0, k, [0.0, 2.0])  # Roboter in +y
+        assert np.allclose(R @ R.T, np.eye(3)) and np.linalg.det(R) == pytest.approx(1.0)
+        z = R[:, 2]  # Werkzeugachse: vom Handgelenk zum TCP
+        assert z[2] == pytest.approx(-math.cos(math.radians(k)))
+        assert z[1] == pytest.approx(-math.sin(math.radians(k)))  # zeigt vom Roboter weg
+        assert np.allclose(R[:, 1], R0[:, 1])  # Schliessrichtung quer zur Kippebene bleibt waagerecht
+
+
+def test_zu_weit_mit_werkzeugachse():
+    A = _aufbau_fest()
+    p = A.pruefer(0.0, 0.0)
+    pt = np.array([2.3, 2.1, 0.5])
+    assert p.zu_weit(pt) == pytest.approx(p.zu_weit(pt, np.array([0.0, 0.0, -1.0])))
+    weg = (pt[:2] - [2.0, 2.0]) / np.linalg.norm(pt[:2] - [2.0, 2.0])
+    waag = np.array([weg[0], weg[1], 0.0])  # waagerecht vom Roboter weg: Handgelenk naeher
+    assert p.zu_weit(pt + 0.5 * waag, waag) < p.zu_weit(pt + 0.5 * waag)
+
+
+def test_slot_mit_kipp_rechnet(z_aufbau):
+    """Slot-Ziel mit Griffrichtung 0/45 Grad laeuft durch und meldet die Kipplage."""
+    d = AU.lade_yaml(REPO / "beispiele" / "z-achse-frontal.yaml")
+    d["ziele"] = {"slots": {"oberkorb_auszug_m": 0.45, "gier_grad": [0, 180], "kipp_grad": [45]}}
+    A = AU.Aufbau(d)
+    r = AU.rechne(A, {"gruppe": "slots", "ziel": "slot_1", "i": 0})
+    assert set(r) >= {"ok", "grund"}
+    if r["ok"]:
+        assert r["kipp"] == 45.0 and r["eigen"]["joint2"] > 0

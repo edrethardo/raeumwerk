@@ -141,6 +141,10 @@ class Aufbau:
         self.cfg = load_robot()
         if d["greifer"]:
             self.cfg.greifer.update(d["greifer"])
+            g = self.cfg.greifer
+            if "griff_ab_spitze_m" in g:  # TCP folgt der Fingerlaenge: Griffpunkt so weit hinter der Spitze
+                g["tcp_ab_flansch_m"] = float(g["koerper_laenge_m"]) + float(g["finger_laenge_m"]) \
+                    - float(g["griff_ab_spitze_m"])
         self.chain = SchnellChain(self._urdf())
         rob = d["roboter"]
         self.T = transform(rz(float(rob["gier_grad"])) @ ry(float(rob["kipp_grad"])) @ rx(-float(rob["neigung_grad"])),
@@ -344,11 +348,13 @@ class APruefer(Pruefer):
             out.append(self.chain.random_q(rng, USE))
         return out
 
-    def zu_weit(self, p: np.ndarray) -> float:
+    def zu_weit(self, p: np.ndarray, werkzeug_z: Optional[np.ndarray] = None) -> float:
         """> 0: der TCP-Punkt (Greifer senkrecht) liegt um so viel ausserhalb des Arbeitsraums,
         fuer jede Stellung der 7. Achse: weiter als ``arm`` oder naeher als die Mindestreichweite
-        ``arm_min`` (Gelenk 3 am Anschlag) an Gelenk 2."""
-        w = (self.Tinv @ np.append(np.asarray(p, float) + [0.0, 0.0, self.hand], 1.0))[:3]
+        ``arm_min`` (Gelenk 3 am Anschlag) an Gelenk 2. ``werkzeug_z``: Werkzeugachse in Welt
+        (Standard senkrecht nach unten); das Handgelenk liegt ``hand`` entgegen dieser Achse."""
+        wz = np.array([0.0, 0.0, -1.0]) if werkzeug_z is None else np.asarray(werkzeug_z, float)
+        w = (self.Tinv @ np.append(np.asarray(p, float) - self.hand * wz, 1.0))[:3]
         j2 = self.j2_0.copy()
         j7 = self.chain.by_name["axis7"]
         if self.achse != "keine" and j7.upper - j7.lower > 1e-9:
@@ -464,37 +470,76 @@ def _ergebnis(name: str, xyz, **kw) -> Dict[str, Any]:
     return d
 
 
+def r_kipp(R: np.ndarray, kipp_grad: float, zum_roboter: Sequence[float]) -> np.ndarray:
+    """Greiferlage ``R`` (Werkzeug senkrecht nach unten) um ``kipp_grad`` aus der Senkrechten
+    kippen, so dass das Handgelenk zum Roboter (waagerechte Richtung ``zum_roboter``) wandert.
+    Drehachse waagerecht, quer zu ``zum_roboter``; 0 = senkrecht, 90 = waagerecht (Seitgriff)."""
+    if abs(kipp_grad) < 1e-9:
+        return R
+    d = np.array([float(zum_roboter[0]), float(zum_roboter[1]), 0.0])
+    d /= np.linalg.norm(d)
+    u = np.cross([0.0, 0.0, 1.0], d)
+    a = math.radians(kipp_grad)
+    K = np.array([[0.0, -u[2], u[1]], [u[2], 0.0, -u[0]], [-u[1], u[0], 0.0]])
+    return (np.eye(3) + math.sin(a) * K + (1.0 - math.cos(a)) * K @ K) @ R
+
+
 def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier: Sequence[float],
-                seed: int, versuche: int = 6, einsetzen: bool = False) -> Dict[str, Any]:
+                seed: int, versuche: int = 6, einsetzen: bool = False,
+                kipp: Sequence[float] = (0.0,)) -> Dict[str, Any]:
     """Wie ``Pruefer.pruefe_ziel``, nur alle Startposen eines Gierwinkels als Batch.
-    ``einsetzen``: Slot zusaetzlich in Gegenrichtung (Glas getragen hinab in den Platz)."""
+    ``einsetzen``: Slot zusaetzlich in Gegenrichtung (Glas getragen hinab in den Platz).
+    ``kipp``: Griffrichtungen (Grad aus der Senkrechten, Handgelenk zum Roboter, siehe
+    ``r_kipp``); gekippt faehrt der Greifer entlang seiner Achse an, der Aushub bleibt senkrecht."""
     g = p.sc["greifen"]
     rng = np.random.default_rng(seed)
     tcp_z = float(g["tcp_ueber_glasrand_m"])
     p_greif = np.array([glas.mitte[0], glas.mitte[1], glas.mitte[2] - float(glas.halb[2]) + tcp_z])
-    if art == "slot":
-        p_vor = p_greif + [0, 0, float(g["vorposition_m"])]
-        p_aus = p_greif + [0, 0, float(g["aushub_m"])]
-        ab, auf = linie(p_vor, p_greif), linie(p_greif, p_aus)[1:]
-    else:
-        p_greif = p_greif + [0, 0, float(g["absetzen_luft_m"])]
-        p_vor = p_greif + [0, 0, float(g["ablage_vorposition_m"])]
-        ab, auf = linie(p_vor, p_greif), []
+    zum_roboter = p.T[:2, 3] - p_greif[:2]
+    if np.linalg.norm(zum_roboter) < 1e-6:
+        zum_roboter = np.array([0.0, 1.0])
     res = _ergebnis(name, glas.mitte, grund="IK ohne Loesung")
-    weit = max(p.zu_weit(pt) for pt in ab + auf)
-    if weit > 0:
-        res["grund"] = f"ausserhalb der Reichweite ({weit * 1e3:.0f} mm)"
-        return res
     L = Loeser(p)
     offen = p.cfg.finger_hub
-    st = p.startwerte(p_vor, rng)
-    st = st[:versuche] + st[-4:]
     ik_je = False
-    punkte = ab + auf
+    p_greif0 = p_greif
+    weit_alle = []
+    for kw in [float(v) for v in kipp]:
+        wz = r_kipp(np.eye(3), kw, zum_roboter)[:, 2] * -1.0  # Werkzeugachse (senkrecht: -z)
+        p_greif = p_greif0
+        if art == "slot":
+            p_vor = p_greif - wz * float(g["vorposition_m"])
+            p_aus = p_greif + [0, 0, float(g["aushub_m"])]
+            ab, auf = linie(p_vor, p_greif), linie(p_greif, p_aus)[1:]
+        else:
+            p_greif = p_greif + [0, 0, float(g["absetzen_luft_m"])]
+            p_vor = p_greif - wz * float(g["ablage_vorposition_m"])
+            ab, auf = linie(p_vor, p_greif), []
+        weit = max(p.zu_weit(pt, wz) for pt in ab + auf)
+        if weit > 0:
+            weit_alle.append(weit)
+            continue
+        st = p.startwerte(p_vor, rng)
+        st = st[:versuche] + st[-4:]
+        punkte = ab + auf
+        r = _pruefe_glas_lagen(p, L, res, glas, art, gier, kw, zum_roboter, st, offen, ab, punkte, p_greif,
+                               p_vor, rng, einsetzen, ik_je)
+        ik_je = r
+        if res["ok"]:
+            return res
+    if len(weit_alle) == len(list(kipp)):
+        res["grund"] = f"ausserhalb der Reichweite ({min(weit_alle) * 1e3:.0f} mm)"
+    return res
+
+
+def _pruefe_glas_lagen(p, L, res, glas, art, gier, kw, zum_roboter, st, offen, ab, punkte, p_greif, p_vor,
+                       rng, einsetzen, ik_je) -> bool:
+    """Alle Gierwinkel einer Kipplage; schreibt in ``res``, liefert, ob je eine IK-Loesung kam."""
+    ik_je = False
     for gi, gw in enumerate(gier):
         if gi == 1 and not ik_je:
             break
-        R = r_greif(gw)
+        R = r_kipp(r_greif(gw), kw, zum_roboter)
         Q0all = np.array(st)
         Q0all[:, p.ifg] = offen
         Tv = L.ziele(R, [p_vor])[0]
@@ -538,12 +583,17 @@ def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier:
                 a7 = qs[k][:, p.i7]
                 info = dict(gier=gw, achse7=_r([a7.min(), a7.max()]), q=_r(qs[k][len(ab) - 1], 5),
                             j5_max_grad=round(float(np.degrees(np.max(np.abs(qs[k][:, p.chain.index["joint5"]])))), 1))
+                if kw:
+                    info["kipp"] = kw
                 if hits:
                     res.update(grund="Kollision: " + ", ".join(hits[:4]), kollisionen=hits, **info)
                     continue
                 res.update(ok=True, grund="", **info)
-                return res
-    return res
+                if art == "slot":  # Haltemoment beim Aushub mit Glas (Eigengewicht + Glas)
+                    m_glas = float(p.m.get("glas", {}).get("masse_kg", 0.25))
+                    res["eigen"] = {n: max(eigen(p, q, m_glas)[n] for q in qs[k][len(ab) - 1:]) for n in ARM}
+                return True
+    return ik_je
 
 
 def pruefe_weg(p: APruefer, R: np.ndarray, punkte: List[np.ndarray], rng, ignoriere=None, szenen=None,
@@ -708,7 +758,8 @@ def rechne(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
         p = A.pruefer(float(cfg.get("oberkorb_auszug_m", 0.45)), 0.0)
         gl = p.glaeser_korb[a["i"]]
         return pruefe_glas(p, a["ziel"], gl, "slot", [float(v) for v in cfg.get("gier_grad", [0.0, 180.0])], a["i"],
-                           einsetzen=bool(cfg.get("einsetzen", False)))
+                           einsetzen=bool(cfg.get("einsetzen", False)),
+                           kipp=[float(v) for v in cfg.get("kipp_grad", [0.0])])
     if g == "ablage":
         cfg = z["ablage"] or {}
         if "seit" in a:
