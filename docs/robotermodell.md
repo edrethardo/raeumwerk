@@ -72,7 +72,7 @@ iRC_ROS (`test_cpr_limits_match_datasheet_after_offset`).
 | J2, J3 | −80…140° | Datenblatt |
 | J5 | −95…95° | Datenblatt |
 | Gelenkgeschwindigkeit | 45 °/s | Datenblatt |
-| Moment je Gelenk (Antriebsgrenze im Modell) | 40 Nm | **Annahme** |
+| Moment je Gelenk | J1–J3 (Baugröße 105): Nenn 10–15 Nm, Max 12,5–20 Nm; J4–J6 (Baugröße 80): Nenn 2 Nm, Max 2,5–3 Nm. URDF-Antriebsgrenze = oberer Maximalwert (20 bzw. 3 Nm), Rechnungen nehmen den unteren Wert | igus-Getriebebaukasten (`igus_getriebe`); Zuordnung der Baugrößen: **Annahme** |
 | Masse Arm | 8,2 kg (Aufteilung auf die Glieder: Annahme) | Datenblatt |
 | Nutzlast | 2 kg inkl. Greifer → 1,5 kg im TCP im Backend-Test | Datenblatt |
 | 7. Achse Hub | 1000 mm (Variante; 500…3000 lieferbar) | igus 7. Achse |
@@ -138,8 +138,8 @@ in den 4 freien Posen keine Durchdringung. Übersicht: `docs/STATUS.md`.
 
 ## 5. Bekannte Grenzen
 
-- Momentgrenze 40 Nm je Gelenk, Massenverteilung, Greifer- und Schienenmaße
-  sind Annahmen, keine Datenblattwerte.
+- Welche Getriebebaugröße an welchem Gelenk sitzt (J1–J3 105, J4–J6 80), die
+  Massenverteilung, Greifer- und Schienenmaße sind Annahmen, keine Datenblattwerte.
 - Die Mimic-Kopplung ist in Newton/MuJoCo eine weiche Zwangsbedingung: der
   rechte Finger steht unter Schwerkraft rund 0,4 mm hinter dem linken.
 - Das Modell kennt keine Getriebeelastizität, kein Spiel und keine Reibung;

@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO / "config" / "robot.yaml"
@@ -24,6 +24,9 @@ class Gelenk:
     unten: float  # rad
     oben: float  # rad
     src: str
+    baugroesse: int = 0
+    nennmoment: Tuple[float, float] = (0.0, 0.0)  # Nm [unten, oben] (igus)
+    max_moment: Tuple[float, float] = (0.0, 0.0)  # Nm [unten, oben] (igus)
 
 
 @dataclass
@@ -80,6 +83,9 @@ def load(path: Path | str | None = None) -> RobotConfig:
                 unten=math.radians(float(g["unten_grad"])),
                 oben=math.radians(float(g["oben_grad"])),
                 src=g.get("src", ""),
+                baugroesse=int(g.get("baugroesse", 0)),
+                nennmoment=tuple(float(v) for v in g["nennmoment_nm"]),
+                max_moment=tuple(float(v) for v in g["max_moment_nm"]),
             )
         )
     cfg.massen = {k: float(v) for k, v in raw["arm"]["massen_kg"].items() if k != "src"}

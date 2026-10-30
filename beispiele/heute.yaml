@@ -1,0 +1,42 @@
+# Aufbau "heute": 7. Achse senkrecht zur Front rechts neben der Tuer auf einem
+# Vorgabe: Raeumwerk macht nur den Oberkorb. Die Unterkorb-Teller stehen hier
+# nur fuer den Abgleich mit Konzept-Spec §13.
+# Podest (config/scene_spuelmaschine.yaml, docs/spuelmaschine.md), Podest 0,65 m.
+#   raeumwerk aufbau beispiele/heute.yaml
+name: Heute (Schiene senkrecht zur Front, Podest 0,65 m)
+beschreibung: >-
+  ReBeL auf der liegenden 7. Achse (Hub 1,0 m), Schienenanfang (0,78; 0,06),
+  Schiene zeigt in den Raum (Gier 90 Grad), Podest 0,65 m hoch unter der Schiene.
+roboter:
+  ursprung_xyz_m: [0.78, 0.06, 0.65]
+  gier_grad: 90
+achse:
+  richtung: x
+  hub_m: 1.0
+  schiene: standard
+  podest: true                       # Podest unter der Schiene wie spuelmaschine.erreichbarkeit
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180]}
+  teller:
+    korb: unterkorb
+    auszug_m: 0.45
+    x_m: [0.10, 0.20, 0.30, 0.40, 0.50]
+    tiefe_m: [0.04, 0.16, 0.28, 0.40]
+    rand_ueber_boden_m: 0.26
+    greif_unter_rand_m: 0.01
+    vorposition_m: 0.10
+    aushub_m: 0.30
+    gier_grad: [0, 180]
+  ablage:
+    platte: true
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]
+# Referenz (Konzept-Spec §13.3 Spalte "heute" bei 0,65 m): Slots 3/16,
+# Teller 3/20 (§6.3), Ablage Platte 4/4.
+vergleich:
+  slots: 3
+  teller: 3
+  ablage_platte: 4

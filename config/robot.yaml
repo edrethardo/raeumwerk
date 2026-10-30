@@ -19,6 +19,11 @@ quellen:
   ds_greifer: >-
     igus Produktseite "Lightweight Parallel Gripper for ReBeL", Artikel
     0-LCA-GRI-0100 (Greifbereich 100 mm, maximale Oeffnung 105 mm)
+  igus_getriebe: >-
+    igus ReBeL-Getriebebaukasten Baugroesse 80/105 (Nennmoment 2 bzw. 10-15 Nm,
+    Maximum 2,5-3 bzw. 12,5-20 Nm), https://www.igus.eu/automation/robot-types/cobot/rebel-gearbox-construction-kit
+    und RBTX 105 https://rbtx.com/en-US/components/accessories/rebel-fully-integrated-shaft-gearbox-size-105
+    (Zusammenfassung in docs/hardware-auswahl.md und der Konzept-Spec, Quelle K10)
 
 arm:
   # Abstaende in der Kerzenpose (alle Gelenke 0, Arm senkrecht), entlang z
@@ -34,15 +39,24 @@ arm:
   reichweite_m: {wert: 0.660, src: ds_rebel}      # Gelenk 2 -> Flansch, Arm gestreckt (Kontrollwert)
   # Gelenke: Achsrichtung wie cpr_urdf (fuer den spaeteren Hardware-Abgleich),
   # Nullpunkt = Kerzenpose, Grenzen aus dem Datenblatt.
+  # Momente je Gelenk [unten, oben] aus dem igus-Getriebebaukasten (moment_src);
+  # welches Gelenk welche Baugroesse hat, ist eine Annahme (baugroesse_src):
+  # J1-J3 Baugroesse 105, J4-J6 Baugroesse 80. Rechnungen nehmen den unteren
+  # Wert (konservativ), die URDF-Antriebsgrenze (effort) den oberen Maximalwert.
   gelenke:
-    - {name: joint1, achse: [0, 0, -1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
-    - {name: joint2, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel}
-    - {name: joint3, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel}
-    - {name: joint4, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
-    - {name: joint5, achse: [0, 1, 0], unten_grad: -95, oben_grad: 95, src: ds_rebel}
-    - {name: joint6, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel}
+    - {name: joint1, achse: [0, 0, -1], unten_grad: -179, oben_grad: 179, src: ds_rebel,
+       baugroesse: 105, nennmoment_nm: [10.0, 15.0], max_moment_nm: [12.5, 20.0], moment_src: igus_getriebe, baugroesse_src: annahme}
+    - {name: joint2, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel,
+       baugroesse: 105, nennmoment_nm: [10.0, 15.0], max_moment_nm: [12.5, 20.0], moment_src: igus_getriebe, baugroesse_src: annahme}
+    - {name: joint3, achse: [0, 1, 0], unten_grad: -80, oben_grad: 140, src: ds_rebel,
+       baugroesse: 105, nennmoment_nm: [10.0, 15.0], max_moment_nm: [12.5, 20.0], moment_src: igus_getriebe, baugroesse_src: annahme}
+    - {name: joint4, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel,
+       baugroesse: 80, nennmoment_nm: [2.0, 2.0], max_moment_nm: [2.5, 3.0], moment_src: igus_getriebe, baugroesse_src: annahme}
+    - {name: joint5, achse: [0, 1, 0], unten_grad: -95, oben_grad: 95, src: ds_rebel,
+       baugroesse: 80, nennmoment_nm: [2.0, 2.0], max_moment_nm: [2.5, 3.0], moment_src: igus_getriebe, baugroesse_src: annahme}
+    - {name: joint6, achse: [0, 0, 1], unten_grad: -179, oben_grad: 179, src: ds_rebel,
+       baugroesse: 80, nennmoment_nm: [2.0, 2.0], max_moment_nm: [2.5, 3.0], moment_src: igus_getriebe, baugroesse_src: annahme}
   geschwindigkeit_grad_s: {wert: 45, src: ds_rebel}
-  moment_nm: {wert: 40.0, src: annahme}           # Antriebsgrenze im Modell; kein Datenblattwert
   masse_gesamt_kg: {wert: 8.2, src: ds_rebel}
   # Aufteilung der 8,2 kg auf die Glieder: annahme (Datenblatt nennt nur die Summe)
   massen_kg:

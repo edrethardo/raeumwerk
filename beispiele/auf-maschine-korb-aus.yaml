@@ -1,0 +1,102 @@
+# Owner-Frage: Oberkorb ist schon ausgezogen (vom Menschen). Beste Lage aus dem Raster
+# Vorgabe: Raeumwerk macht nur den Oberkorb.
+# (Vorfilter 72 Lagen, volle IK fuer die besten 2 je Achse/Neigung).
+#   raeumwerk aufbau beispiele/auf-maschine-korb-aus.yaml
+name: Auf der Maschine, Oberkorb vom Menschen ausgezogen (beste Lage)
+roboter:
+  ursprung_xyz_m:
+  - 0.3
+  - 0.05
+  - 0.86
+  gier_grad: 0
+  neigung_grad: 0
+achse:
+  richtung: keine
+  schiene: platte
+masse:
+  glashalter:
+    reihen_x_m:
+    - 0.48
+    - 0.36
+    - 0.24
+    - 0.12
+    slots_je_reihe: 4
+  ablage:
+    punkte_xy_m:
+    - - 0.6
+      - -0.03
+    - - 0.72
+      - -0.03
+    - - 0.6
+      - -0.15
+    - - 0.72
+      - -0.15
+hindernisse:
+- name: podest
+  gruppe: halter
+  lo:
+  - 0.16999999999999998
+  - 0.05
+  - 0.82
+  hi:
+  - 0.43
+  - 0.18
+  - 0.86
+erlaubt:
+- rail|podest
+- carriage|podest
+- rail|arbeitsplatte
+- carriage|arbeitsplatte
+- base_link|podest
+- base_link|arbeitsplatte
+halter_beruehrt:
+- arbeitsplatte
+ziele:
+  slots:
+    oberkorb_auszug_m: 0.45
+    gier_grad:
+    - 0
+    - 180
+    einsetzen: true
+  teller:
+    korb: oberkorb
+    auszug_m: 0.45
+    praefix: teller
+    x_m:
+    - 0.15
+    - 0.45
+    tiefe_m:
+    - 0.07
+    - 0.13
+    - 0.19
+    - 0.25
+    rand_ueber_boden_m: 0.19
+    greif_unter_rand_m: 0.02
+    vorposition_m: 0.1
+    aushub_m: 0.15
+    gier_grad:
+    - 90
+    - 0
+    glashalter: false
+    last_kg: 0.35
+  ablage:
+    platte: true
+    seitgriff: true
+    gier_grad:
+    - 0
+    - 90
+    - 180
+    - 270
+momente:
+  zugkraft_n:
+  - 20
+  - 30
+beschreibung: 'ReBeL auf der Arbeitsplatte, kein Korbzug: Oberkorb fest 0,45 m ausgezogen.
+  Glasplaetze entnehmen und einsetzen, 8 Dessertteller, Ablage auf der Platte. Beste
+  Lage aus dem Raster (Kantenabstand -0,10..+0,15 m, Versatz, Neigung 0/105/120 Grad,
+  ohne/mit 7. Achse).'
+vergleich:
+  slots: 2
+  teller: 4
+  ablage_platte: 4
+  ablage_seitgriff: 0
