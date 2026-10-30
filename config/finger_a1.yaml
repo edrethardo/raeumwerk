@@ -1,0 +1,90 @@
+# Greifsimulation mit den eigenen 100-mm-Fingern im Aufbau "Arm auf der
+# Spuelmaschine" (Szenario A1-S1, docs/finger.md). Gelesen von finger/a1.py.
+# Jeder Wert hat `src` oder ist `annahme`.
+
+quellen:
+  szenario: >-
+    beispiele/auf-maschine-korb-aus-finger100.yaml (raeumwerk aufbau): Fuss (0,30; 0,00) auf der
+    Platte, Oberkorb 0,45 m ausgezogen; erreichbar Glasplaetze 1, 2, 5, 6, 9, 10, 13, 14 und je
+    Tellerspalte die vorderen drei
+  ausraeumen: >-
+    config/ausraeumen.yaml und docs/ausraeumen.md: Umgreifen ueber Matten, Greifkraft 10 N,
+    Neigungsgrenze 20 Grad, Bewertungsgrenzen
+  finger: config/finger.yaml (Fingergeometrie, Teller-Randmasse)
+
+aufbau: {wert: beispiele/auf-maschine-korb-aus-finger100.yaml, src: szenario}
+
+glaeser:
+  slots: {wert: [1, 2, 5, 6, 9, 10, 13, 14], src: szenario}       # Platznummern 1..16 des Werkzeugs
+  # Ablage: aufrecht auf einem 10 cm hohen Abstellbrett (je Glas ein Platz mit Matte, zugleich
+  # Zwischenablage zum Umgreifen). Auf Plattenhoehe war kein Ablagepunkt planbar: das
+  # Umdrehen geht dort nirgends (Gelenkgrenzen neben dem Fuss), und nach dem Umdrehen in
+  # 10 cm Hoehe riss jeder Weg hinab auf die Platte ab (IK, link_5|arbeitsplatte); 20 cm
+  # hoch ist der Griff von oben nicht mehr erreichbar. Alle 8 Plaetze einzeln sondiert
+  # (Griff von oben kopfueber + Seitgriff + Umdrehen, IK + Kollision), docs/finger.md.
+  ablage_xy_m:
+    wert: [[0.70, -0.25], [0.58, -0.25], [0.70, -0.10], [0.58, -0.10],
+           [-0.10, -0.25], [0.02, -0.25], [-0.10, -0.10], [0.02, -0.10]]
+    src: annahme
+  ablage_auf_matte: {wert: true, src: annahme}
+  # Reihenfolge: Platz (Index in slots, 1-basiert) -> Ablagepunkt (1-basiert);
+  # rechte zwei Glasreihen nach rechts, linke nach links, hintere Brettreihe zuerst
+  zuordnung: {wert: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8]], src: annahme}
+  matten_xy_m:
+    wert: [[0.70, -0.25], [0.58, -0.25], [0.70, -0.10], [0.58, -0.10],
+           [-0.10, -0.25], [0.02, -0.25], [-0.10, -0.10], [0.02, -0.10]]
+    src: annahme
+  matte_sockel_m: {wert: 0.10, src: annahme}
+  # nach dem Abstellen 6 cm senkrecht hoch: Fingerspitzen 0,8 cm ueber dem Glasboden
+  # (5 cm wie beim Ausraeumen liessen die Finger noch neben dem Glas; 7 cm nicht ueberall erreichbar)
+  matte_vorposition_m: {wert: 0.06, src: annahme}
+  # Seitgriff: waagerecht nur 5 cm vor dem Glas erreichbar (10 cm: keine IK-Loesung neben dem Fuss)
+  seitgriff_vorposition_m: {wert: 0.05, src: annahme}
+  seitgriff_rueckzug_m: {wert: 0.05, src: annahme}
+  absetzen_luft_m: {wert: 0.003, src: annahme}
+  je_ablage: {wert: [0, 1, 2, 3, 4, 5, 6, 7], src: annahme}
+
+ablauf:
+  ruhepose_grad:
+    wert: {joint1: -90.0, joint2: 10.0, joint3: 90.0, joint4: 0.0, joint5: 80.0, joint6: 0.0}
+    src: annahme
+
+greifer:
+  # Kollisionsquader der Planung (Huelle des Schafts, CAD: 18 mm breit, 10-14 mm dick)
+  finger_breite_m: {wert: 0.018, src: finger}
+  finger_dicke_m: {wert: 0.014, src: finger}
+  # Abstand Backe -> Glasberuehrung (Bezugsebene 2,5 mm innen, Glasscheitel ~0,4 mm hinter der
+  # Bezugsebene, Auflagenkante im Seitgriff 0,4 mm davor; Mittel)
+  kontakt_versatz_m: {wert: 0.0025, src: finger}
+
+teller:
+  spalten_x_m: {wert: [0.15, 0.45], src: szenario}
+  tiefe_m: {wert: [0.07, 0.13, 0.19], src: szenario}     # ab Korbfront, je Spalte die vorderen drei
+  durchmesser_m: {wert: 0.19, src: szenario}
+  masse_kg: {wert: 0.35, src: szenario}
+  wulst_segmente: {wert: 24, src: annahme}                # Randwulst als Kapselring
+  halter_hoehe_m: {wert: 0.06, src: annahme}              # Tellerstaebe im Korb und im Staender
+  halter_x_m: {wert: 0.05, src: annahme}                  # Staebe +-5 cm neben der Tellermitte
+  halter_luft_m: {wert: 0.003, src: annahme}              # je Seite zum Wulst
+  halter_stab_m: {wert: 0.004, src: annahme}
+  vorposition_m: {wert: 0.10, src: szenario}
+  aushub_m: {wert: 0.20, src: annahme}                    # Tellerunterkante 20 cm ueber dem Korbboden
+  greifkraft_n: {wert: 10.0, src: finger}
+  # Ablage: hochkant in einen Tellerstaender auf der Platte (Begruendung docs/finger.md):
+  # gleicher Griff, nur senkrechte Bewegungen, kein Kippmoment am Rand. Hinter dem Fuss
+  # (y -0,30), Plaetze entlang x, Teller um 90 Grad gedreht; der senkrechte Greifer kommt
+  # dort nur ~6 cm ueber die Abstellhoehe (Sondierung), daher kurze Staebe, 5,5 cm Vorposition
+  staender_xy_m: {wert: [0.175, -0.30], src: annahme}     # erster Platz
+  staender_teilung_m: {wert: [0.05, 0.0], src: annahme}   # weitere Plaetze entlang x
+  staender_gier_grad: {wert: 0.0, src: annahme}           # Schliessrichtung x: Tellernormale entlang x
+  staender_boden_m: {wert: 0.010, src: annahme}
+  staender_halter_hoehe_m: {wert: 0.035, src: annahme}
+  staender_vorposition_m: {wert: 0.055, src: annahme}
+  absetzen_luft_m: {wert: 0.002, src: ausraeumen}
+  zuordnung: {wert: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]], src: annahme}
+
+bewertung:
+  # Teller: wie die Glaeser (config/ausraeumen.yaml), Kippung = Neigung der Tellerebene gegen die
+  # Senkrechte, Zielfehler = Tellermitte gegen den Staenderplatz (x, y)
+  ziel_toleranz_m: {wert: 0.01, src: ausraeumen}
+  kippung_max_grad: {wert: 10.0, src: ausraeumen}

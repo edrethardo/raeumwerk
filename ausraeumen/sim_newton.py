@@ -24,7 +24,8 @@ from spuelmaschine.stabilitaet import quat_aus_matrix
 
 ROBOTER_GELENKE_EXTRA = ["finger_right"]
 KONTAKT_GRUPPEN = {"oberkorb": "korb", "glashalter": "korb", "klemmbacke": "korb", "tuer": "tuer",
-                   "arbeitsplatte": "arbeitsplatte", "zwischenablage": "zwischenablage"}
+                   "arbeitsplatte": "arbeitsplatte", "zwischenablage": "zwischenablage",
+                   "tellerhalter": "korb", "tellerstaender": "staender", "podest": "arbeitsplatte"}
 
 
 def kontext(device=None) -> dict:
@@ -94,9 +95,7 @@ class Lauf:
         bl = {l.split("/")[-1]: i for i, l in enumerate(b.body_label)}
         robot_bodies = set(range(b.body_count))
         finger_bodies = {bl["finger_left"], bl["finger_right"]}
-        finger_shapes = {s for s in range(b.shape_count) if b.shape_body[s] in finger_bodies}
-        for s in finger_shapes:
-            b.shape_material_mu[s] = float(si["reibung_finger"])
+        finger_shapes = self.finger_formen(b, bl, shape_cfg)
         gravcomp = b.custom_attributes["mujoco:gravcomp"]
         if gravcomp.values is None:
             gravcomp.values = {}
@@ -128,15 +127,9 @@ class Lauf:
                                 label=k.name)
             gruppe_von[s] = KONTAKT_GRUPPEN.get(k.gruppe, k.gruppe)
         b.add_ground_plane(cfg=shape_cfg(si["reibung_korb"]))
-        r, h = self.w.glas_r, self.w.glas_h
-        dichte = float(self.w.aufbau.m["glas"]["masse_kg"]) / (math.pi * r * r * h)
         self.glas_b, self.glas_s = [], []
-        for g in self.w.glas_start:
-            bi = b.add_body(xform=wp.transform(tuple(float(v) for v in g.mitte), quat_aus_matrix(g.rot)), label=g.name)
-            si_ = b.add_shape_cylinder(bi, radius=r, half_height=h / 2.0, cfg=shape_cfg(si["reibung_glas"], dichte),
-                                       label=g.name)
-            self.glas_b.append(bi)
-            self.glas_s.append(si_)
+        self.objekt_von_shape: Dict[int, int] = {}
+        self.objekte(b, shape_cfg)
         self.model = b.finalize(device=c["device"])
         self.body_label = [l.split("/")[-1] for l in b.body_label]
         self.qi, self.di = qi, di
@@ -148,6 +141,31 @@ class Lauf:
             raise RuntimeError("Antriebswerte passen nicht zum Gelenkindex")
         self.glas_masse = [float(v) for v in self.model.body_mass.numpy()[self.glas_b]]
         self.n_statisch = len(gruppe_von)
+
+    def finger_formen(self, b, bl, shape_cfg) -> set:
+        """Kollisionsformen der Finger (Standard: die Quader aus dem URDF, Reibwert der
+        Finger). Unterklassen ersetzen sie (z. B. eigene Fingerkontur, finger.sim)."""
+        si = self.w.aufbau.a["simulation"]
+        finger_bodies = {bl["finger_left"], bl["finger_right"]}
+        shapes = {s for s in range(b.shape_count) if b.shape_body[s] in finger_bodies}
+        for s in shapes:
+            b.shape_material_mu[s] = float(si["reibung_finger"])
+        return shapes
+
+    def objekte(self, b, shape_cfg) -> None:
+        """Freie Koerper (Standard: Glaeser als Vollzylinder). Fuellt ``glas_b`` (Koerper)
+        und ``objekt_von_shape`` (Form -> Objektindex, fuer die Fingerdurchdringung)."""
+        wp = self.ctx["wp"]
+        si = self.w.aufbau.a["simulation"]
+        r, h = self.w.glas_r, self.w.glas_h
+        dichte = float(self.w.aufbau.m["glas"]["masse_kg"]) / (math.pi * r * r * h)
+        for i, g in enumerate(self.w.glas_start):
+            bi = b.add_body(xform=wp.transform(tuple(float(v) for v in g.mitte), quat_aus_matrix(g.rot)), label=g.name)
+            si_ = b.add_shape_cylinder(bi, radius=r, half_height=h / 2.0, cfg=shape_cfg(si["reibung_glas"], dichte),
+                                       label=g.name)
+            self.glas_b.append(bi)
+            self.glas_s.append(si_)
+            self.objekt_von_shape[si_] = i
 
     def fahren(self) -> dict:
         from raeumwerk.backends.sim import SimGripper, SimRobot
@@ -175,7 +193,7 @@ class Lauf:
         self.greifer = SimGripper(self, cfg.min_oeffnung)
         arm = [n for n in chain.active if n != "finger_left"]
         tcp_off = np.array([0.0, 0.0, float(cfg.greifer["tcp_ab_flansch_m"])])
-        glas_s = {s: i for i, s in enumerate(self.glas_s)}
+        glas_s = dict(self.objekt_von_shape) or {s: i for i, s in enumerate(self.glas_s)}
         n_g = len(self.glas_b)
         spur = {"t": [], "phase": [], "glas": [], "tcp": []}
         kontakt = [dict() for _ in range(n_g + 1)]  # je Glas (+ ohne Glas): Gruppe -> (tiefe, phase)

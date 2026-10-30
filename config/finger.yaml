@@ -54,8 +54,9 @@ anschluss:
   senkung_d_mm: {wert: 8.0, src: annahme}            # Zylinderkopf ISO 4762 M4: Kopf 7 mm
   senkung_tiefe_mm: {wert: 4.5, src: annahme}
   # Lage der Finger-Innenbezugsebene zur Backen-Innenflaeche (nach innen positiv):
-  # bei ganz geschlossenem Greifer (5 mm) liegen die Bezugsebenen 2 mm auseinander
-  innen_versatz_mm: {wert: 1.5, src: annahme}
+  # bei ganz geschlossenem Greifer (5 mm) beruehren sich die Bezugsebenen (Lippen),
+  # die 3-mm-Tellerfahne wird also sicher geklemmt
+  innen_versatz_mm: {wert: 2.5, src: annahme}
 
 v_kontur:
   # Flache V-Nut ueber die Breite, Fingerachse entlang: das Glas (Zylinder parallel
