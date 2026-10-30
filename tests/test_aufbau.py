@@ -300,3 +300,55 @@ def test_slot_mit_kipp_rechnet(z_aufbau):
     assert set(r) >= {"ok", "grund"}
     if r["ok"]:
         assert r["kipp"] == 45.0 and r["eigen"]["joint2"] > 0
+
+
+class _Stopp(Exception):
+    pass
+
+
+@pytest.mark.parametrize("kipp", [0.0, 30.0, 45.0, 70.0])
+def test_werkzeugachse_der_reichweite_gleich_greifachse(z_aufbau, monkeypatch, kipp):
+    """Die Achse, gegen die Reichweite und Anfahrt geprueft werden, ist die Achse der
+    tatsaechlich geloesten Greiforientierung ``r_kipp(r_greif(gier), kipp)``; ab 60 Grad
+    faehrt der Greifer entlang dieser Achse an, darunter senkrecht."""
+    from spuelmaschine.erreichbarkeit import r_greif
+
+    p = z_aufbau.pruefer(0.45, 0.0)
+    gl = p.glaeser_korb[0]
+    erfasst = {}
+
+    def zu_weit(self, pt, wz=None):
+        erfasst.setdefault("wz", np.asarray(wz, float))
+        return 0.0  # Reichweite nie als Abbruchgrund: der IK-Aufruf soll erreicht werden
+
+    def ziele(self, R, punkte):
+        erfasst["R"] = np.asarray(R, float)
+        erfasst["p_vor"] = np.asarray(punkte[0], float)
+        raise _Stopp
+
+    monkeypatch.setattr(AU.APruefer, "zu_weit", zu_weit)
+    monkeypatch.setattr(AU.Loeser, "ziele", ziele)
+    with pytest.raises(_Stopp):
+        AU.pruefe_glas(p, "t", gl, "slot", [0.0], 0, kipp=[kipp])
+    g = p.sc["greifen"]
+    p_greif = np.array([gl.mitte[0], gl.mitte[1], gl.mitte[2] - float(gl.halb[2]) + float(g["tcp_ueber_glasrand_m"])])
+    zum_roboter = p.T[:2, 3] - p_greif[:2]
+    greifachse = AU.r_kipp(r_greif(0.0), kipp, zum_roboter)[:, 2]  # Werkzeugachse (Handgelenk -> TCP)
+    assert np.allclose(erfasst["R"][:, 2], greifachse)
+    assert np.allclose(erfasst["wz"], greifachse, atol=1e-9)
+    richtung = p_greif - erfasst["p_vor"]
+    richtung /= np.linalg.norm(richtung)
+    soll = greifachse if kipp >= 60.0 else np.array([0.0, 0.0, -1.0])
+    assert np.allclose(richtung, soll, atol=1e-9)
+
+
+@pytest.mark.parametrize("datei,erwartet", [
+    ("z-achse-frontal.yaml", {"slots": (6, 16), "teller": (15, 20)}),
+    ("z-achse-oberkorb-finger100.yaml", {"slots": (12, 16), "teller": (8, 8)}),
+])
+def test_beispiel_ergebnis_regression(datei, erwartet):
+    """Voller Lauf der Beispiele: Slots und Teller muessen die dokumentierten Werte liefern."""
+    d = AU.lade_yaml(REPO / "beispiele" / datei)
+    e = AU.lauf(d, jobs=None, cache=None, gruppen=["slots", "teller"], log=lambda *_: None)
+    for gruppe, (ok, n) in erwartet.items():
+        assert (e["abdeckung"][gruppe]["ok"], e["abdeckung"][gruppe]["n"]) == (ok, n), (datei, gruppe)
