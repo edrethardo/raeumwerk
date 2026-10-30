@@ -89,7 +89,7 @@ teller:
   spitze_unter_rand_mm: {wert: 10.0, src: annahme}
 
 greifkraft:
-  sim_n: {wert: 10.0, src: ausraeumen}               # je Finger, wie das Ausraeumen
+  sim_n: {wert: 7.0, src: annahme}                   # je Finger; 10 N (Ausraeumen) drueckte im Seitgriff 3,06 mm ein
   rechnung_n: {wert: [10.0, 20.0], src: auftrag}
   griffpunkt_ab_spitze_mm: {wert: 30.0, src: ausraeumen}
 

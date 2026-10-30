@@ -52,8 +52,9 @@ def test_szene_a1_glaeser_in_den_erreichbaren_plaetzen(f):
     pl = a1.A1Planer(w, A.cfg, A.chain, sz, f)
     from ausraeumen.plan import Lagezustand
     assert pl.treffer(pl.ruhepose(), Lagezustand(list(w.glas_start))) == []
-    # Greifkraft: Ziel 10 N hinter der Beruehrung
-    assert (pl.q_kontakt - pl.q_zu) * float(pl.a["greifer"]["finger_ke"]) == pytest.approx(10.0)
+    # Greifkraft: Ziel sim_n (7 N) hinter der Beruehrung
+    assert (pl.q_kontakt - pl.q_zu) * float(pl.a["greifer"]["finger_ke"]) == pytest.approx(f.p["greifkraft"]["sim_n"])
+    assert f.p["greifkraft"]["sim_n"] == pytest.approx(7.0)
 
 
 def test_szene_a1_teller_hochkant_in_haltern(f):
