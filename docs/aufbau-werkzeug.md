@@ -58,7 +58,8 @@ achse:
   hub_m: 1.0
   schiene: standard           # standard = Schiene aus config/robot.yaml; platte = nur Schlittenplatte 0,25 × 0,25 m
   podest: false               # true: Podest unter der Schiene wie spuelmaschine.erreichbarkeit
-greifer: {}                   # Überschreibungen von config/robot.yaml → greifer (z. B. koerper_breite_m)
+greifer: {}                   # Überschreibungen von config/robot.yaml → greifer (z. B. koerper_breite_m, finger_laenge_m)
+                              # griff_ab_spitze_m: 0.03 → TCP = koerper_laenge + finger_laenge − 0,03 (TCP folgt der Fingerlänge)
 masse: {}                     # Überschreibungen von config/spuelmaschine.yaml (Glashalter, Ablagepunkte, Tür …)
 szene: {}                     # Überschreibungen von config/scene_spuelmaschine.yaml (Rand, Greifparameter …)
 hindernisse:                  # zusätzliche Körper; "podest" = Halterung des Roboters
@@ -67,7 +68,7 @@ hindernisse:                  # zusätzliche Körper; "podest" = Halterung des R
 erlaubt: ["base_link|podest"] # Berührungen, die keine Kollision sind (Link|Körper)
 ik: {zufallsstarts_bei_fehlschlag: 12}
 ziele:
-  slots:  {oberkorb_auszug_m: 0.45, gier_grad: [0, 180]}
+  slots:  {oberkorb_auszug_m: 0.45, gier_grad: [0, 180], kipp_grad: [0]}  # kipp: Griffrichtung, s. u.
   teller: {korb: unterkorb, auszug_m: 0.45, x_m: […], tiefe_m: […], rand_ueber_boden_m: 0.26,
            greif_unter_rand_m: 0.01, vorposition_m: 0.10, aushub_m: 0.30, gier_grad: [90, 0],
            glashalter: true, last_kg: 0.35}
@@ -88,6 +89,13 @@ bisherigen Machbarkeitsprüfungen:
   Gelenksprung ≤ 10° je Wegpunkt, Selbstkollision und 5 mm Rand zur Szene.
   Das gegriffene Glas wird für die Finger **ausgeblendet**, nie aus der Szene
   entfernt.
+- **Griffrichtung (`slots.kipp_grad`):** Liste von Kippwinkeln aus der
+  Senkrechten; positiv neigt das Handgelenk zum Roboterfuß, negativ von ihm
+  weg (Drehachse waagerecht, quer zur Richtung Glas → Fuß). Bis 60° fährt der
+  gekippte Greifer senkrecht an, ab 60° (seitlich, 90° = waagerecht) entlang
+  seiner Achse; der Aushub bleibt senkrecht. Der Reichweiten-Vorfilter rechnet
+  mit der gekippten Werkzeugachse. Je erreichtem Slot steht das Haltemoment
+  (Eigengewicht + Glas, max. über den Aushub) in `eigen`.
 - **teller:** Rand von oben greifen, Vorposition und Aushub senkrecht.
 - **zug:** Korbfront greifen (waagerecht in die Maschine oder von oben),
   Anfahrt, dann den Korb ausziehen (`aus`) bzw. vom ausgezogenen Korb aus

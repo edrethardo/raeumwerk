@@ -1,0 +1,65 @@
+# Greifergeometrie: Z-Achse frontal, nur Oberkorb, igus-Greifer mit 100-mm-Fingern.
+# Lange Finger heben den 150 mm breiten Greiferkoerper ueber Korbrand und
+# Nachbarglaeser; der Griffpunkt bleibt 30 mm hinter der Fingerspitze.
+#   raeumwerk aufbau beispiele/z-achse-oberkorb-finger100.yaml
+name: Z-Achse frontal, nur Oberkorb, Finger 100 mm
+beschreibung: >-
+  Wie z-achse-frontal (ReBeL auf vertikaler Achse, Fuss (0,30; 0,60), Saeule
+  hinter dem Fuss, Ablagetisch rechts in 0,86 m Hoehe), aber nur Oberkorb-Ziele
+  (Glaeser, Teller im Oberkorb, Oberkorbzug, Ablage) und Finger 100 statt 60 mm.
+roboter:
+  ursprung_xyz_m: [0.30, 0.60, 0.0]
+  gier_grad: -90
+achse:
+  richtung: z
+  hub_m: 1.0
+  schiene: platte
+greifer:
+  finger_laenge_m: 0.10
+  finger_masse_kg: 0.083        # 0,05 kg je 60 mm, linear (Annahme)
+  griff_ab_spitze_m: 0.03       # TCP = 0,05 + 0,10 - 0,03 = 0,12 m ab Flansch
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+hindernisse:
+  - {name: podest, gruppe: saeule, lo: [0.20, 0.76, 0.0], hi: [0.40, 0.86, 1.60]}
+  - {name: tisch, gruppe: tisch, lo: [0.54, 0.46, 0.83], hi: [0.82, 0.74, 0.86]}
+  - {name: tisch_1, glas_mitte: [0.62, 0.54, 0.915]}
+  - {name: tisch_2, glas_mitte: [0.62, 0.66, 0.915]}
+  - {name: tisch_3, glas_mitte: [0.74, 0.54, 0.915]}
+  - {name: tisch_4, glas_mitte: [0.74, 0.66, 0.915]}
+erlaubt: ["base_link|podest"]
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180]}
+  teller:
+    korb: oberkorb
+    auszug_m: 0.45
+    praefix: oteller
+    x_m: [0.15, 0.45]
+    tiefe_m: [0.07, 0.13, 0.19, 0.25]
+    rand_ueber_boden_m: 0.19
+    greif_unter_rand_m: 0.02
+    vorposition_m: 0.10
+    aushub_m: 0.15
+    gier_grad: [90, 0]
+    glashalter: false
+    last_kg: 0.35
+  zug:
+    koerbe: [oberkorb]
+    x_m: [0.50, 0.10]
+    griffe: [waagerecht]
+    richtungen: [aus, ein]
+    anfahrt_m: 0.08
+  ablage:
+    platte: true
+    glaeser: [tisch_1, tisch_2, tisch_3, tisch_4]
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]
+# Gerechnet mit dem Werkzeug: Glasplaetze 12/16 (Finger 60 mm: 6/16), Teller 8/8,
+# Oberkorbzug ja, Ablage Tisch 4/4, Platte 0/4.
+vergleich:
+  slots: 12
+  teller: 8
+  zug_oberkorb: true
+  ablage_platte: 0
+  ablage_extra: 4

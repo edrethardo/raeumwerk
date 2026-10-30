@@ -489,8 +489,9 @@ def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier:
                 kipp: Sequence[float] = (0.0,)) -> Dict[str, Any]:
     """Wie ``Pruefer.pruefe_ziel``, nur alle Startposen eines Gierwinkels als Batch.
     ``einsetzen``: Slot zusaetzlich in Gegenrichtung (Glas getragen hinab in den Platz).
-    ``kipp``: Griffrichtungen (Grad aus der Senkrechten, Handgelenk zum Roboter, siehe
-    ``r_kipp``); gekippt faehrt der Greifer entlang seiner Achse an, der Aushub bleibt senkrecht."""
+    ``kipp``: Griffrichtungen (Grad aus der Senkrechten, positiv = Handgelenk zum Roboter,
+    negativ = vom Roboter weg, siehe ``r_kipp``); schraeg (< 60 Grad) faehrt der gekippte Greifer
+    senkrecht an, seitlich entlang seiner Achse; der Aushub bleibt senkrecht."""
     g = p.sc["greifen"]
     rng = np.random.default_rng(seed)
     tcp_z = float(g["tcp_ueber_glasrand_m"])
@@ -506,14 +507,17 @@ def pruefe_glas(p: APruefer, name: str, glas: geometrie.Koerper, art: str, gier:
     weit_alle = []
     for kw in [float(v) for v in kipp]:
         wz = r_kipp(np.eye(3), kw, zum_roboter)[:, 2] * -1.0  # Werkzeugachse (senkrecht: -z)
+        # schraeg: gekippter Greifer faehrt senkrecht an (Finger und Glas gleiten senkrecht
+        # in den Halter); seitlich (|kipp| >= 60 Grad): Anfahrt entlang der Werkzeugachse
+        anfahrt = wz if abs(kw) >= 60.0 else np.array([0.0, 0.0, -1.0])
         p_greif = p_greif0
         if art == "slot":
-            p_vor = p_greif - wz * float(g["vorposition_m"])
+            p_vor = p_greif - anfahrt * float(g["vorposition_m"])
             p_aus = p_greif + [0, 0, float(g["aushub_m"])]
             ab, auf = linie(p_vor, p_greif), linie(p_greif, p_aus)[1:]
         else:
             p_greif = p_greif + [0, 0, float(g["absetzen_luft_m"])]
-            p_vor = p_greif - wz * float(g["ablage_vorposition_m"])
+            p_vor = p_greif - anfahrt * float(g["ablage_vorposition_m"])
             ab, auf = linie(p_vor, p_greif), []
         weit = max(p.zu_weit(pt, wz) for pt in ab + auf)
         if weit > 0:
