@@ -119,7 +119,7 @@ Je Lauf: Lageabweichung im Korb (Glas ±5 mm / ±3°, Korb 0…−1 cm; Teller x
 Gier ±1°, mehr lassen die Stäbe nicht zu) und Rauschseed. Reproduzieren: Liste mit Zeilen
 `<name> --art glas|teller --seed S --wahrnehmung [--voll] --device cuda` an
 `scripts/griff_serie.sh AUSGABE LISTE`, dann `scripts/griff_auswertung.py AUSGABE` (eine Tabelle je
-Reihe). Laufzeit auf einer Laptop-GPU (12 GB): Kurzlauf ~65 s, Vollablauf Teller ~3 min, Glas ~5 min.
+Reihe). Laufzeit auf einer Mobil-GPU (12 GB): Kurzlauf ~65 s, Vollablauf Teller ~3 min, Glas ~5 min.
 
 **Kurzlauf** — Erfolg: Aushub ≥ 80 mm, Wanderung in der Hand ≤ 20 mm, Kippung in der Hand < 10°,
 Nachbarn ≤ 5 mm, Finger ≤ 3 mm, kein Kontakt Arm ↔ Korb.
