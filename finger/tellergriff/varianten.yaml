@@ -1,0 +1,57 @@
+# Tellergriff-Varianten fuer die 100-mm-Finger (docs/tellergriff.md).
+#
+# Ausgangslage (docs/finger.md, Abschnitt 3): der 18 mm breite Randgriff (Wulst in der Kerbe,
+# Lippen unter dem Wulst) haelt den Teller nicht gegen Drehen in seiner Ebene; der Teller pendelt
+# um den einen Griffpunkt (2 -> 22 Grad) und faellt beim Beginn der Querfahrt.
+#
+# Jede Variante aendert nur Parameter des bestehenden Fingers (config/finger.yaml) und legt
+# Zinken (Kopien der Fingerkontur) quer zur Schliessrichtung nebeneinander:
+#   finger:      Ueberschreibungen fuer finger.parameter.Finger.laden (abschnitt__schluessel)
+#   zinken_x_mm: Lage der Zinken quer (x im Fingersystem = Tangente am Tellerrand)
+#   joch:        Steg zwischen den Zinken (z von/bis im Fingersystem, mm)
+#   greifkraft_n: Sollkraft je Finger beim Kontakt an der Fahne (Kraft ueber die Fingersteifigkeit)
+#   tempo:       Faktor auf die Bahngeschwindigkeit/-beschleunigung (1 = Planwerte)
+# Jeder Wert hat `src` oder ist `annahme`.
+
+quellen:
+  finger: config/finger.yaml (Fingerkontur, Kerbe, Lippe, Teller-Randmasse)
+  befund: docs/finger.md, Abschnitt 3 (Pendeln um den Griffpunkt, Teller faellt)
+  teilung: Tellerreihe im Oberkorb, Teilung 6 cm (Szene oberkorb-voll)
+
+varianten:
+  basis:
+    beschreibung: {wert: "18-mm-Randgriff wie bisher (Referenz)", src: befund}
+    finger: {wert: {}, src: finger}
+    zinken_x_mm: {wert: [0.0], src: finger}
+    joch: {wert: null, src: annahme}
+    greifkraft_n: {wert: 10.0, src: finger}
+    tempo: {wert: 1.0, src: annahme}
+  gabel:
+    # (a) Zwei Auflagepunkte am Rand: zwei 10-mm-Zinken im Abstand 50 mm, jede mit Kerbe und
+    # Lippe; die aeusseren Zinken sind um den Bogenstich des Tellerrands laenger, damit beide
+    # Lippen unter dem Wulst liegen. Steg (Joch) bleibt ueber dem Rand.
+    beschreibung: {wert: "Gabel: zwei Zinken mit Kerbe/Lippe, Abstand 50 mm", src: annahme}
+    finger: {wert: {geometrie__breite_mm: 10.0, auflage__breite_mm: 3.0}, src: annahme}
+    zinken_x_mm: {wert: [-25.0, 25.0], src: annahme}
+    joch: {wert: {z_von_mm: 8.0, z_bis_mm: 70.0}, src: annahme}
+    greifkraft_n: {wert: 10.0, src: finger}
+    tempo: {wert: 1.0, src: annahme}
+  breit:
+    # (b) Breite Backe ueber den Rand (60 mm statt 18 mm), flache V-Kontur (2 Grad): der gerade
+    # Lippenrand liegt seitlich auf dem gekruemmten Wulst auf (Bogenstich 4,9 mm bei +-30 mm),
+    # in der Mitte haelt die Kerbe den Wulst.
+    beschreibung: {wert: "Breite Backe 60 mm, flache Kontur", src: annahme}
+    finger: {wert: {geometrie__breite_mm: 60.0, v_kontur__winkel_grad: 2.0, auflage__breite_mm: 25.0}, src: annahme}
+    zinken_x_mm: {wert: [0.0], src: annahme}
+    joch: {wert: null, src: annahme}
+    greifkraft_n: {wert: 10.0, src: finger}
+    tempo: {wert: 1.0, src: annahme}
+  kraft:
+    # (d) Gleicher 18-mm-Finger, doppelte Kraft und halbe Bahngeschwindigkeit: prueft, ob das
+    # Pendeln nur eine Frage von Reibung und Beschleunigung ist
+    beschreibung: {wert: "18-mm-Randgriff, 20 N, halbe Geschwindigkeit", src: annahme}
+    finger: {wert: {}, src: finger}
+    zinken_x_mm: {wert: [0.0], src: finger}
+    joch: {wert: null, src: annahme}
+    greifkraft_n: {wert: 20.0, src: annahme}
+    tempo: {wert: 0.5, src: annahme}
