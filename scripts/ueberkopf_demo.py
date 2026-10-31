@@ -83,7 +83,20 @@ def szenario_und_aufbau(objekt, variante=GL.TELLER_VARIANTE, ziel=None, D=None):
         sz["greifer"]["finger_breite_m"] = max(float(sz["greifer"]["finger_breite_m"]), var.breite_m())
         t["greifkraft_n"] = var.greifkraft_n
     t["zuordnung"] = [[ziel or 1, int(D["staender"]["platz_ut" if objekt == "teller_ut" else "platz_ot"])]]
-    return D, var, f, sz, a1.aufbau(sz, f)
+    A = a1.aufbau(sz, f)
+    achse_reserve(A, float(D.get("achse_reserve_m", 0.0)))
+    return D, var, f, sz, A
+
+
+def achse_reserve(A, m):
+    """Planung haelt die Hubachse ``m`` unter dem oberen Anschlag (Newton behaelt den vollen Hub): am
+    Anschlag ruckte der Schlitten im Newton-Lauf, und der Teller fiel am Ende des Aushubs aus der Hand."""
+    if m <= 0:
+        return
+    j7 = A.chain.by_name["axis7"]
+    j7.upper = float(j7.upper) - m
+    i7 = A.chain.index["axis7"]
+    A.chain.upper[i7] = j7.upper
 
 
 def abweichung(objekt, seed, D):

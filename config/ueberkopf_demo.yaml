@@ -11,6 +11,10 @@ wagen_oberkante_m: 0.55
 # gleiche Pose am Anfang und Ende jedes Laufs (die Hubachse faehrt in der Anfahrt auf Korbhoehe)
 park_tcp_m: [0.45, 0.42, 0.80]
 
+# Planung: Hubachse 5 cm unter dem oberen Anschlag halten (Newton: voller Hub 1,2 m). Ohne Reserve
+# stand der Schlitten am Ende des Teller-Aushubs am Anschlag, und der Teller fiel aus der Hand (2/2).
+achse_reserve_m: 0.05
+
 glaeser:
   # Umgreifen ueber eine Matte auf dem Wagen (kopfueber), dann aufrecht auf den Wagen.
   # Plaetze wagen_2 / wagen_1 im Aufbau-YAML (raeumwerk aufbau: erreichbar). Das fertige Glas steht

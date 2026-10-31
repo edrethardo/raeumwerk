@@ -136,6 +136,18 @@ def test_teller_ot_ohne_das_schon_abgeraeumte_glas(welten):
     assert welten["teller_ut"][1]["teller"]["zuordnung"] == [[1, 1]]
 
 
+def test_achse_reserve_nur_in_der_planung(welten):
+    """Die Planung haelt die Hubachse unter dem Anschlag, Newton bekommt den vollen Hub (URDF)."""
+    import xml.etree.ElementTree as ET
+    from finger import a1
+    w, sz, A = welten["glas"]
+    j7 = A.chain.by_name["axis7"]
+    assert j7.upper == pytest.approx(1.2 - UD.demo_werte()["achse_reserve_m"])
+    assert A.chain.upper[A.chain.index["axis7"]] == pytest.approx(j7.upper)
+    lim = [j.find("limit") for j in ET.fromstring(a1.urdf_sim(A)).findall("joint") if j.get("name") == "axis7"][0]
+    assert float(lim.get("upper")) == pytest.approx(1.2)
+
+
 class _Plan:
     def __init__(self, q):
         self.q, self.dauer = q, 1.0
