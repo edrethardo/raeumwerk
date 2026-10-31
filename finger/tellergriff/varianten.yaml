@@ -46,6 +46,16 @@ varianten:
     joch: {wert: null, src: annahme}
     greifkraft_n: {wert: 10.0, src: finger}
     tempo: {wert: 1.0, src: annahme}
+  breit_6n:
+    # (b') wie breit, Sollkraft 6 N: die Backe liegt am 5-mm-Wulst statt an der 3-mm-Fahne an, die
+    # Kraft ueber die Fingersteifigkeit steigt dort auf 6 * 2,5 / 1,5 = 10 N (breit mit 10 N: ~17 N,
+    # Fingerdurchdringung 3,1 mm ueber der Grenze 3 mm)
+    beschreibung: {wert: "Breite Backe 60 mm, Sollkraft 6 N (~10 N am Wulst)", src: annahme}
+    finger: {wert: {geometrie__breite_mm: 60.0, v_kontur__winkel_grad: 2.0, auflage__breite_mm: 25.0}, src: annahme}
+    zinken_x_mm: {wert: [0.0], src: annahme}
+    joch: {wert: null, src: annahme}
+    greifkraft_n: {wert: 6.0, src: annahme}
+    tempo: {wert: 1.0, src: annahme}
   kraft:
     # (d) Gleicher 18-mm-Finger, doppelte Kraft und halbe Bahngeschwindigkeit: prueft, ob das
     # Pendeln nur eine Frage von Reibung und Beschleunigung ist
