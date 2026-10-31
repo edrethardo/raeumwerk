@@ -7,14 +7,14 @@
 name: Ueber Kopf an der Z-Achse frontal
 beschreibung: >-
   ReBeL kopfueber an einer senkrechten Hubachse (Hub 1,2 m, Fuss-Oberseite 0,55-1,75 m), Fussmitte
-  (0,30; 0,45), Maschinenmitte. Hubprofil 0,08 x 0,08 m faehrt mit, 0,15 m raumseitig hinter dem
-  Fuss. Glasplaetze im ausgezogenen Oberkorb, 8 Oberkorb-Teller, 20 Unterkorb-Teller, Korbzug
-  beider Koerbe, Ablage auf der Arbeitsplatte rechts.
+  (0,30; 0,60), Maschinenmitte, 30 Grad zur Maschine geneigt. Hubprofil 0,08 x 0,08 m faehrt mit,
+  0,15 m raumseitig hinter dem Fuss. Glasplaetze im ausgezogenen Oberkorb, 8 Oberkorb-Teller,
+  20 Unterkorb-Teller, Korbzug beider Koerbe, Ablage auf der Arbeitsplatte rechts.
 roboter:
-  ursprung_xyz_m: [0.30, 0.45, 0.55]  # Fuss-Oberseite bei Hub 0 (tiefste Stellung)
-  gier_grad: 0
+  ursprung_xyz_m: [0.30, 0.60, 0.55]  # Fuss-Oberseite bei Hub 0 (tiefste Stellung)
+  gier_grad: 180                      # mit Neigung 30: der haengende Arm neigt sich zur Maschine
   montage: haengend                   # Roboter-z zeigt nach unten, Achse bleibt senkrecht
-  neigung_grad: 0
+  neigung_grad: 30
 achse:
   richtung: z
   hub_m: 1.2
@@ -66,3 +66,16 @@ ziele:
     gier_grad: [0, 90, 180, 270]
 momente:
   zugkraft_n: [20, 30]
+# Gerechnet mit dem Werkzeug (Abstandsraster 0,20-1,00 m, Neigung 0/30 Grad): diese Lage erreicht
+# Glasplaetze 12/16 (alle ausser 4, 8, 12, 16: hinterste Reihe, Arm stoesst an Platte/Bottichdecke),
+# Oberkorb-Teller 8/8, Unterkorb-Teller 15/20 (hinterste Reihe nicht), Korbzug Ober- und Unterkorb
+# je 4/4 Wege, Ablage auf der Platte 0/4. J2 mit Eigengewicht bis 11,2 Nm (Glas/Teller), beim
+# Korbzug 20 N 15,5 Nm (ueber dem igus-Maximum 12,5 Nm). Fuss-Oberseite genutzt 0,82-1,69 m.
+# Gleiche Abdeckung von 0,20 bis 0,65 m; der Roboter zieht die Koerbe erst ab 0,45 m (Oberkorb) bzw.
+# 0,50 m (Unterkorb). Ohne Korbzug ist 0,45 m mit 30 Grad die Lage mit dem kleinsten J2 (7,2 Nm).
+vergleich:
+  slots: 12
+  teller_ot: 8
+  teller_ut: 15
+  zug_oberkorb: true
+  zug_unterkorb: true

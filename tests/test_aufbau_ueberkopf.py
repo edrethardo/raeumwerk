@@ -16,6 +16,7 @@ BEISPIEL = REPO / "beispiele" / "ueberkopf-z-achse-frontal.yaml"
 
 def _aufbau(**rob):
     d = AU.lade_yaml(BEISPIEL)
+    d["roboter"].update({"ursprung_xyz_m": [0.30, 0.45, 0.55], "gier_grad": 0, "neigung_grad": 0})
     d["roboter"].update(rob)
     return AU.Aufbau(d)
 
@@ -138,3 +139,19 @@ def test_haengend_teller_unterkorb_erreichbar():
     assert r["ok"], r["grund"]
     assert r["teil"] == "ut" and 0.0 <= r["achse7"][0] <= r["achse7"][1] <= 1.2
     assert 0.55 + r["achse7"][0] > r["xyz"][2] + 0.3  # der Fuss haengt ueber dem Teller
+
+
+def test_beispiel_ueberkopf_regression():
+    """Voller Lauf des Beispiels (Abstand 0,60 m, 30 Grad zur Maschine): Glasplaetze, Teller beider
+    Koerbe und Korbzug muessen die dokumentierten Werte liefern (Grundlage der Owner-Pruefung)."""
+    d = AU.lade_yaml(BEISPIEL)
+    e = AU.lauf(d, jobs=6, cache=None, gruppen=["slots", "teller", "zug"], log=lambda *_: None)
+    ab = e["abdeckung"]
+    assert (ab["slots"]["ok"], ab["slots"]["n"]) == (12, 16)
+    erreicht = {int(r["ziel"].split("_")[1]) for r in e["gruppen"]["slots"] if r["ok"]}
+    assert erreicht == {1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15}
+    assert ab["teller_ot"] == {"ok": 8, "n": 8} and ab["teller_ut"] == {"ok": 15, "n": 20}
+    assert all(not r["ok"] for r in e["gruppen"]["teller"] if r["ziel"].endswith("_0.04"))  # hinterste Reihe
+    assert ab["zug_oberkorb"]["wege_ok"] == "4/4" and ab["zug_unterkorb"]["wege_ok"] == "4/4"
+    j2 = max(r["momente"]["20N"]["gesamt"]["joint2"] for r in e["gruppen"]["zug"] if r["ok"])
+    assert 14.0 < j2 < 17.0  # Korbzug 20 N: J2 ueber dem igus-Maximum 12,5 Nm

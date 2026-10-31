@@ -40,6 +40,35 @@ Die Bilder zeigen die Kollisionsquader (Prüfbilder), keine Renderings.
 | `stationaer.yaml` | fest ohne Achse, Fuß 0,35 m | Konzept-Spec §13, Variante B |
 | `heute.yaml` | Schiene senkrecht zur Front, Podest 0,65 m | Konzept-Spec §13, Spalte heute |
 | `auf-maschine-ohne-ueberstand.yaml` | ohne Achse auf der Arbeitsplatte, Fuß 10 cm hinter der Kante, Halterplatte 0,20 × 0,20 m endet an der Kante; Oberkorb ausgezogen, 100-mm-Finger | Gläser 8/16, Teller 8/8 |
+| `ueberkopf-z-achse-frontal.yaml` | Studie: ReBeL kopfüber an einer senkrechten Hubachse vor der offenen Maschine (Portal), mitfahrendes Hubprofil; Ober- und Unterkorb, Korbzug beider Körbe | siehe Kommentar in der Datei |
+
+### Kopfüber an der senkrechten Achse
+
+Bei `achse.richtung: z` bleibt die Achse senkrecht in der Welt; `kipp_grad`,
+`neigung_grad` und `montage: haengend` drehen nur den Roboter auf dem Schlitten
+(feste Drehung zwischen Schlitten und Fuß). Kopfüber hängt der Fuß unter der
+Schlittenplatte, die Achse fährt mit wachsendem Wert nach oben; `ursprung_xyz_m`
+ist die Fuß-Oberseite in der tiefsten Stellung. Gier 180° mit Neigung 30° neigt
+den hängenden Arm zur Maschine (−y), Gier 0° mit Neigung 30° zum Raum.
+
+```yaml
+achse:
+  richtung: z
+  hub_m: 1.2
+  schiene: platte
+  saeule: {versatz_m: [0.0, 0.15], querschnitt_m: [0.08, 0.08]}  # laenge_m: Standard Hub + 0,15 m
+```
+
+`achse.saeule` (nur bei `richtung: z`) ist eine Hubachse mit **bewegtem
+Profil**: das Profil steht als Kollisionsquader auf der Schlittenplatte und
+fährt mit dem Roboter, versetzt um `versatz_m` (Welt x, y ab Fußmitte,
+unabhängig von der Gier). Unter dem Roboter steht dann nichts; der Platzhalter
+der festen Schiene liegt über dem Profil (Führung am Portal). Eine feste
+Säule bis zum Boden beschreibt man weiter als Hindernis `podest`.
+
+Mehrere Tellergruppen (z. B. Oberkorb und Unterkorb) stehen als Liste unter
+`ziele.teller`, jede mit eigenem `praefix`; die Abdeckung zählt sie getrennt
+(`teller_<praefix>`).
 
 Steht der Roboter ohne Achse auf der Arbeitsplatte, nennt der Bericht, wie weit Fuß
 (Quader `fuss_breite_m`) und Halterplatte über die Arbeitsplatten-Vorderkante ragen
@@ -57,7 +86,7 @@ roboter:
   gier_grad: 0                # Drehung um z
   kipp_grad: 0                # Drehung um y (Roboter-x neigt nach unten)
   neigung_grad: 0             # Drehung um x (Roboter-z neigt zum Raum, +y)
-  montage: stehend            # oder haengend (= kipp + 180°)
+  montage: stehend            # oder haengend (= kipp + 180°); bei achse z dreht das nur den Roboter, nicht die Achse
 achse:
   richtung: x                 # x (liegende 7. Achse), y, z (vertikal) oder keine
   hub_m: 1.0

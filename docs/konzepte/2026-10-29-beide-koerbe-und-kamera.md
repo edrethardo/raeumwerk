@@ -981,3 +981,120 @@ gehen als Artefakt an den Owner.
 - [K15] EN 50242, Maßgedeck (Dessertteller Ø 19 cm, Untertasse Ø 14 cm), Zusammenfassung: https://de.wikipedia.org/wiki/EN_50242
 - [K16] Bosch, Gebrauchsanleitung Geschirrspüler (Oberkorb Stufe 1/2/3: Teller max. Ø 22/24/27 cm): https://media3.bosch-home.com/Documents/9000611003_A.pdf ; BSH-Datenblatt DF480101 (maximale Tellergrößen Ober-/Unterkorb 27/25, 24,5/27,5 bzw. 22/31 cm): https://media3.bsh-group.com/Documents/specsheet/de-DE/DF480101.pdf
 - [K10], [K13], [K14], [Q17], [Q18] wie §13 bzw. `docs/hardware-auswahl.md`.
+
+## 15. Prüfung: ReBeL kopfüber an einer senkrechten Achse frontal vor der Maschine
+
+> Owner-Auftrag (31.10.2026): „Über Kopf. Das soll erst mal geprüft werden. Danach
+> entscheiden wir.“ Dieser Abschnitt ist eine **Prüfung, keine Festlegung**. Für die
+> Studie gilt die Vorgabe „nur Oberkorb“ nicht: Ober- und Unterkorb werden geprüft.
+
+### 15.1 Modell
+
+- Der ReBeL hängt kopfüber (Flansch nach unten) unter der Schlittenplatte einer
+  senkrechten Hubachse, Maschinenmitte (x = 0,30 m). Die Achse hängt an einem Portal
+  über der offenen Tür; das Hubprofil (0,08 × 0,08 m, 0,15 m raumseitig hinter dem Fuß)
+  fährt mit dem Roboter (`achse.saeule`), unter dem Roboter steht nichts.
+- **Abstand** = Fußmitte vor der Gerätefront (y = 0). Die offene Tür (0,60 m lang,
+  waagerecht auf 0,10–0,14 m Höhe) liegt unter dem Roboter und ist nicht im Weg;
+  die Türspitze liegt bei 0,60 m.
+- Raster: Abstand 0,20–1,00 m in 0,05-m-Schritten (17 Abstände), Neigung 0° und 30°
+  zur Maschine (Gier 180°), Hub 1,2 m (Fuß-Oberseite 0,55–1,75 m), 100-mm-Finger.
+  Ziele wie in den Beispielen: 16 Glasplätze (mit Einsetzen), 8 Oberkorb-Dessertteller
+  (Glashalter weggeklappt), 20 Unterkorb-Teller Ø 26 cm, Korbzug beider Körbe
+  waagerecht an der Korbfront (x = 0,15 und 0,45 m, aus/ein = 4 Wege je Korb), Ablage
+  auf der Arbeitsplatte rechts. Raster mit 4 Zufallsstarts je gescheitertem Ziel;
+  die Lagen 0,45 und 0,60 m (30°) mit den Standard-12 nachgerechnet: gleiche Zahlen.
+- Momente: J2 mit Eigengewicht (geschätzte Gliedermassen, Schwerkraft in Welt-z) beim
+  Halten von Glas bzw. Teller (0,25 bzw. 0,35 kg) und beim Korbzug (20 N, |Zug| +
+  |Schwerkraft|).
+
+### 15.2 Ergebnis über dem Abstand
+
+| Abstand m | Neigung | Fuß-Oberseite z m (genutzt, ohne Korbzug) | Gläser/16 | O-Teller/8 | U-Teller/20 | Zug O | Zug U | J2 max Nm (Halten / Zug 20 N) | J3 max Nm |
+|---|---|---|---|---|---|---|---|---|---|
+| 0,20 | 0° | 1,07–1,72 | 12 | 8 | 15 | 0/4 | 0/4 | 10,8 (10,8 / –) | 7,2 |
+| 0,20 | 30° | 1,14–1,67 | 12 | 8 | 15 | 0/4 | 0/4 | 12,0 (12,0 / –) | 6,3 |
+| 0,25 | 0° | 1,07–1,72 | 12 | 8 | 15 | 0/4 | 0/4 | 10,0 (10,0 / –) | 7,2 |
+| 0,25 | 30° | 1,08–1,68 | 12 | 8 | 15 | 0/4 | 0/4 | 11,7 (11,7 / –) | 7,1 |
+| 0,30 | 0° | 1,17–1,72 | 12 | 8 | 15 | 0/4 | 0/4 | 9,9 (9,9 / –) | 7,1 |
+| 0,30 | 30° | 1,09–1,69 | 12 | 8 | 15 | 0/4 | 0/4 | 10,7 (10,7 / –) | 7,1 |
+| 0,35 | 0° | 1,11–1,72 | 12 | 8 | 15 | 0/4 | 0/4 | 10,8 (10,8 / –) | 7,2 |
+| 0,35 | 30° | 1,04–1,69 | 12 | 8 | 15 | 0/4 | 0/4 | 9,7 (9,7 / –) | 7,0 |
+| 0,40 | 0° | 1,11–1,71 | 12 | 8 | 15 | 0/4 | 0/4 | 11,7 (11,7 / –) | 7,2 |
+| 0,40 | 30° | 1,00–1,69 | 12 | 8 | 16 | 0/4 | 0/4 | 8,6 (8,6 / –) | 6,6 |
+| 0,45 | 0° | 1,10–1,71 | 12 | 8 | 15 | 4/4 | 0/4 | 17,3 (12,7 / 17,3) | 8,5 |
+| **0,45** | **30°** | 1,10–1,70 | 12 | 8 | 15 | 0/4 | 0/4 | **7,2** (7,2 / –) | 6,6 |
+| 0,50 | 0° | 1,09–1,69 | 12 | 8 | 15 | 4/4 | 3/4 | 18,3 (13,7 / 18,3) | 9,1 |
+| 0,50 | 30° | 1,04–1,69 | 12 | 8 | 15 | 0/4 | 0/4 | 9,0 (9,0 / –) | 6,2 |
+| 0,55 | 0° | 1,06–1,70 | 12 | 8 | 15 | 3/4 | 3/4 | 19,0 (14,7 / 19,0) | 9,3 |
+| 0,55 | 30° | 1,09–1,69 | 12 | 8 | 15 | 4/4 | 0/4 | 15,6 (10,0 / 15,6) | 7,5 |
+| 0,60 | 0° | 1,00–1,61 | 12 | 8 | 15 | 3/4 | 3/4 | 19,3 (15,8 / 19,3) | 9,4 |
+| **0,60** | **30°** | 1,06–1,69 | 12 | 8 | 15 | **4/4** | **4/4** | 15,5 (11,2 / 15,5) | 7,5 |
+| 0,65 | 0° | 0,91–1,59 | 10 | 8 | 15 | 4/4 | 3/4 | 19,4 (16,8 / 19,4) | 9,4 |
+| 0,65 | 30° | 0,77–1,68 | 12 | 8 | 15 | 4/4 | 4/4 | 14,7 (12,9 / 14,7) | 7,5 |
+| 0,70 | 0° | 1,02–1,55 | 8 | 6 | 10 | 4/4 | 4/4 | 18,7 (16,1 / 18,7) | 9,2 |
+| 0,70 | 30° | 0,72–1,66 | 12 | 8 | 15 | 4/4 | 4/4 | 15,3 (14,2 / 15,3) | 7,9 |
+| 0,75 | 0° | 0,95–1,49 | 6 | 4 | 10 | 0/4 | 0/4 | 16,4 (16,4 / –) | 7,2 |
+| 0,75 | 30° | 0,74–1,63 | 10 | 8 | 15 | 4/4 | 4/4 | 16,9 (15,7 / 16,9) | 8,6 |
+| 0,80 | 0° | 0,93–1,46 | 4 | 2 | 8 | 0/4 | 0/4 | 16,8 (16,8 / –) | 7,2 |
+| 0,80 | 30° | 0,71–1,60 | 8 | 6 | 13 | 4/4 | 4/4 | 17,6 (16,5 / 17,6) | 8,8 |
+| 0,85 | 0° | 0,98–1,41 | 2 | 2 | 5 | 0/4 | 0/4 | 16,9 (16,9 / –) | 7,2 |
+| 0,85 | 30° | 0,79–1,57 | 6 | 6 | 10 | 0/4 | 4/4 | 17,6 (16,4 / 17,6) | 8,8 |
+| 0,90 | 0° | 0,94–1,35 | 0 | 0 | 3 | 0/4 | 0/4 | 16,3 (16,3 / –) | 6,8 |
+| 0,90 | 30° | 0,85–1,51 | 4 | 4 | 10 | 0/4 | 0/4 | 16,5 (16,5 / –) | 7,0 |
+| 0,95 | 0° | – | 0 | 0 | 0 | 0/4 | 0/4 | – | – |
+| 0,95 | 30° | 0,98–1,46 | 2 | 2 | 5 | 0/4 | 0/4 | 15,9 (15,9 / –) | 7,1 |
+| 1,00 | 0° | – | 0 | 0 | 0 | 0/4 | 0/4 | – | – |
+| 1,00 | 30° | 0,91–1,38 | 0 | 0 | 5 | 0/4 | 0/4 | 15,9 (15,9 / –) | 7,1 |
+
+Ablage auf der Arbeitsplatte rechts: nur bei 0,20–0,40 m (1–3 von 4), sonst 0/4.
+
+### 15.3 Befund
+
+- **Reichweite:** Von 0,20 bis 0,65 m (30° bis 0,70 m) erreicht der hängende Arm
+  dieselben Plätze: Gläser 12/16 (alle außer der hintersten Reihe 4, 8, 12, 16),
+  Oberkorb-Teller 8/8, Unterkorb-Teller 15/20 (hinterste Reihe nicht; bei 0,40 m,
+  30° einmal 16/20). Hinten stößt der Unterarm an Arbeitsplatte bzw. Bottichdecke,
+  wie bei den anderen Aufbauten. Ab 0,75 m fällt die Abdeckung, ab 0,90 m ist sie
+  fast null.
+- **Korbzug durch den Roboter:** erst ab 0,45 m (Oberkorb) bzw. 0,50 m (Unterkorb);
+  beide Körbe mit allen 4 Wegen bei 0,60–0,80 m mit 30° Neigung. Näher kommt die
+  Korbfront mit dem waagerechten Greifer beim Ausziehen zu dicht an den Fuß: der Weg
+  reißt ab (Unterkorb bei 0,20 m nach 28 von 54 Wegpunkten, bei 0,40 m nach 38).
+- **J2:** Beim Halten von Glas und Teller bleibt J2 bei 0,35–0,50 m mit 30° unter
+  dem Nennmoment (bester Wert 7,2 Nm bei 0,45 m). Wo der Roboter die Körbe zieht,
+  liegt J2 beim Zug mit 20 N bei 14,7–19,4 Nm, also **über dem igus-Maximum
+  12,5 Nm**; der Zug allein trägt davon 7–10 Nm. J3 bleibt überall unter 10 Nm.
+- **Hub:** genutzt wird eine Fuß-Oberseite von etwa 1,0 bis 1,7 m für Gläser und
+  Teller; für den Korbzug fährt der Fuß bei 0,60 m (30°) bis 0,82 m hinab. Ein Hub
+  von etwa 0,9–1,0 m reicht für beide Aufgaben.
+- **Beste Lagen nach der Owner-Regel** (beide Sorten > 0, dann schwächeres
+  Verhältnis, dann J2): Oberkorb, Unterkorb und gemeinsam jeweils **0,45 m mit 30°**
+  (Gläser 12/16 = 0,75, Teller 8/8 bzw. 15/20 = 0,75, J2 7,2 Nm), Körbe vom Menschen
+  ausgezogen. Soll der Roboter beide Körbe selbst ziehen: **0,60 m mit 30°**
+  (`beispiele/ueberkopf-z-achse-frontal.yaml`), gleiche Abdeckung, J2 beim Halten
+  11,2 Nm, beim Korbzug 15,5 Nm.
+
+### 15.4 Vergleich (zitierte Zahlen, nicht neu gerechnet)
+
+| Aufbau | Gläser | Oberkorb-Teller | Unterkorb-Teller | Korbzug |
+|---|---|---|---|---|
+| Kopfüber frontal, 0,45 m, 30° | 12/16 | 8/8 | 15/20 | Mensch |
+| Kopfüber frontal, 0,60 m, 30° | 12/16 | 8/8 | 15/20 | beide Körbe (J2 über Max.) |
+| Auf der Spülmaschine ohne Überstand (§14, Owner-Aufbau) | 8/16 | 8/8 | – | Mensch |
+| Z-Achse frontal, aufrecht (§13, Variante A, 60-mm-Finger) | 6/16 | – | 15/20 | beide Körbe |
+
+### 15.5 Grenzen und offene Punkte
+
+- Nur Kinematik mit Kollisionsquadern; keine Physik, kein Weg zwischen den Zielen,
+  Gliedermassen geschätzt (gleicher Vorbehalt wie §13/§14).
+- Ob igus den ReBeL kopfüber und die ZLW-Achse senkrecht (Haltebremse, Lasten)
+  freigibt, ist nicht belegt; RBTX schreibt zur 7. Achse „Überkopf oder Horizontal“
+  (abgerufen 31.10.2026), Datenblattwerte gelten waagerecht [K13]. Die Achse mit
+  bewegtem Profil ist eine Annahme; eine feste Säule bis zum Boden stünde bei kleinen
+  Abständen im ausgezogenen Korb bzw. auf der Tür.
+- Portal bzw. Wandhalter über der Tür und Kamera (§3) sind nicht gerechnet;
+  die Ablage auf der Arbeitsplatte ist von vorn kaum erreichbar (Tisch o. Ä. nötig).
+- Kosten: ein Preis für eine senkrechte igus-Achse mit iRC-Anbindung ist weiter nicht
+  gefunden; das ZLW-Bundle (ReBeL + Achse 1000 mm) kostet 10.499,07 € [Q17], der
+  Achsanteil rund 5.529 € gegen ReBeL allein 4.970 € [Q17][Q18] (§13.6).
