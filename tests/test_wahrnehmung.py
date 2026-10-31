@@ -144,6 +144,34 @@ def test_kalibrierfehler_null_aendert_nichts_und_sigma_verschiebt():
     assert 1e-4 < float(np.median(np.linalg.norm(auf.P[ok] - P0[ok], axis=1))) < 0.01
 
 
+# --- Griffpose (Ensenso -> D405 -> Pruefung) -----------------------------------------------------
+
+def _welt_glas():
+    from types import SimpleNamespace as NS
+
+    def k(name, gruppe, mitte, halb, rot=np.eye(3)):
+        return NS(name=name, gruppe=gruppe, mitte=np.asarray(mitte, float), halb=np.asarray(halb, float), rot=rot)
+    stat = [k("korbboden", "oberkorb", (0.3, 0.2, 0.495), (0.3, 0.3, 0.005))]
+    gl = [k("glas_1", "glas", (0.30, 0.20, 0.555), (0.0375, 0.0375, 0.055), KOPF),
+          k("glas_2", "glas", (0.385, 0.20, 0.555), (0.0375, 0.0375, 0.055), KOPF)]
+    return NS(statisch_ohne_teller=stat, glas_start=gl, teller=[], aufbau=NS(abw=NS(korbauszug_delta_m=0.0)))
+
+
+@pytest.mark.parametrize("negativ,soll,ok,grund", [
+    (None, (0.30, 0.20), True, None),
+    (None, (0.30, 0.23), False, "nicht_am_erwarteten_platz"),
+    ("versatz", (0.30, 0.20), False, None),
+])
+def test_griffpose_prueft_platz_und_widerspruch(negativ, soll, ok, grund):
+    from wahrnehmung import griffpose as WG
+    est = WG.schaetzen("glas", _welt_glas(), 0, seed=1, negativ=negativ, skala_ensenso=2.0, skala_d405=1.5, soll_m=soll)
+    assert est["ok"] is ok, est["gruende"]
+    if ok:
+        assert est["fehler_mm"] < 4.0
+    if grund:
+        assert grund in est["gruende"]
+
+
 def test_maskenversatz_verschiebt_ganze_maske():
     m = np.zeros((20, 20), bool)
     m[5:10, 5:10] = True

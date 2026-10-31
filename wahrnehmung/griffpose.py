@@ -79,8 +79,11 @@ def _glas(auf, maske, z_boden, c0, rng):
 
 
 def schaetzen(art: str, w, s: int, seed: int = 0, negativ: Optional[str] = None, fm: Optional[Fehlermodell] = None,
-              skala_ensenso: float = 2.0, skala_d405: float = 1.0, mit_aufnahmen: bool = False) -> Dict:
-    """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller')."""
+              skala_ensenso: float = 2.0, skala_d405: float = 1.0, mit_aufnahmen: bool = False,
+              soll_m=None, soll_tol_m: float = 0.015) -> Dict:
+    """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller').
+    ``soll_m``: Platz laut Belegungsplan (Korbpose aus der Ensenso); liegt die Schaetzung mehr als
+    ``soll_tol_m`` daneben, ist es nicht das geplante Objekt (z. B. Nachbar segmentiert) -> Abbruch."""
     rng = np.random.default_rng(10_000 + int(seed))
     fm = fm or Fehlermodell()
     prims = prims_aus_welt(w, art)
@@ -97,6 +100,8 @@ def schaetzen(art: str, w, s: int, seed: int = 0, negativ: Optional[str] = None,
     m_e = _maske(auf_e, ziel, rng, negativ, prims, gruppe, fm)
     kalibrierfehler(auf_e, rng, fm.kalib_ensenso_mm * 1e-3, fm.kalib_ensenso_grad)
     out["ensenso"] = {"statistik": auf_e.statistik(), "maske_px": int(m_e.sum())}
+    if mit_aufnahmen:
+        out["_aufnahmen"] = {"ensenso": (auf_e, m_e)}
     if art == "glas":
         h = float(ziel_k.halb[2]) * 2.0
         z_boden = float(wahr[2] - h / 2.0)          # aus dem Korbmodell (Halterhoehe)
@@ -145,7 +150,7 @@ def schaetzen(art: str, w, s: int, seed: int = 0, negativ: Optional[str] = None,
         d = S.teller_schaetzen(auf_d, m_d, np.asarray(e["normale"]), c_e, halbdicke=float(ziel_k.halb[2]), rng=rng)
     out["d405"].update({k: v for k, v in d.items() if k != "kandidaten"}, kandidaten=d.get("kandidaten"))
     if mit_aufnahmen:
-        out["_aufnahmen"] = {"ensenso": (auf_e, m_e), "d405": (auf_d, m_d)}
+        out["_aufnahmen"]["d405"] = (auf_d, m_d)
     if not d["ok"]:
         out["gruende"] += [f"d405:{g}" for g in d["gruende"]]
         out["ok"] = False
@@ -169,6 +174,11 @@ def schaetzen(art: str, w, s: int, seed: int = 0, negativ: Optional[str] = None,
     out["ensenso_d405_abstand_mm"] = 1e3 * abw
     if abw > tol:
         out["gruende"].append("ensenso_d405_widerspruch")
+    if soll_m is not None:
+        d_soll = float(np.linalg.norm(pose[:2] - np.asarray(soll_m, float)[:2]))
+        out["abstand_soll_mm"] = 1e3 * d_soll
+        if d_soll > soll_tol_m:
+            out["gruende"].append("nicht_am_erwarteten_platz")
     out["pose_m"] = pose.tolist()
     out["fehler_mm"] = float(1e3 * (np.linalg.norm(pose[:2] - wahr[:2]) if art == "glas" else np.linalg.norm(pose - wahr)))
     out["fehler_xyz_mm"] = (1e3 * (pose - wahr)).tolist()

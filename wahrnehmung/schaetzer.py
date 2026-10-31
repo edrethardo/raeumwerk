@@ -157,10 +157,12 @@ def glas_schaetzen(auf, maske: np.ndarray, z_boden: float, c0, modelle=GLAS_MODE
     kand = []
     for name, r_m, h_m in modelle:
         c, _, res, inl = zylinder_silhouette(O, D_rand, z_boden, z_boden + h_m, c0, r=r_m)
-        rms = float(np.sqrt(np.mean(np.minimum(np.abs(res), 0.01) ** 2)))
+        # Restfehler nur ueber die Randstrahlen, die das Glas streifen (Verdeckungskanten der Nachbarn
+        # sind keine Glaskontur); der Inlier-Anteil zaehlt getrennt
+        rms = float(np.sqrt(np.mean(res[inl] ** 2))) if inl.any() else 0.01
         di, _ = _achsabstand(O, D_in, c, z_boden, z_boden + h_m)
         innen = float(np.mean(di <= r_m + 0.0015)) if len(D_in) else 0.0
-        s = math.exp(-0.5 * (rms / sigma_fit) ** 2) * innen
+        s = math.exp(-0.5 * (rms / sigma_fit) ** 2) * innen * float(inl.mean())
         kand.append(dict(name=name, r=r_m, h=h_m, c=c.tolist(), rms_mm=1e3 * rms, innen=innen, passwert=s,
                          inlier=float(inl.mean())))
     kand.sort(key=lambda k: -k["passwert"])
