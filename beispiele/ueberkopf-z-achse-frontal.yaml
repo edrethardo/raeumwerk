@@ -1,0 +1,68 @@
+# Aufbau "ueber Kopf an der Z-Achse, frontal": ReBeL kopfueber (Flansch nach unten) am Schlitten
+# einer senkrechten Hubachse vor der offenen Maschine, Ober- UND Unterkorb (Studie, kein Kauf).
+# Die Achse haengt an einem Portal ueber der offenen Tuer; das Hubprofil faehrt mit dem Roboter
+# (achse.saeule), unter dem Roboter steht nichts. Abstand = Fussmitte vor der Geraetefront (y = 0);
+# die offene Tuer (0,60 m lang, auf 0,10-0,14 m Hoehe) liegt darunter und ist nicht im Weg.
+#   raeumwerk aufbau beispiele/ueberkopf-z-achse-frontal.yaml
+name: Ueber Kopf an der Z-Achse frontal
+beschreibung: >-
+  ReBeL kopfueber an einer senkrechten Hubachse (Hub 1,2 m, Fuss-Oberseite 0,55-1,75 m), Fussmitte
+  (0,30; 0,45), Maschinenmitte. Hubprofil 0,08 x 0,08 m faehrt mit, 0,15 m raumseitig hinter dem
+  Fuss. Glasplaetze im ausgezogenen Oberkorb, 8 Oberkorb-Teller, 20 Unterkorb-Teller, Korbzug
+  beider Koerbe, Ablage auf der Arbeitsplatte rechts.
+roboter:
+  ursprung_xyz_m: [0.30, 0.45, 0.55]  # Fuss-Oberseite bei Hub 0 (tiefste Stellung)
+  gier_grad: 0
+  montage: haengend                   # Roboter-z zeigt nach unten, Achse bleibt senkrecht
+  neigung_grad: 0
+achse:
+  richtung: z
+  hub_m: 1.2
+  schiene: platte
+  platte_m: [0.20, 0.20]
+  saeule: {versatz_m: [0.0, 0.15], querschnitt_m: [0.08, 0.08]}  # bewegtes Hubprofil, Welt x/y ab Fussmitte
+greifer:
+  finger_laenge_m: 0.10
+  finger_masse_kg: 0.0175
+  griff_ab_spitze_m: 0.03
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+hindernisse: []
+erlaubt: []
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180], einsetzen: true}
+  teller:
+    - korb: oberkorb               # 8 Dessertteller im Oberkorb (wie auf-maschine-ohne-ueberstand)
+      praefix: ot
+      auszug_m: 0.45
+      x_m: [0.15, 0.45]
+      tiefe_m: [0.07, 0.13, 0.19, 0.25]
+      rand_ueber_boden_m: 0.19
+      greif_unter_rand_m: 0.02
+      vorposition_m: 0.10
+      aushub_m: 0.15
+      gier_grad: [90, 0]
+      glashalter: false
+      last_kg: 0.35
+    - korb: unterkorb              # 20 Teller D 26 cm im Unterkorb (wie z-achse-frontal)
+      praefix: ut
+      auszug_m: 0.45
+      x_m: [0.10, 0.20, 0.30, 0.40, 0.50]
+      tiefe_m: [0.04, 0.16, 0.28, 0.40]
+      rand_ueber_boden_m: 0.26
+      greif_unter_rand_m: 0.01
+      vorposition_m: 0.10
+      aushub_m: 0.30
+      gier_grad: [90, 0]
+      last_kg: 0.35
+  zug:
+    koerbe: [unterkorb, oberkorb]
+    x_m: [0.15, 0.45]
+    griffe: [waagerecht]            # von oben: der Unterkorb liegt unter dem Oberkorb (Probe: 0/4 Wege)
+    richtungen: [aus, ein]
+    anfahrt_m: 0.08
+  ablage:
+    platte: true
+    gier_grad: [0, 90, 180, 270]
+momente:
+  zugkraft_n: [20, 30]

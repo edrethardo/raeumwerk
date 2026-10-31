@@ -130,7 +130,36 @@ def normalisiere(roh: Dict[str, Any]) -> Dict[str, Any]:
     for g in d["ziele"]:
         if g not in ("slots", "teller", "zug", "ablage"):
             raise ValueError(f"unbekannte Zielgruppe {g!r}")
+    if d["achse"].get("saeule") is not None and d["achse"]["richtung"] != "z":
+        raise ValueError("achse.saeule nur bei achse.richtung z")
+    if isinstance(d["ziele"].get("teller"), list):
+        teile = [t.get("praefix") for t in d["ziele"]["teller"]]
+        if None in teile or len(set(teile)) != len(teile):
+            raise ValueError("ziele.teller als Liste: jede Gruppe braucht ein eigenes praefix")
     return d
+
+
+def senkrechte_achse(d: Dict[str, Any]) -> bool:
+    """Vertikale Achse (``richtung: z``): die Achse bleibt senkrecht in der Welt; Kipp, Neigung
+    und ``montage: haengend`` drehen nur den Roboter auf dem Schlitten."""
+    return d["achse"]["richtung"] == "z"
+
+
+def montage_matrix(rob: Dict[str, Any]) -> np.ndarray:
+    return ry(float(rob["kipp_grad"])) @ rx(-float(rob["neigung_grad"]))
+
+
+def haengend(d: Dict[str, Any]) -> bool:
+    """Roboter kopfueber (Roboter-z zeigt nach unten)."""
+    return float(montage_matrix(d["roboter"])[2, 2]) < 0.0
+
+
+def teller_gruppen(z: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """``ziele.teller`` als Liste von Tellergruppen (eine Gruppe oder mehrere mit eigenem praefix)."""
+    t = z.get("teller")
+    if t is None:
+        return []
+    return list(t) if isinstance(t, list) else [t]
 
 
 PLATTE_STANDARD_M = (0.25, 0.25)  # Schlittenplatte bei achse.schiene: platte ohne achse.platte_m
@@ -181,8 +210,11 @@ class Aufbau:
                     - float(g["griff_ab_spitze_m"])
         self.chain = SchnellChain(self._urdf())
         rob = d["roboter"]
-        self.T = transform(rz(float(rob["gier_grad"])) @ ry(float(rob["kipp_grad"])) @ rx(-float(rob["neigung_grad"])),
-                           [float(v) for v in rob["ursprung_xyz_m"]])
+        if senkrechte_achse(d):  # Achse senkrecht, Kipp/Neigung sitzen zwischen Schlitten und Fuss
+            R = rz(float(rob["gier_grad"]))
+        else:
+            R = rz(float(rob["gier_grad"])) @ montage_matrix(rob)
+        self.T = transform(R, [float(v) for v in rob["ursprung_xyz_m"]])
         self.lage = _LageT(str(d.get("name", "aufbau")), tuple(float(v) for v in rob["ursprung_xyz_m"]),
                            float(rob["gier_grad"]), self.T)
         self.m0 = _tief_mischen(masse.load(), d["masse"])
@@ -209,7 +241,18 @@ class Aufbau:
                             box.set("size", "0.01 0.01 0.01"); org.set("xyz", "0 0 0.005")
                         else:
                             box.set("size", f"{px:g} {py:g} 0.02"); org.set("xyz", "0 0 0.01")
+        s = a.get("saeule")
+        if s is not None:
+            self._saeule_urdf(root, s)
         for j in root.findall("joint"):
+            if j.get("name") == "carriage_to_base" and senkrechte_achse(self.d):
+                rob = self.d["roboter"]
+                org = j.find("origin")
+                org.set("rpy", f"{-math.radians(float(rob['neigung_grad'])):.12g} "
+                               f"{math.radians(float(rob['kipp_grad'])):.12g} 0")
+                if haengend(self.d):  # Fuss haengt unter dem Schlitten, Platte liegt darueber
+                    org.set("xyz", "0 0 0")
+                continue
             if j.get("name") != "axis7":
                 continue
             lim = j.find("limit")
@@ -223,6 +266,36 @@ class Aufbau:
             if hub is not None:
                 lim.set("upper", str(float(hub)))
         return ET.tostring(root, encoding="unicode")
+
+    def _saeule_urdf(self, root, s: Dict[str, Any]) -> None:
+        """Hubachse mit bewegtem Profil (``achse.saeule``): das Profil faehrt mit dem Roboter und
+        steht als Quader auf der Schlittenplatte (Link ``carriage``), versetzt um ``versatz_m``
+        (Welt x, y ab Fussmitte), Querschnitt ``querschnitt_m``, Laenge ``laenge_m`` (Standard Hub
+        + 0,15 m). Der Platzhalter der festen Schiene (Link ``rail``) wandert ueber das Profil
+        (Fuehrungswagen am Portal), damit er nicht als Phantom im Arbeitsraum steht."""
+        import xml.etree.ElementTree as ET
+
+        rob = self.d["roboter"]
+        vx, vy = (float(v) for v in s.get("versatz_m", [0.0, 0.15]))
+        g = math.radians(float(rob["gier_grad"]))
+        lx, ly = math.cos(g) * vx + math.sin(g) * vy, -math.sin(g) * vx + math.cos(g) * vy
+        qx, qy = (float(v) for v in s.get("querschnitt_m", [0.08, 0.08]))
+        hub = float(self.d["achse"].get("hub_m") or 0.0)
+        L = float(s.get("laenge_m", hub + 0.15))
+        cz = 0.02 + L / 2.0
+        for ln in root.findall("link"):
+            if ln.get("name") == "carriage":
+                for tag in ("collision", "visual"):
+                    el = ET.SubElement(ln, tag)
+                    ET.SubElement(el, "origin", {"xyz": f"{lx:.6g} {ly:.6g} {cz:.6g}", "rpy": "0 0 0"})
+                    geo = ET.SubElement(el, "geometry")
+                    ET.SubElement(geo, "box", {"size": f"{qx:g} {qy:g} {L:g}"})
+            if ln.get("name") == "rail":
+                for tag in ("visual", "collision"):
+                    for el in ln.findall(tag):
+                        box, org = el.find("geometry/box"), el.find("origin")
+                        box.set("size", "0.01 0.01 0.01")
+                        org.set("xyz", f"{lx:.6g} {ly:.6g} {hub + 0.02 + L:.6g}")
 
     def masse_fuer(self, extra: Optional[Dict] = None) -> Dict:
         return _tief_mischen(self.m0, extra or {})
@@ -358,7 +431,10 @@ class APruefer(Pruefer):
         i = self._achsvektor
         basis = self.chain.fk(self.chain.zero(), "base_link")[:3, 3]
         if self.achse == "z":
-            a7 = pr[2] - 0.08  # Gelenk 2 etwas unter dem Ziel
+            if haengend(self.A.d):  # kopfueber: Gelenk 2 etwa 0,30 m ueber dem Ziel
+                a7 = pr[2] - float(self.j2_0[2]) + 0.30
+            else:
+                a7 = pr[2] - 0.08  # Gelenk 2 etwas unter dem Ziel
         else:
             a7 = pr[i] - basis[i]
         return [float(np.clip(a7 + d7, j7.lower, j7.upper)) for d7 in (0.0, -0.25, 0.25)]
@@ -369,8 +445,9 @@ class APruefer(Pruefer):
         for a7 in self.achswerte(pr):
             q = self.chain.zero()
             q[self.i7] = a7
-            base = self.chain.fk(q, "base_link")[:3, 3]
-            phi = math.atan2(pr[1] - base[1], pr[0] - base[0])
+            Tb = self.chain.fk(q, "base_link")
+            d = Tb[:3, :3].T @ (pr - Tb[:3, 3])  # Richtung zum Ziel im Fusssystem (kopfueber gespiegelt)
+            phi = math.atan2(d[1], d[0])
             for j2, j3, j5 in ((30.0, 90.0, 60.0), (0.0, 90.0, 90.0), (50.0, 60.0, 70.0),
                                (-30.0, -90.0, -60.0), (0.0, -90.0, -90.0), (-35.0, -50.0, -90.0)):
                 qq = q.copy()
@@ -764,8 +841,13 @@ def aufgaben(d: Dict[str, Any]) -> List[Dict[str, Any]]:
             for i in range(len(A.m0["ablage"]["punkte_xy_m"])):
                 out.append({"gruppe": "ablage", "ziel": f"seit_{i + 1}", "seit": i})
     if "teller" in z:
-        for name, pt in teller_ziele(A, z["teller"]):
-            out.append({"gruppe": "teller", "ziel": name, "xyz": _r(pt, 4)})
+        tg = teller_gruppen(z)
+        for ti, tc in enumerate(tg):
+            for name, pt in teller_ziele(A, tc):
+                a = {"gruppe": "teller", "ziel": name, "xyz": _r(pt, 4)}
+                if isinstance(z["teller"], list):
+                    a["teil"] = ti
+                out.append(a)
     if "zug" in z:
         cfg = z["zug"] or {}
         for korb in cfg.get("koerbe", ["unterkorb", "oberkorb"]):
@@ -848,7 +930,7 @@ def rechne_seitgriff(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def rechne_teller(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
-    cfg = A.d["ziele"]["teller"]
+    cfg = teller_gruppen(A.d["ziele"])[a.get("teil", 0)]
     korb = cfg.get("korb", "unterkorb")
     aus = float(cfg.get("auszug_m", 0.45))
     extra = None if cfg.get("glashalter", True) else {"glashalter": {"reihen_x_m": []}}
@@ -869,6 +951,8 @@ def rechne_teller(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
     res["q"] = None if qs is None else _r(qs[n_vor - 1], 5)
     if qs is not None and cfg.get("last_kg") is not None:
         res["eigen"] = eigen(p, qs[-1], float(cfg["last_kg"]))
+    if "teil" in a:
+        res["teil"] = cfg["praefix"]
     return {"ziel": a["ziel"], "xyz": _r(pt), **res}
 
 
@@ -1052,6 +1136,11 @@ def abdeckung(gr: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
                 rr = [r for r in rows if sel(r)]
                 if rr:
                     out[teil] = {"ok": sum(r["ok"] for r in rr), "n": len(rr)}
+            continue
+        if g == "teller" and any("teil" in r for r in rows):  # mehrere Tellergruppen (praefix)
+            for teil in dict.fromkeys(r.get("teil") for r in rows):
+                rr = [r for r in rows if r.get("teil") == teil]
+                out[f"teller_{teil}"] = {"ok": sum(r["ok"] for r in rr), "n": len(rr)}
             continue
         out[g] = {"ok": sum(r["ok"] for r in rows), "n": len(rows)}
     return out

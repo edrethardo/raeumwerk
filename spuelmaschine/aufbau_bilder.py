@@ -79,7 +79,7 @@ def _achsen(ax, a, b, titel):
     ax.set_aspect("equal")
     ax.grid(alpha=0.3)
     ax.set_title(titel, fontsize=8)
-    lims = {0: (-0.65, 1.3), 1: (-0.65, 1.2), 2: (0.0, 1.7)}
+    lims = {0: (-0.65, 1.3), 1: (-0.65, 1.5), 2: (0.0, 2.2)}
     ax.set_xlim(*lims[a]); ax.set_ylim(*lims[b])
     ax.set_xlabel("xyz"[a] + " [m]", fontsize=7); ax.set_ylabel("xyz"[b] + " [m]", fontsize=7)
     ax.tick_params(labelsize=6)
@@ -90,7 +90,9 @@ def _zustand(d: Dict[str, Any], gruppe: str, r: Dict[str, Any]) -> Tuple[float, 
     if gruppe == "slots":
         return float((z["slots"] or {}).get("oberkorb_auszug_m", 0.45)), 0.0, None
     if gruppe == "teller":
-        cfg = z["teller"]
+        from .aufbau import teller_gruppen
+        tg = teller_gruppen(z)
+        cfg = next((t for t in tg if t.get("praefix") == r.get("teil")), tg[0])
         aus = float(cfg.get("auszug_m", 0.45))
         extra = None if cfg.get("glashalter", True) else {"glashalter": {"reihen_x_m": []}}
         return (aus, 0.0, extra) if cfg.get("korb", "unterkorb") == "oberkorb" else (0.0, aus, extra)
