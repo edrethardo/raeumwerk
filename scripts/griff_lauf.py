@@ -401,13 +401,42 @@ def bewerte_kurz(mess, plan, s, art, gr):
     return out
 
 
+def teller_lage_grad(q):
+    """Tellerkoerper (Quaternion x, y, z, w; Normale = Koerper-y): Neigung der Tellerebene gegen die
+    Senkrechte und Drehung in der Tellerebene (Koerper-z gegen oben). Der Kapselring startet um ein
+    halbes Segment gedreht (``_teller_lage``, 7,5 Grad bei 24 Segmenten); ``ab._kipp`` (Koerper-z
+    gegen die Senkrechte) zaehlt diese Drehung in der Ebene als Kippung mit."""
+    x, y, z, w = (float(v) for v in q)
+    R = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                  [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                  [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+    n, zk = R[:, 1], R[:, 2]
+    ebene = math.degrees(math.asin(min(1.0, abs(float(n[2])))))
+    drehung = math.degrees(math.atan2(float(np.dot(np.cross([0.0, 0.0, 1.0], zk), n)), float(zk[2])))
+    return ebene, drehung
+
+
 def bewerte_voll(mess, plan, gps, w, art, gr):
     """Ganzer Ablauf: Kriterien der Ausraeum-Bewertung (Zielfehler, Kippung am Ende, Hand, Nachbarn,
-    Kontakte, Durchdringung) fuer das eine Objekt; flache Kennzahlen dazu."""
+    Kontakte, Durchdringung) fuer das eine Objekt; flache Kennzahlen dazu. Teller: ``gekippt`` misst
+    die Neigung der Tellerebene (``teller_lage_grad``), nicht die Drehung in der Ebene; der Wert nach
+    ``finger.a1.bewerte_teller`` steht als ``kippung_koerper_grad`` daneben."""
     zeiten = plan.phase_zeiten()
     gp = gps[0]
+    extra = {}
     if art == "teller":
         b = a1.bewerte_teller(0, gp, zeiten, w, mess, gr)
+        G = mess["glas"]
+        if b.get("werte") and np.all(np.isfinite(G)):
+            e0, d0 = teller_lage_grad(G[0, gp.slot, 3:7])
+            e1, d1 = teller_lage_grad(G[-1, gp.slot, 3:7])
+            k = b["kriterien"]["gekippt"]
+            extra = {"kippung_koerper_grad": k["wert"], "kippung_ebene_grad": e1, "drehung_in_ebene_grad": d1 - d0}
+            k.update(ok=bool(e1 < float(gr["kippung_max_grad"])), wert=e1, koerper_grad=extra["kippung_koerper_grad"],
+                     drehung_in_ebene_grad=d1 - d0, start_grad=e0)
+            b["werte"]["kippung_end_grad"] = e1
+            b["gruende"] = [g for g in ab.GRUENDE if g in b["kriterien"] and not b["kriterien"][g]["ok"]]
+            b["erfolg"] = not b["gruende"]
     else:
         b = ab.bewerte_glas(0, gp, zeiten, w, mess, gr)
         if b.get("werte"):
@@ -421,7 +450,7 @@ def bewerte_voll(mess, plan, gps, w, art, gr):
             "hand_wanderung_m": hand, "nachbar_max_m": wv.get("nachbar_max_m"),
             "finger_durchdringung_m": float(mess["finger_durchdringung_m"][gp.slot]),
             "finger_durchdringung_phase": mess["finger_durchdringung_phase"][gp.slot],
-            "objekt_ende_m": wv.get("ende_m"), "ziel_m": wv.get("ziel_m"), "voll": b}
+            "objekt_ende_m": wv.get("ende_m"), "ziel_m": wv.get("ziel_m"), **extra, "voll": b}
 
 
 # --- Hauptablauf -----------------------------------------------------------------------------------

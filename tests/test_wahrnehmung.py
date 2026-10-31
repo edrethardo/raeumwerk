@@ -316,6 +316,24 @@ def test_maskenversatz_verschiebt_ganze_maske():
     assert np.array_equal(maske_verrauschen(m, np.random.default_rng(2), 0.0, 0.0), m)
 
 
+def test_teller_lage_trennt_neigung_und_drehung_in_der_ebene():
+    """Vollablauf-Bewertung Teller: Drehung um die Tellernormale (Koerper-y) ist keine Kippung."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import griff_lauf as GL
+
+    def quat(achse, grad):
+        a = math.radians(grad) / 2
+        return [*(math.sin(a) * np.asarray(achse, float)), math.cos(a)]
+    e, d = GL.teller_lage_grad(quat([0, 1, 0], 7.5))
+    assert e == pytest.approx(0.0, abs=1e-9)
+    assert abs(d) == pytest.approx(7.5)
+    e, d = GL.teller_lage_grad(quat([1, 0, 0], 5.0))
+    assert e == pytest.approx(5.0)
+    assert d == pytest.approx(0.0, abs=1e-9)
+
+
 # --- Tellergriff-Varianten -----------------------------------------------------------------------
 
 def test_varianten_vollstaendig():
