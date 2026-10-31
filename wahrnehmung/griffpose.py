@@ -92,8 +92,9 @@ def schaetzen(art: str, w, s: int, seed: int = 0, negativ: Optional[str] = None,
     ziel = [p for p in prims if p.objekt == ziel_k.name][0]
     wahr = np.asarray(ziel_k.mitte, float)
     out: Dict = {"art": art, "negativ": negativ, "fehlermodell": fm.raten(), "wahr_m": wahr.tolist(), "gruende": []}
-    # Korbpose (Ensenso, ICP an den Streben): kleine Streuung um die Wahrheit
-    out["korbauszug_delta_m"] = float(w.aufbau.abw.korbauszug_delta_m + rng.normal(0.0, KORB_SIGMA_M))
+    # Korbpose (Ensenso, ICP an den Streben): kleine Streuung um die Wahrheit; der Korb steht am
+    # Anschlag, weiter heraus als ganz ausgezogen geht nicht
+    out["korbauszug_delta_m"] = min(0.0, float(w.aufbau.abw.korbauszug_delta_m + rng.normal(0.0, KORB_SIGMA_M)))
     # 1. Ensenso
     cam_e = ensenso(skala_ensenso)
     auf_e = aufnehmen(prims, cam_e, rng, fm, roi=(wahr, 0.16))
