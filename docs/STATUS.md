@@ -87,3 +87,7 @@ jeweiligen Rechner (siehe `docs/umgebung.md`).
 | Finger im Aufbau A1-S1, Teller (Randgriff, Ständer) | fehlgeschlagen, 0/6 | Teller 1 und 4: Aushub 192 mm, dann Pendeln in der Hand (2° → 22°) und Absturz bei der Querfahrt; Randgriff 18 mm hält nicht gegen Drehen in der Tellerebene; Startlage im Ständer korrigiert (`tests/test_finger_sim.py`) |
 | Newton auf der Laptop-GPU (`--device cuda`) | nachgewiesen | gleiche Ergebnisse wie CPU (Glas 3: 3,07 statt 3,06 mm, 4,15 statt 4,32 mm), 313 s statt 2 510 s Wandzeit |
 | J2-Moment mit CAD-Fingermasse | nachgewiesen (Modell), über Grenze | `raeumwerk aufbau` A1: J2 max. 12,52 Nm (Gläser) / 12,58 Nm (Teller), vorher 13,0 / 13,06 Nm; igus max. 12,5 Nm; `test_aufbau_beispiel_rechnet_mit_der_cad_masse` |
+| Wahrnehmung Ensenso + D405 (simuliert, Glas transparent), Glas-Silhouettenfit, Teller Ebene + Kreis | nachgewiesen (Simulation) | `tests/test_wahrnehmung.py`; 20 Seeds: Glas 20/20, Fehler ≤ 2,3 mm; Teller 19/20, ≤ 5,3 mm; `docs/griff-verrauscht.md` |
+| Negativtests Wahrnehmung (Fehlsegmentierung, Versatz 15 mm, Nachbar) | nachgewiesen, alle abgelehnt | je 5 Seeds 0/5 angenommen; `test_griffpose_prueft_platz_und_widerspruch` |
+| Glasgriff mit Pose aus der Wahrnehmung, Aufbau ohne Überstand (Newton, Kurzlauf bis Aushub) | nachgewiesen, 10/10 | Kippung ≤ 1,2°, Hand ≤ 0,9 mm, Nachbarn ≤ 0,2 mm, Finger ≤ 2,1 mm |
+| Tellergriff breite Backe 60 mm (Newton, bis Querfahrt) | experimentell, 7/11 | 3 × nur Fingerdurchdringung 3,1–3,2 mm (Teller gehalten), 1 Abbruch der Wahrnehmung; Gabel und 20-N-Randgriff fallen |
