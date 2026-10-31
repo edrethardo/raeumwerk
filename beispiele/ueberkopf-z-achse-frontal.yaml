@@ -69,10 +69,12 @@ momente:
 # Gerechnet mit dem Werkzeug (Abstandsraster 0,20-1,00 m, Neigung 0/30 Grad): diese Lage erreicht
 # Glasplaetze 12/16 (alle ausser 4, 8, 12, 16: hinterste Reihe, Arm stoesst an Platte/Bottichdecke),
 # Oberkorb-Teller 8/8, Unterkorb-Teller 15/20 (hinterste Reihe nicht), Korbzug Ober- und Unterkorb
-# je 4/4 Wege, Ablage auf der Platte 0/4. J2 mit Eigengewicht bis 11,2 Nm (Glas/Teller), beim
-# Korbzug 20 N 15,5 Nm (ueber dem igus-Maximum 12,5 Nm). Fuss-Oberseite genutzt 0,82-1,69 m.
+# je 4/4 Wege, Ablage auf der Platte 0/4. J2 mit Eigengewicht bis 13,3 Nm (Glas/Teller), beim
+# Korbzug 20 N 16,5 Nm (ueber dem igus-Maximum 12,5 Nm); Glieder am Schwerpunkt (Quadermitte,
+# Annahme), Gliedermassen geschaetzt. Fuss-Oberseite genutzt 0,82-1,69 m.
 # Gleiche Abdeckung von 0,20 bis 0,65 m; der Roboter zieht die Koerbe erst ab 0,45 m (Oberkorb) bzw.
-# 0,50 m (Unterkorb). Ohne Korbzug ist 0,45 m mit 30 Grad die Lage mit dem kleinsten J2 (7,2 Nm).
+# 0,50 m (Unterkorb). Ohne Korbzug war 0,45 m mit 30 Grad im Raster die Lage mit dem kleinsten J2;
+# dort jetzt 8,4 Nm beim Halten (Raster selbst nicht neu gerechnet, Konzept-Spec §15).
 vergleich:
   slots: 12
   teller_ot: 8

@@ -154,4 +154,7 @@ def test_beispiel_ueberkopf_regression():
     assert all(not r["ok"] for r in e["gruppen"]["teller"] if r["ziel"].endswith("_0.04"))  # hinterste Reihe
     assert ab["zug_oberkorb"]["wege_ok"] == "4/4" and ab["zug_unterkorb"]["wege_ok"] == "4/4"
     j2 = max(r["momente"]["20N"]["gesamt"]["joint2"] for r in e["gruppen"]["zug"] if r["ok"])
-    assert 14.0 < j2 < 17.0  # Korbzug 20 N: J2 ueber dem igus-Maximum 12,5 Nm
+    assert j2 == pytest.approx(16.54, abs=0.3)  # Korbzug 20 N: J2 ueber dem igus-Maximum 12,5 Nm
+    halten = max(r["eigen"]["joint2"] for g in ("slots", "teller") for r in e["gruppen"][g]
+                 if r["ok"] and r.get("eigen"))
+    assert halten == pytest.approx(13.29, abs=0.3)  # Glas/Teller halten, Glieder am Schwerpunkt

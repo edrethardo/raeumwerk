@@ -148,8 +148,9 @@ bisherigen Machbarkeitsprüfungen:
 ## Momente
 
 `tau = Jᵀ F` mit der Zugkraft entlang der Werkzeugachse (20 und 30 N), dazu
-das Eigengewicht der Glieder (Masse im Link-Ursprung, wie in den
-Machbarkeitsprüfungen). Je Gelenk das Maximum über den Zugweg; Urteil gegen die
+das Eigengewicht der Glieder: jede Gliedmasse in ihrem Schwerpunkt aus der URDF
+(`<inertial><origin>`, Annahme Quadermitte des Glieds; Gliedermassen geschätzt),
+die gehaltene Last (Glas, Teller) im TCP. Je Gelenk das Maximum über den Zugweg; Urteil gegen die
 igus-Grenzen aus `config/robot.yaml` (J1–J3 Nenn 10 / Max 12,5 Nm, J4–J6 Nenn
 2 / Max 2,5 Nm, jeweils der untere Wert): „geht“ (alle ≤ Nenn), „knapp“
 (≤ Max) oder „geht nicht“. Zusätzlich steht da, ob der Zug allein unter dem

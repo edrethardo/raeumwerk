@@ -605,7 +605,9 @@ Befunde:
   für den Griff von oben zudem meist außer Reichweite (9–259 mm).
 - **J1** trägt 4 bzw. 6 Nm, weil der Griff 0,20 m seitlich vom Fuß liegt.
 - **Eigengewicht.** Das Modell belastet J2 schon ohne Zug mit
-  13,3–14,9 Nm (Gliedmassen geschätzt, `config/robot.yaml:47-56`).
+  13,3–14,9 Nm (Gliedmassen geschätzt, `config/robot.yaml:47-56`; Masse im
+  Gliedursprung, zu niedrig: am Schwerpunkt mit `raeumwerk aufbau` J2 beim Zug
+  21,4 statt 18,1 Nm, siehe §15.6).
   - Mit Zug kommt J2 bei A auf 18,4 Nm (20 N) bzw. 20,2 Nm (30 N), bei B
     auf 19,2 bzw. 22,1 Nm.
   - Das liegt am oberen Ende bzw. über dem igus-Maximum von 12,5–20 Nm.
@@ -859,7 +861,8 @@ Lesart:
 
 Gerechnet ist `tau = Jᵀ F` über den ganzen Zugweg, Maximum je Gelenk. Dazu
 kommt das Eigengewicht: Gliedmassen aus `config/robot.yaml` im
-Link-Ursprung, Greifer 0,5 kg. Die Summe ist konservativ als |Zug| +
+Link-Ursprung, Greifer 0,5 kg (zu niedrig; am Schwerpunkt liegt das Eigengewicht
+an J2 nach den Beispielen 16–25 % höher, §15.6, hier nicht neu gerechnet). Die Summe ist konservativ als |Zug| +
 |Schwerkraft| je Wegpunkt gebildet. Grenzen [K10]: J1–J3 Nennmoment
 10–15 Nm, Maximum 12,5–20 Nm. J4–J6 Nennmoment 2 Nm, Maximum 2,5–3 Nm.
 Geurteilt wird gegen die unteren Werte.
@@ -1006,7 +1009,8 @@ gehen als Artefakt an den Owner.
   die Lagen 0,45 und 0,60 m (30°) mit den Standard-12 nachgerechnet: gleiche Zahlen.
 - Momente: J2 mit Eigengewicht (geschätzte Gliedermassen, Schwerkraft in Welt-z) beim
   Halten von Glas bzw. Teller (0,25 bzw. 0,35 kg) und beim Korbzug (20 N, |Zug| +
-  |Schwerkraft|).
+  |Schwerkraft|). Gliedmassen im Gliedursprung; am Schwerpunkt neu gerechnet nur
+  die Lagen 0,45 und 0,60 m mit 30° (§15.6), die Rasterwerte in §15.2 sind zu niedrig.
 
 ### 15.2 Ergebnis über dem Abstand
 
@@ -1062,18 +1066,21 @@ Ablage auf der Arbeitsplatte rechts: nur bei 0,20–0,40 m (1–3 von 4), sonst 
   Korbfront mit dem waagerechten Greifer beim Ausziehen zu dicht an den Fuß: der Weg
   reißt ab (Unterkorb bei 0,20 m nach 28 von 54 Wegpunkten, bei 0,40 m nach 38).
 - **J2:** Beim Halten von Glas und Teller bleibt J2 bei 0,35–0,50 m mit 30° unter
-  dem Nennmoment (bester Wert 7,2 Nm bei 0,45 m). Wo der Roboter die Körbe zieht,
-  liegt J2 beim Zug mit 20 N bei 14,7–19,4 Nm, also **über dem igus-Maximum
+  dem Nennmoment (bester Wert 7,2 Nm bei 0,45 m). Am Schwerpunkt gerechnet (§15.6)
+  gilt das nachgewiesen nur noch für 0,45 m (8,4 Nm); 0,35/0,40/0,50 m lagen mit
+  8,6–9,7 Nm so knapp, dass sie mit +16–25 % über 10 Nm kommen können. Wo der Roboter die Körbe zieht,
+  liegt J2 beim Zug mit 20 N bei 14,7–19,4 Nm (am Schwerpunkt höher, bei 0,60 m
+  16,5 statt 15,5 Nm), also **über dem igus-Maximum
   12,5 Nm**; der Zug allein trägt davon 7–10 Nm. J3 bleibt überall unter 10 Nm.
 - **Hub:** genutzt wird eine Fuß-Oberseite von etwa 1,0 bis 1,7 m für Gläser und
   Teller; für den Korbzug fährt der Fuß bei 0,60 m (30°) bis 0,82 m hinab. Ein Hub
   von etwa 0,9–1,0 m reicht für beide Aufgaben.
 - **Beste Lagen nach der Owner-Regel** (beide Sorten > 0, dann schwächeres
   Verhältnis, dann J2): Oberkorb, Unterkorb und gemeinsam jeweils **0,45 m mit 30°**
-  (Gläser 12/16 = 0,75, Teller 8/8 bzw. 15/20 = 0,75, J2 7,2 Nm), Körbe vom Menschen
+  (Gläser 12/16 = 0,75, Teller 8/8 bzw. 15/20 = 0,75, J2 7,2 Nm, am Schwerpunkt 8,4 Nm), Körbe vom Menschen
   ausgezogen. Soll der Roboter beide Körbe selbst ziehen: **0,60 m mit 30°**
   (`beispiele/ueberkopf-z-achse-frontal.yaml`), gleiche Abdeckung, J2 beim Halten
-  11,2 Nm, beim Korbzug 15,5 Nm.
+  11,2 Nm, beim Korbzug 15,5 Nm (am Schwerpunkt 13,3 bzw. 16,5 Nm, §15.6).
 
 ### 15.4 Vergleich (zitierte Zahlen, nicht neu gerechnet)
 
@@ -1098,3 +1105,41 @@ Ablage auf der Arbeitsplatte rechts: nur bei 0,20–0,40 m (1–3 von 4), sonst 
 - Kosten: ein Preis für eine senkrechte igus-Achse mit iRC-Anbindung ist weiter nicht
   gefunden; das ZLW-Bundle (ReBeL + Achse 1000 mm) kostet 10.499,07 € [Q17], der
   Achsanteil rund 5.529 € gegen ReBeL allein 4.970 € [Q17][Q18] (§13.6).
+
+### 15.6 Korrektur 31.10.2026: Eigengewicht am Schwerpunkt
+
+Bis hierher (§13.4, §14.4, §15.2–15.4) saß die Masse jedes Glieds im Ursprung
+des Glieds, also im Gelenk davor. Richtig ist der Schwerpunkt. `raeumwerk aufbau`
+rechnet jetzt jede Gliedmasse im Schwerpunkt aus der URDF (`<inertial><origin>`).
+Die Gliedermassen sind weiter geschätzt, die Schwerpunkte liegen als Annahme in der
+Quadermitte jedes Glieds. Die gehaltene Last sitzt wie bisher im TCP.
+
+Neu gerechnet mit `raeumwerk aufbau` (alt → neu, J2 in Nm, Maximum über alle
+erreichten Ziele). Halten heißt Eigengewicht plus Glas (0,25 kg) bzw. Teller
+(0,35 kg). Zug heißt |Zug| + |Schwerkraft| über den Korbzugweg. Die Abdeckung ist
+überall gleich geblieben.
+
+| Aufbau (`beispiele/…`) | Halten Gläser | Halten Teller | Zug 20 N | Zug 30 N |
+|---|---|---|---|---|
+| Auf der Spülmaschine ohne Überstand (`auf-maschine-ohne-ueberstand`) | 12,6 → **14,9** | 14,5 → **17,1** | – | – |
+| Tisch frontal (`tisch-frontal-korb-aus-finger100`) | 16,5 → **19,5** | 14,7 → **17,3** | – | – |
+| Z-Achse frontal (`z-achse-frontal`) | 15,0 → **17,8** | – | 18,1 → **21,4** | 20,2 → **23,2** |
+| Kopfüber 0,60 m, 30° (`ueberkopf-z-achse-frontal`) | 11,2 → **13,3** | 11,1 → **13,1** | 15,5 → **16,5** | 19,7 → **20,7** |
+| Kopfüber 0,45 m, 30° (Beispiel mit Fuß y 0,45) | 3,4 → **4,3** | 7,2 → **8,4** | – | – |
+| auf der Maschine (`auf-maschine`, Ablage 3,1 → 3,6) | 4,9 → **5,9** | 3,6 → **4,3** | 13,2 → **14,0** | 16,9 → **17,6** |
+| auf der Maschine, Korb aus (`auf-maschine-korb-aus`) | 10,6 → **12,4** | 11,8 → **13,9** | – | – |
+| A1, 100-mm-Finger (`auf-maschine-korb-aus-finger100`) | 12,5 → **14,8** | 12,6 → **14,8** | – | – |
+| heute (`heute`) | 14,9 → **17,7** | – | – | – |
+| stationär (`stationaer`) | 9,1 → **10,9** | – | 19,2 → **22,1** | 22,1 → **25,1** |
+| Tisch neben dem Korb (`tisch-neben-korb`) | 16,1 → **19,1** | 9,9 → **11,8** | – | – |
+| Z-Achse Oberkorb, 100-mm-Finger (`z-achse-oberkorb-finger100`) | 16,4 → **19,4** | 15,0 → **17,7** | 15,0 → **18,2** | 15,3 → **18,5** |
+
+- Beim Halten steigt J2 um 16–25 %. Der Zug allein bleibt gleich, die Summe beim
+  Zug steigt um 0,7–3,2 Nm.
+- Über dem Nennmoment 10 Nm liegen jetzt alle Aufbauten außer kopfüber 0,45 m
+  (8,4 Nm). Über dem Maximum 12,5 Nm liegen alle außer kopfüber 0,45 m. Bei
+  „auf der Maschine“ liegt nur der Zug darüber (Halten ≤ 5,9 Nm).
+- Nicht neu gerechnet sind das Abstandsraster in §15.2 und die
+  Überschlagsrechnungen in §13.4 und §14.4 (Skripte außerhalb des Repos). Deren
+  J2-Werte sind zu niedrig, nach den Beispielen um etwa 16–25 % beim
+  Eigengewicht. Ob sich die Rangfolge der Lagen dadurch ändert, ist nicht geprüft.

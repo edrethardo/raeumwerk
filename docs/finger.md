@@ -156,9 +156,11 @@ dem Wulst; Ablage hochkant im Ständer.
 ## 4. Momente mit der CAD-Masse
 
 `raeumwerk aufbau` mit `beispiele/auf-maschine-korb-aus-finger100.yaml`
-(Finger 17,5 g statt 83 g): J2 höchstens **12,52 Nm** an den Glasplätzen
-und **12,58 Nm** an den Tellern (vorher 13,0 / 13,06 Nm), J3 ≤ 4,0 Nm.
-Das liegt weiter über der igus-Nenngröße 10 Nm und knapp über dem Maximum
+(Finger 17,5 g statt 83 g): J2 höchstens **14,81 Nm** an den Glasplätzen
+und **14,84 Nm** an den Tellern. Gerechnet ist jede Gliedmasse im Schwerpunkt
+(seit 31.10.2026; Gliedermassen geschätzt, Schwerpunkte = Quadermitte, Annahme).
+Mit der Masse im Gliedursprung waren es 12,52 / 12,58 Nm, mit 83-g-Fingern
+13,0 / 13,06 Nm. Das liegt über der igus-Nenngröße 10 Nm und über dem Maximum
 12,5 Nm (`config/robot.yaml`); die leichteren Finger allein lösen das
 J2-Problem nicht.
 
@@ -171,7 +173,7 @@ J2-Problem nicht.
 - Zulässige Fingerlänge, -masse und Kippmoment an der Backe (100 mm,
   17,5 g; Tellermoment an der Spitze bis ~0,33 Nm je Finger).
 - Körpermaße (Annahme 150 × 50 × 50 mm) und Masse des Greifers (0,40 kg).
-- Zulässiges J2-Moment im Dauerbetrieb (gerechnet bis 12,58 Nm, siehe §4).
+- Zulässiges J2-Moment im Dauerbetrieb (gerechnet bis 14,84 Nm, siehe §4).
 
 Weitere eigene Annahmen (nicht igus): Auflagen TPU 85A/Silikon und deren
 Reibwert, Tellerrand (Wulst 5 mm, Fahne 3 mm), Halterluft 1 mm,
