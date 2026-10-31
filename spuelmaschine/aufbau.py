@@ -780,18 +780,13 @@ def grenzen(cfg) -> Dict[str, Tuple[float, float]]:
 def momente(p: APruefer, qs: Sequence[np.ndarray], kraefte: Sequence[float],
             richtung=(0.0, -1.0, 0.0)) -> Dict[str, Any]:
     """Max |tau| je Gelenk ueber den Weg: Zug allein (tau = J^T F), Schwerkraft der Glieder
-    (Masse im Link-Ursprung, wie die Machbarkeitspruefungen) und |Schwerkraft| + |Zug|."""
+    (jede Gliedmasse im Schwerpunkt, siehe ``schweremomente``) und |Schwerkraft| + |Zug|."""
     grenze = grenzen(p.cfg)
     out = {}
-    g_rob = p.Tinv[:3, :3] @ np.array([0, 0, -G])
-    massen = [(n, l.mass) for n, l in p.chain.links.items() if l.mass > 0 and n not in ("rail", "carriage")]
     tg_list, J_list = [], []
     for q in qs:
         J_list.append(p.chain.jacobian(q, "gripper_base", p.tcp))
-        tg = np.zeros(len(q))
-        for name, mass in massen:
-            tg += p.chain.jacobian(q, name)[:3].T @ (mass * g_rob)
-        tg_list.append(tg)
+        tg_list.append(schweremomente(p, q))
     for F in kraefte:
         Fl = p.Tinv[:3, :3] @ (float(F) * np.asarray(richtung, float))
         zug = {n: 0.0 for n in ARM}
@@ -956,16 +951,25 @@ def rechne_teller(A: Aufbau, a: Dict[str, Any]) -> Dict[str, Any]:
     return {"ziel": a["ziel"], "xyz": _r(pt), **res}
 
 
-def eigen(p: APruefer, q, last_kg: float = 0.0) -> Dict[str, float]:
+def schweremomente(p: APruefer, q, last_kg: float = 0.0) -> np.ndarray:
+    """Signiertes Schweremoment je aktivem Gelenk (tau = J^T m g), jede Gliedmasse in ihrem
+    Schwerpunkt (URDF ``<inertial><origin>``, Annahme Quadermitte), die Last ``last_kg`` im TCP.
+    Schiene und Schlitten tragen die Achse, nicht die Armgelenke, und zaehlen nicht."""
     q = np.asarray(q, float)
     g_rob = p.Tinv[:3, :3] @ np.array([0, 0, -G])
     tg = np.zeros(len(q))
     for name, link in p.chain.links.items():
         if link.mass <= 0 or name in ("rail", "carriage"):
             continue
-        tg += p.chain.jacobian(q, name)[:3].T @ (link.mass * g_rob)
+        tg += p.chain.jacobian(q, name, link.com)[:3].T @ (link.mass * g_rob)
     if last_kg:
         tg += p.chain.jacobian(q, "gripper_base", p.tcp)[:3].T @ (last_kg * g_rob)
+    return tg
+
+
+def eigen(p: APruefer, q, last_kg: float = 0.0) -> Dict[str, float]:
+    """|Schweremoment| je Armgelenk in Nm (Glieder am Schwerpunkt, Last im TCP)."""
+    tg = schweremomente(p, q, last_kg)
     return {n: round(abs(float(tg[p.chain.index[n]])), 2) for n in ARM}
 
 

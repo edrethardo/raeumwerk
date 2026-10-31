@@ -88,6 +88,17 @@ def test_urdf_structure(chain, cfg):
         assert link.boxes, f"{name} ohne Kollisionsquader"
 
 
+def test_kette_kennt_schwerpunkt(chain, cfg):
+    """Der Schwerpunkt jedes Glieds kommt aus ``<inertial><origin>`` (Standard: Quadermitte)."""
+    a, g = cfg.arm, cfg.greifer
+    assert chain.links["link_2"].com == pytest.approx([0, 0, a["oberarm_m"] / 2])
+    assert chain.links["base_link"].com == pytest.approx([0, 0, a["j1_hoehe_m"] / 2])
+    assert chain.links["gripper_base"].com == pytest.approx([0, 0, g["koerper_laenge_m"] / 2])
+    assert chain.links["finger_left"].com == pytest.approx([0, 0, g["finger_laenge_m"] / 2])
+    c = Chain('<robot name="r"><link name="a"><inertial><mass value="1"/></inertial></link></robot>')
+    assert c.links["a"].com == pytest.approx([0, 0, 0])  # ohne origin: Link-Ursprung
+
+
 def test_urdf_payload_link():
     cfg = load()
     c = Chain(build_urdf(cfg, payload_kg=cfg.nutzlast_test))

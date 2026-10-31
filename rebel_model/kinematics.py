@@ -69,6 +69,7 @@ class Link:
     name: str
     mass: float = 0.0
     boxes: List[Tuple[np.ndarray, np.ndarray]] = field(default_factory=list)  # (groesse, Ursprung 4x4)
+    com: np.ndarray = field(default_factory=lambda: np.zeros(3))  # Schwerpunkt im Link-System (<inertial><origin>)
 
 
 class Chain:
@@ -80,6 +81,7 @@ class Chain:
             inert = el.find("inertial")
             if inert is not None and inert.find("mass") is not None:
                 ln.mass = float(inert.find("mass").get("value"))
+                ln.com = self._origin(inert.find("origin"))[:3, 3].copy()
             for col in el.findall("collision"):
                 box = col.find("geometry/box")
                 if box is None:

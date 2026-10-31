@@ -152,20 +152,86 @@ def test_moment_handwert_zug():
     assert m["urteil"] == "geht nicht"  # 14,8 > Max 12,5 (untere Grenze)
 
 
+def _handwert_waagerecht(A, last_kg=0.0):
+    """Handrechnung Arm waagerecht (J2 = 90 Grad): g * Summe Masse * Abstand J2 -> Schwerpunkt.
+    Schwerpunkte = Quadermitte jedes Glieds (Annahme wie in der URDF)."""
+    mm, g = A.cfg.massen, A.cfg.greifer
+    o, u, h = 0.237, 0.297, 0.126           # Oberarm, Unterarm, Hand (Datenblatt)
+    j4, j6 = 0.127, 0.1208                  # J3->J4, J5->J6
+    kl, fl = g["koerper_laenge_m"], g["finger_laenge_m"]
+    hebel = {
+        "link_2": o / 2,
+        "link_3": o + j4 / 2,
+        "link_4": o + j4 + (u - j4) / 2,
+        "link_5": o + u + j6 / 2,
+        "link_6": o + u + j6 + (h - j6) / 2,
+    }
+    s = sum(mm[n] * r for n, r in hebel.items())
+    s += g["masse_kg"] * (o + u + h + kl / 2)
+    s += 2 * g["finger_masse_kg"] * (o + u + h + kl + fl / 2)
+    s += last_kg * (o + u + h + g["tcp_ab_flansch_m"])
+    return 9.81 * s
+
+
 def test_moment_handwert_eigengewicht():
-    """Arm waagerecht (J2 = 90 Grad): Eigengewicht an J2 = g * Summe Masse * Abstand (Link-Ursprung)."""
+    """Arm waagerecht (J2 = 90 Grad): Eigengewicht an J2 = g * Summe Masse * Abstand zum Schwerpunkt."""
     A = _aufbau_fest()
     p = A.pruefer(0.0, 0.0)
     q = p.chain.zero()
     q[p.chain.index["joint2"]] = math.pi / 2
-    mm = A.cfg.massen
-    g = A.cfg.greifer
-    hand = 0.237 + 0.297 + 0.126
-    hand_wert = 9.81 * (mm["link_3"] * 0.237 + mm["link_4"] * (0.237 + 0.127) + mm["link_5"] * (0.237 + 0.297)
-                        + mm["link_6"] * (0.237 + 0.297 + 0.1208) + g["masse_kg"] * hand
-                        + 2 * g["finger_masse_kg"] * (hand + g["koerper_laenge_m"]))
+    hand_wert = _handwert_waagerecht(A)
     m = AU.momente(p, [q], [0.0])["0N"]
-    assert m["schwerkraft"]["joint2"] == pytest.approx(hand_wert, abs=0.005)  # Ausgabe auf 0,01 Nm gerundet
+    assert m["schwerkraft"]["joint2"] == pytest.approx(hand_wert, rel=0.01, abs=0.005)
+    assert AU.eigen(p, q)["joint2"] == pytest.approx(hand_wert, rel=0.01, abs=0.005)
+    mit_last = _handwert_waagerecht(A, 0.25)
+    assert AU.eigen(p, q, 0.25)["joint2"] == pytest.approx(mit_last, rel=0.01, abs=0.005)
+
+
+def test_schweremoment_vorzeichen():
+    """Signiertes Schweremoment (ohne abs): stehend kippt die Schwerkraft den geneigten Arm weiter
+    (Moment hat das Vorzeichen der Auslenkung), haengend zieht sie ihn zurueck (Gegenvorzeichen)."""
+    A = _aufbau_fest()
+    p = A.pruefer(0.0, 0.0)
+    i2 = p.chain.index["joint2"]
+    d = AU.lade_yaml(REPO / "beispiele" / "ueberkopf-z-achse-frontal.yaml")
+    d["roboter"].update({"ursprung_xyz_m": [0.30, 0.45, 0.55], "gier_grad": 0, "neigung_grad": 0})
+    ph = AU.Aufbau(d).pruefer(0.0, 0.0)
+    for w in (0.4, -0.4):
+        q = p.chain.zero()
+        q[i2] = w
+        assert np.sign(AU.schweremomente(p, q)[i2]) == np.sign(w)
+        qh = ph.chain.zero()
+        qh[ph.i7] = 0.8
+        qh[ph.chain.index["joint2"]] = w
+        assert np.sign(AU.schweremomente(ph, qh)[ph.chain.index["joint2"]]) == -np.sign(w)
+
+
+def test_schweremoment_ist_minus_gradient_der_lageenergie():
+    """tau_g = -dV/dq mit V = -Summe m g . p_Schwerpunkt; Schwerpunkt unabhaengig ueber fk +
+    Quadermitte der Kollisionsquader bestimmt, in einer schiefen Pose, alle Armgelenke."""
+    A = _aufbau_fest()
+    p = A.pruefer(0.0, 0.0)
+    ch = p.chain
+    q = ch.q_from({"joint1": 0.3, "joint2": 0.7, "joint3": -0.5, "joint4": 0.4, "joint5": 0.9, "joint6": -0.2})
+    g_rob = p.Tinv[:3, :3] @ np.array([0, 0, -9.81])
+    last = 0.25
+
+    def energie(qq):
+        v = 0.0
+        for n, ln in ch.links.items():
+            if ln.mass <= 0 or n in ("rail", "carriage"):
+                continue
+            mitte = max(ln.boxes, key=lambda b: float(np.prod(b[0])))[1][:3, 3]  # groesster Quader
+            v -= ln.mass * g_rob @ ch.fk(q=qq, link=n, offset=mitte)[:3, 3]
+        return v - last * g_rob @ ch.fk(qq, "gripper_base", p.tcp)[:3, 3]
+
+    tau = AU.schweremomente(p, q, last)
+    for n in AU.ARM:
+        i = ch.index[n]
+        e = np.zeros_like(q)
+        e[i] = 1e-6
+        num = -(energie(q + e) - energie(q - e)) / 2e-6
+        assert tau[i] == pytest.approx(num, abs=1e-4), n
 
 
 def test_gelenkgrenzen_aus_igus_quelle():
