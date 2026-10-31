@@ -157,14 +157,24 @@ def _welt_glas():
     return NS(statisch_ohne_teller=stat, glas_start=gl, teller=[], aufbau=NS(abw=NS(korbauszug_delta_m=0.0)))
 
 
+def _nenn(mitte, rot, halb):
+    """Nennlage laut Belegungsplan; der Korbauszug verschiebt sie entlang y."""
+    return lambda d: {"mitte": np.asarray(mitte, float) + [0.0, d, 0.0], "rot": rot, "halb": np.asarray(halb, float)}
+
+
+def _nenn_glas(xy=(0.30, 0.20)):
+    return _nenn((xy[0], xy[1], 0.555), KOPF, (0.0375, 0.0375, 0.055))
+
+
 @pytest.mark.parametrize("negativ,soll,ok,grund", [
     (None, (0.30, 0.20), True, None),
     (None, (0.30, 0.23), False, "nicht_am_erwarteten_platz"),
-    ("versatz", (0.30, 0.20), False, None),
+    ("versatz", (0.30, 0.20), False, "ensenso_d405_widerspruch"),
 ])
 def test_griffpose_prueft_platz_und_widerspruch(negativ, soll, ok, grund):
     from wahrnehmung import griffpose as WG
-    est = WG.schaetzen("glas", _welt_glas(), 0, seed=1, negativ=negativ, skala_ensenso=2.0, skala_d405=1.5, soll_m=soll)
+    est = WG.schaetzen("glas", _welt_glas(), 0, _nenn_glas(soll), seed=1, negativ=negativ, skala_ensenso=2.0,
+                       skala_d405=1.5)
     assert est["ok"] is ok, est["gruende"]
     if ok:
         assert est["fehler_mm"] < 4.0
@@ -172,12 +182,138 @@ def test_griffpose_prueft_platz_und_widerspruch(negativ, soll, ok, grund):
         assert grund in est["gruende"]
 
 
+def _verschoben(w, s, d, gier_grad=0.0):
+    """Kopie der Welt, in der nur die *Wahrheit* von Objekt s um d verschoben (und um die
+    Hochachse gedreht) ist."""
+    import copy
+    w2 = copy.copy(w)
+    w2.glas_start = list(w.glas_start)
+    k = copy.copy(w.glas_start[s])
+    k.mitte = np.asarray(k.mitte, float) + np.asarray(d, float)
+    a = math.radians(gier_grad)
+    k.rot = np.array([[math.cos(a), -math.sin(a), 0.0], [math.sin(a), math.cos(a), 0.0], [0.0, 0.0, 1.0]]) @ k.rot
+    w2.glas_start[s] = k
+    return w2
+
+
+def test_griffpose_glas_liest_die_wahrheit_nicht():
+    """Gleiche Szene, Wahrheit 4 mm verschoben: die Schaetzung bleibt bitgleich (der alte Startwert
+    ``c0 = wahr`` und die ROI um die Wahrheit liessen sie mitlaufen); die Fehlerangabe folgt."""
+    from wahrnehmung import griffpose as WG
+    w = _welt_glas()
+    prims = WG.prims_aus_welt(w, "glas")
+    kw = dict(seed=1, skala_ensenso=2.0, skala_d405=1.5, prims=prims)
+    a = WG.schaetzen("glas", w, 0, _nenn_glas(), **kw)
+    b = WG.schaetzen("glas", _verschoben(w, 0, (0.004, -0.003, 0.002)), 0, _nenn_glas(), **kw)
+    assert a["ok"], a["gruende"]
+    assert b["pose_m"] == a["pose_m"]
+    assert b["ensenso"]["c"] == a["ensenso"]["c"]
+    for k in ("ensenso", "d405"):            # gleiche Pixel ausgewertet (ROI nicht um die Wahrheit)
+        assert b[k]["statistik"] == a[k]["statistik"]
+    assert b["fehler_mm"] != pytest.approx(a["fehler_mm"], abs=0.5)
+
+
+def test_griffpose_glas_folgt_der_szene():
+    """Szene (Glas) 4 mm verschoben, Nennlage gleich: die Schaetzung folgt der Aufnahme."""
+    from wahrnehmung import griffpose as WG
+    w = _welt_glas()
+    w2 = _verschoben(w, 0, (0.004, 0.0, 0.0))
+    a = WG.schaetzen("glas", w, 0, _nenn_glas(), seed=1, skala_ensenso=2.0, skala_d405=1.5)
+    b = WG.schaetzen("glas", w2, 0, _nenn_glas(), seed=1, skala_ensenso=2.0, skala_d405=1.5)
+    assert a["ok"] and b["ok"], (a["gruende"], b["gruende"])
+    assert b["pose_m"][0] - a["pose_m"][0] == pytest.approx(0.004, abs=0.0015)
+    assert b["fehler_mm"] < 4.0
+
+
+def _welt_teller(c=(0.15, 0.30)):
+    from types import SimpleNamespace as NS
+
+    def k(name, gruppe, mitte, halb, rot=np.eye(3)):
+        return NS(name=name, gruppe=gruppe, mitte=np.asarray(mitte, float), halb=np.asarray(halb, float), rot=rot)
+    stat = [k("korbboden", "oberkorb", (0.3, 0.2, 0.495), (0.3, 0.3, 0.005))]
+    tl = [k(f"teller_{j + 1}", "teller", (c[0], c[1] + dy, 0.595), (0.095, 0.095, 0.0025), TELLER_ROT)
+          for j, dy in enumerate((0.0, -0.06, 0.06))]
+    return NS(statisch=stat, glaeser_statisch=[], glas_start=tl, aufbau=NS(abw=NS(korbauszug_delta_m=0.0)))
+
+
+def _nenn_teller(c=(0.15, 0.30)):
+    return _nenn((c[0], c[1], 0.595), TELLER_ROT, (0.095, 0.095, 0.0025))
+
+
+def _teller_est(w, nenn=None, negativ=None, prims=None, seed=2):
+    from wahrnehmung import griffpose as WG
+    return WG.schaetzen("teller", w, 0, nenn or _nenn_teller(), seed=seed, negativ=negativ, skala_ensenso=2.5,
+                        skala_d405=1.5, prims=prims)
+
+
+def test_griffpose_teller_liest_die_wahrheit_nicht():
+    """Wahrheit 35 mm verschoben und 3 Grad gedreht, Szene gleich: Schaetzung, Normalenpruefung und
+    ausgewertete Pixel bleiben gleich (Suchfenster 30 mm um die Nennlage, nicht um die Wahrheit)."""
+    from wahrnehmung import griffpose as WG
+    w = _welt_teller()
+    prims = WG.prims_aus_welt(w, "teller")
+    a = _teller_est(w, prims=prims)
+    b = _teller_est(_verschoben(w, 0, (0.035, 0.0, 0.0), gier_grad=3.0), prims=prims)
+    assert a["ok"], a["gruende"]
+    assert a["fehler_mm"] < 6.0
+    assert b["pose_m"] == a["pose_m"]
+    assert b["gier_grad"] == a["gier_grad"]
+    for k in ("ensenso", "d405"):
+        assert b[k]["normale_winkel_grad"] == a[k]["normale_winkel_grad"]
+        assert b[k]["statistik"] == a[k]["statistik"]
+    assert b["fehler_mm"] > 30.0
+
+
+def test_griffpose_teller_startet_an_der_nennlage_nicht_an_der_wahrheit():
+    """Teller 5 mm neben der Nennlage (so weit lassen die Staebe ihn wandern): gefunden, Fehler klein."""
+    w = _welt_teller((0.155, 0.30))
+    e = _teller_est(w, nenn=_nenn_teller((0.15, 0.30)))
+    assert e["ok"], e["gruende"]
+    assert e["fehler_mm"] < 6.0
+    assert e["abstand_soll_mm"] == pytest.approx(5.0, abs=4.0)
+
+
+def test_griffpose_teller_widerspruch_ensenso_d405():
+    """Teller: Ensenso-Grobpose 15 mm daneben -> Ensenso und D405 widersprechen sich (TOL_TELLER_M);
+    ohne Versatz liegt der Abstand klar unter der Toleranz."""
+    from wahrnehmung import griffpose as WG
+    w = _welt_teller()
+    gut = _teller_est(w)
+    assert gut["ok"], gut["gruende"]
+    assert gut["ensenso_d405_abstand_mm"] < 1e3 * WG.TOL_TELLER_M
+    v = _teller_est(w, negativ="versatz")
+    assert v["ensenso_d405_abstand_mm"] > 1e3 * WG.TOL_TELLER_M
+    assert v["gruende"] == ["ensenso_d405_widerspruch"]
+    assert not v["ok"]
+
+
+@pytest.mark.parametrize("modell,z", [(ENSENSO, 0.6), (D405, 0.3)])
+def test_tiefenrauschen_sigma_wie_datenblatt(modell, z):
+    """Rauschen entlang des Strahls: Streuung = sigma_k * z^2 (Ensenso 0,55 mm bei 0,6 m, D405 1,8 mm bei
+    0,3 m). Mit sigma 0 (Mutation) oder doppeltem sigma wird der Test rot."""
+    boden = Prim("boden", "tisch", "box", np.array([0.0, 0.0, -0.005]), np.array([0.5, 0.5, 0.005]))
+    cam = Kamera("k", modell, np.array([0.0, 0.0, z]), r_greif(0.0), skala=4.0)
+    fm = Fehlermodell(nass_ausfall=0.0, kante_ausfall=0.0)
+    auf = aufnehmen([boden], cam, np.random.default_rng(7), fm)
+    ok = np.isfinite(auf.mess)
+    zt = auf.t_wahr[ok] * (auf.d[ok] @ cam.R[:, 2])
+    r = (auf.mess[ok] - auf.t_wahr[ok]) / (modell["sigma_k"] * zt ** 2)
+    assert ok.sum() > 500
+    assert float(np.std(r)) == pytest.approx(1.0, abs=0.1)
+    assert abs(float(np.mean(r))) < 0.15
+
+
 def test_maskenversatz_verschiebt_ganze_maske():
     m = np.zeros((20, 20), bool)
     m[5:10, 5:10] = True
-    rng = np.random.default_rng(2)
-    out = maske_verrauschen(m, rng, 0.0, 5.0)
+    out = maske_verrauschen(m, np.random.default_rng(2), 0.0, 5.0)
+    dy, dx = (int(round(v)) for v in np.random.default_rng(2).normal(0.0, 5.0, 2))
+    assert (dy, dx) != (0, 0)
     assert out.sum() == m.sum()
+    assert np.array_equal(out, np.roll(m, (dy, dx), (0, 1)))
+    ys, xs = np.nonzero(out)
+    assert (ys.mean() - 7.0, xs.mean() - 7.0) == pytest.approx((dy, dx))
+    assert np.array_equal(maske_verrauschen(m, np.random.default_rng(2), 0.0, 0.0), m)
 
 
 # --- Tellergriff-Varianten -----------------------------------------------------------------------
