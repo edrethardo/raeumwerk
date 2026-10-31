@@ -1,0 +1,74 @@
+# Demo-Aufbau "ueber Kopf an der Z-Achse, 0,45 m, 30 Grad" fuer die Physik-Demo beider Koerbe
+# (scripts/ueberkopf_demo.py). Gleicher Roboter wie beispiele/ueberkopf-z-achse-frontal.yaml, aber
+# Fussmitte 0,45 m vor der Geraetefront (Lage mit dem kleinsten J2 im Abstandsraster). Die Koerbe
+# zieht der Mensch. Die Arbeitsplatte rechts erreicht der Roboter hier nicht (0/4); abgelegt wird
+# auf einem Wagen rechts neben der offenen Tuer (Annahme): Platte 0,30 x 0,38 m, Oberkante 0,55 m.
+#   raeumwerk aufbau beispiele/ueberkopf-045-demo.yaml
+name: Ueber Kopf an der Z-Achse frontal, 0,45 m, Demo mit Ablagewagen
+beschreibung: >-
+  ReBeL kopfueber an einer senkrechten Hubachse (Hub 1,2 m), Fussmitte (0,30; 0,45), 30 Grad zur
+  Maschine geneigt, mitfahrendes Hubprofil. Ablagewagen rechts neben der offenen Tuer, Oberkante
+  0,55 m; Ablageplaetze fuer Glaeser (kopfueber) auf dem Wagen. Koerbe zieht der Mensch.
+roboter:
+  ursprung_xyz_m: [0.30, 0.45, 0.55]
+  gier_grad: 180
+  montage: haengend
+  neigung_grad: 30
+achse:
+  richtung: z
+  hub_m: 1.2
+  schiene: platte
+  platte_m: [0.20, 0.20]
+  saeule: {versatz_m: [0.0, 0.15], querschnitt_m: [0.08, 0.08]}
+greifer:
+  finger_laenge_m: 0.10
+  finger_masse_kg: 0.0175
+  griff_ab_spitze_m: 0.03
+masse:
+  glashalter: {reihen_x_m: [0.48, 0.36, 0.24, 0.12], slots_je_reihe: 4}
+hindernisse:
+  # Ablagewagen: Platte und Unterbau (Annahme), rechts neben der Tuer (Tuer x 0-0,60), so nah an
+  # Gelenk 2 (x 0,30; y 0,32) wie moeglich: J2 waechst mit dem waagerechten Abstand der Ablage
+  # (Sondierung mit 0,5 kg im TCP: x 0,64/y 0,25 8,6 Nm, x 0,72/y 0,45 13,9 Nm, x 0,76/y 0,55 17,3 Nm;
+  # x 0,84 ausserhalb der Reichweite). Die Platte kragt bis x 0,575 ueber die Tuerkante aus (Koerbe
+  # enden bei x 0,56, die Platte liegt 0,4 m ueber der Tuer); der Unterbau steht neben der Tuer.
+  - {name: wagen_platte, gruppe: arbeitsplatte, lo: [0.575, 0.05, 0.53], hi: [0.84, 0.58, 0.55]}
+  - {name: wagen_unterbau, gruppe: arbeitsplatte, lo: [0.64, 0.07, 0.0], hi: [0.82, 0.56, 0.53]}
+  # Ablageplaetze: Matte (Glas kopfueber) und Glas aufrecht; wagen_3 = Staenderplatz 1 der Teller
+  # (Glas als Stellvertreter fuer die Erreichbarkeit von oben; Platz 2 liegt 5 cm weiter in x und
+  # wird im Test mit verschobenem Stellvertreter gerechnet, zwei Glaeser 5 cm nebeneinander stossen an)
+  - {name: wagen_1, glas_mitte: [0.625, 0.12, 0.605]}
+  - {name: wagen_2, glas_mitte: [0.625, 0.52, 0.605]}
+  - {name: wagen_3, glas_mitte: [0.625, 0.32, 0.605]}
+erlaubt: []
+halter_beruehrt: [wagen_1, wagen_2, wagen_3]
+ziele:
+  slots: {oberkorb_auszug_m: 0.45, gier_grad: [0, 180], einsetzen: true}
+  teller:
+    - korb: oberkorb
+      praefix: ot
+      auszug_m: 0.45
+      x_m: [0.15, 0.45]
+      tiefe_m: [0.07, 0.13, 0.19, 0.25]
+      rand_ueber_boden_m: 0.19
+      greif_unter_rand_m: 0.02
+      vorposition_m: 0.10
+      aushub_m: 0.15
+      gier_grad: [90, 0]
+      glashalter: false
+      last_kg: 0.35
+    - korb: unterkorb
+      praefix: ut
+      auszug_m: 0.45
+      x_m: [0.10, 0.20, 0.30, 0.40, 0.50]
+      tiefe_m: [0.04, 0.16, 0.28, 0.40]
+      rand_ueber_boden_m: 0.26
+      greif_unter_rand_m: 0.01
+      vorposition_m: 0.10
+      aushub_m: 0.30
+      gier_grad: [90, 0]
+      last_kg: 0.35
+  ablage:
+    platte: false
+    glaeser: [wagen_1, wagen_2, wagen_3]
+    gier_grad: [0, 90, 180, 270]

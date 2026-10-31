@@ -1,0 +1,42 @@
+# Physik-Demo "ueber Kopf an der Z-Achse, 0,45 m, 30 Grad" (scripts/ueberkopf_demo.py,
+# docs/ueberkopf-demo.md). Aufbau: beispiele/ueberkopf-045-demo.yaml. Alle Werte sind Annahmen der
+# Demo, sofern nicht anders vermerkt; Szene im Oberkorb wie scripts/griff_lauf.py (8 Glaeser
+# kopfueber rechts, 6 Dessertteller links).
+aufbau: beispiele/ueberkopf-045-demo.yaml
+
+# Ablagewagen rechts neben der offenen Tuer (Koerper im Aufbau-YAML), Oberkante der Wagenplatte
+wagen_oberkante_m: 0.55
+
+# Parkpose zwischen den Koerben: TCP-Punkt (Greifer senkrecht nach unten), Gelenkwinkel per IK,
+# gleiche Pose am Anfang und Ende jedes Laufs (die Hubachse faehrt in der Anfahrt auf Korbhoehe)
+park_tcp_m: [0.45, 0.42, 0.80]
+
+glaeser:
+  # Umgreifen ueber eine Matte auf dem Wagen (kopfueber), dann aufrecht auf den Wagen.
+  # Plaetze wagen_2 / wagen_1 im Aufbau-YAML (raeumwerk aufbau: erreichbar). Das fertige Glas steht
+  # vorn (y 0,12): bei y 0,52 kreuzte die Rueckfahrt in die Parkpose das abgestellte Glas
+  matten_xy_m: [[0.625, 0.52]]
+  matte_sockel_m: [0.0]
+  ablage_xy_m: [[0.625, 0.12]]
+  je_ablage: [0]
+  ablage_auf_matte: false
+
+staender:
+  # Kleiner Tellerstaender auf dem Wagen (Boden 1 cm, je Platz zwei Stabpaare 35 mm), Tellernormale
+  # entlang x, zwei Plaetze entlang x (wagen_3 / wagen_4): Platz 1 (naeher am Roboter, kleineres J2)
+  # fuer den schweren Unterkorb-Teller, Platz 2 fuer den Oberkorb-Teller
+  staender_xy_m: [0.625, 0.32]
+  staender_teilung_m: [0.05, 0.0]
+  staender_gier_grad: 0.0
+  platz_ot: 2
+  platz_ut: 1
+
+teller_ut:
+  # Unterkorb: 4 Teller D 26 cm hochkant in einer Reihe (Tellernormale y, wie die Oberkorbreihe),
+  # Spalte x 0,20, Teilung 6 cm ab 6 cm hinter der Korbfront (Belegungsplan 0,45 m: vordere drei
+  # Reihen erreichbar). Masse 0,50 kg (Annahme; Speiseteller 26 cm wiegen etwa 0,45-0,6 kg).
+  spalte_x_m: 0.20
+  tiefe_m: [0.06, 0.12, 0.18, 0.24]
+  durchmesser_m: 0.26
+  masse_kg: 0.50
+  aushub_m: 0.30
