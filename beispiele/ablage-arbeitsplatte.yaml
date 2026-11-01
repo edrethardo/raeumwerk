@@ -1,0 +1,76 @@
+# Ablage der Glaeser auf der Arbeitsplatte ueber der Spuelmaschine (geprueft, nicht gewaehlt).
+# Aufbau: Roboter kopfueber an einer senkrechten Hubachse, 60 Grad zur Maschine geneigt, Fussmitte
+# 0,30 m vor der Korpusfront (beste Lage des Umpositionierungs-Rasters).
+#
+# Ziel ist die Arbeitsplatte ueber der Maschine (Oberkante 0,86 m, x 0,00..0,60 m, y -0,50..+0,05 m).
+# Die Belegungsplaetze (Glasmitte z = 0,915 m) stehen als Hindernisse ``glas_mitte`` in der Szene und
+# sind zugleich Ziele der Gruppe ``ablage``: je Platz wird das senkrechte Absetzen eines stehenden
+# Glases geprueft. Raster x 0,10/0,30/0,50 m, y 0,00/-0,20/-0,40 m (0,20 m Teilung): bei engerer
+# Teilung streifen die 100-mm-Finger die Nachbarglaeser (Befund der Studie), bei 0,20 m nicht.
+#
+# Erwartung (geprueft, siehe docs/STATUS.md): alle 9 Plaetze sind absetzbar. Das Halten kostet
+# |J2| 4,95 Nm (vordere Reihe y 0,00) bis 17,62 Nm (hinterste Reihe y -0,40), Last 0,25 kg.
+# Momente, Grenzen und Methode im Studienbericht (siehe docs/STATUS.md).
+
+roboter:
+  ursprung_xyz_m: [0.30, 0.30, 0.60]
+  gier_grad: 180
+  kipp_grad: 180
+  neigung_grad: 60
+  montage: haengend
+
+achse:
+  richtung: z
+  hub_m: 1.25
+  schiene: platte
+  platte_m: [0.2, 0.2]
+  saeule:
+    versatz_m: [0.0, 0.15]
+    querschnitt_m: [0.08, 0.08]
+
+greifer:
+  finger_laenge_m: 0.1
+  finger_masse_kg: 0.0175
+  griff_ab_spitze_m: 0.03
+
+masse:
+  glashalter:
+    reihen_x_m: [0.48, 0.36]
+    slots_je_reihe: 2
+
+hindernisse:
+  - {name: p_x0.10_y+0.00, glas_mitte: [0.10, 0.00, 0.915]}
+  - {name: p_x0.10_y-0.20, glas_mitte: [0.10, -0.20, 0.915]}
+  - {name: p_x0.10_y-0.40, glas_mitte: [0.10, -0.40, 0.915]}
+  - {name: p_x0.30_y+0.00, glas_mitte: [0.30, 0.00, 0.915]}
+  - {name: p_x0.30_y-0.20, glas_mitte: [0.30, -0.20, 0.915]}
+  - {name: p_x0.30_y-0.40, glas_mitte: [0.30, -0.40, 0.915]}
+  - {name: p_x0.50_y+0.00, glas_mitte: [0.50, 0.00, 0.915]}
+  - {name: p_x0.50_y-0.20, glas_mitte: [0.50, -0.20, 0.915]}
+  - {name: p_x0.50_y-0.40, glas_mitte: [0.50, -0.40, 0.915]}
+
+ziele:
+  ablage:
+    platte: false
+    glaeser:
+      - p_x0.10_y+0.00
+      - p_x0.10_y-0.20
+      - p_x0.10_y-0.40
+      - p_x0.30_y+0.00
+      - p_x0.30_y-0.20
+      - p_x0.30_y-0.40
+      - p_x0.50_y+0.00
+      - p_x0.50_y-0.20
+      - p_x0.50_y-0.40
+    gier_grad: [0, 90, 180, 270]
+
+momente:
+  zugkraft_n: [20.0, 30.0]
+
+name: Ablage Arbeitsplatte ueber der Maschine, 60 Grad / 0.30 m
+beschreibung: >-
+  Roboter kopfueber an einer senkrechten Hubachse (Hub 1,25 m), 60 Grad zur Maschine geneigt,
+  Fussmitte 0,30 m vor der Front (beste Lage des Umpositionierungs-Rasters). Belegungsplan der
+  Arbeitsplatte ueber der Maschine (Oberkante 0,86 m): 9 Plaetze x 0,10/0,30/0,50 m,
+  y 0,00/-0,20/-0,40 m (0,20 m Teilung), je als stehendes Glas (Glasmitte 0,915 m). Geprueft wird je
+  Platz das senkrechte Absetzen eines stehenden Glases.
