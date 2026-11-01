@@ -1,0 +1,109 @@
+# Regal ueber der Spuelmaschine als Ablageziel (offenes Fach ohne Tuer).
+# Aufbau wie die Owner-Vorgabe: Roboter kopfueber an einer senkrechten Hubachse, 45 Grad zur
+# Maschine geneigt, Fussmitte 0,50 m vor der Korpusfront.
+#
+# Das Regal ist ein offenes Fach: Rueckwand, zwei Seiten, Decke und ein Fachboden als untere
+# Abstellflaeche. Unterkante 1,45 m, Oberkante 2,15 m, 0,35 m tief ab Wand (y -0,55 .. -0,20 m),
+# 1,80 m breit (Annahme Kuechennorm). Der Fachboden ist Ziel, kein Hindernis.
+# Die Abstellplaetze (Glasmitte) stehen als Hindernisse ``glas_mitte`` in der Szene; die
+# Zielgruppe ``ablage`` prueft je Platz das senkrechte Absetzen eines stehenden Glases.
+#
+# Erwartung (geprueft, siehe docs/STATUS.md): keiner der 24 Plaetze ist erreichbar; die
+# Reichweitengrenze liegt vor der Regalvorderkante (y = -0,20 m).
+
+roboter:
+  ursprung_xyz_m: [0.30, 0.50, 0.60]
+  gier_grad: 180
+  kipp_grad: 180
+  neigung_grad: 45
+  montage: haengend
+
+achse:
+  richtung: z
+  hub_m: 1.25
+  schiene: platte
+  platte_m: [0.2, 0.2]
+  saeule:
+    versatz_m: [0.0, 0.15]
+    querschnitt_m: [0.08, 0.08]
+
+greifer:
+  finger_laenge_m: 0.1
+  finger_masse_kg: 0.0175
+  griff_ab_spitze_m: 0.03
+
+masse:
+  glashalter:
+    reihen_x_m: [0.48, 0.36]
+    slots_je_reihe: 2
+
+hindernisse:
+  - {name: regal_links, gruppe: schrank, lo: [-0.60, -0.55, 1.45], hi: [-0.58, -0.20, 2.15]}
+  - {name: regal_rechts, gruppe: schrank, lo: [1.18, -0.55, 1.45], hi: [1.20, -0.20, 2.15]}
+  - {name: regal_rueck, gruppe: schrank, lo: [-0.60, -0.55, 1.45], hi: [1.20, -0.53, 2.15]}
+  - {name: regal_decke, gruppe: schrank, lo: [-0.60, -0.55, 2.13], hi: [1.20, -0.20, 2.15]}
+  - {name: regal_boden, gruppe: schrank, lo: [-0.60, -0.55, 1.43], hi: [1.20, -0.20, 1.45]}
+  - {name: r_x0.05_y-0.22, glas_mitte: [0.05, -0.22, 1.505]}
+  - {name: r_x0.05_y-0.30, glas_mitte: [0.05, -0.30, 1.505]}
+  - {name: r_x0.05_y-0.40, glas_mitte: [0.05, -0.40, 1.505]}
+  - {name: r_x0.05_y-0.50, glas_mitte: [0.05, -0.50, 1.505]}
+  - {name: r_x0.15_y-0.22, glas_mitte: [0.15, -0.22, 1.505]}
+  - {name: r_x0.15_y-0.30, glas_mitte: [0.15, -0.30, 1.505]}
+  - {name: r_x0.15_y-0.40, glas_mitte: [0.15, -0.40, 1.505]}
+  - {name: r_x0.15_y-0.50, glas_mitte: [0.15, -0.50, 1.505]}
+  - {name: r_x0.25_y-0.22, glas_mitte: [0.25, -0.22, 1.505]}
+  - {name: r_x0.25_y-0.30, glas_mitte: [0.25, -0.30, 1.505]}
+  - {name: r_x0.25_y-0.40, glas_mitte: [0.25, -0.40, 1.505]}
+  - {name: r_x0.25_y-0.50, glas_mitte: [0.25, -0.50, 1.505]}
+  - {name: r_x0.35_y-0.22, glas_mitte: [0.35, -0.22, 1.505]}
+  - {name: r_x0.35_y-0.30, glas_mitte: [0.35, -0.30, 1.505]}
+  - {name: r_x0.35_y-0.40, glas_mitte: [0.35, -0.40, 1.505]}
+  - {name: r_x0.35_y-0.50, glas_mitte: [0.35, -0.50, 1.505]}
+  - {name: r_x0.45_y-0.22, glas_mitte: [0.45, -0.22, 1.505]}
+  - {name: r_x0.45_y-0.30, glas_mitte: [0.45, -0.30, 1.505]}
+  - {name: r_x0.45_y-0.40, glas_mitte: [0.45, -0.40, 1.505]}
+  - {name: r_x0.45_y-0.50, glas_mitte: [0.45, -0.50, 1.505]}
+  - {name: r_x0.55_y-0.22, glas_mitte: [0.55, -0.22, 1.505]}
+  - {name: r_x0.55_y-0.30, glas_mitte: [0.55, -0.30, 1.505]}
+  - {name: r_x0.55_y-0.40, glas_mitte: [0.55, -0.40, 1.505]}
+  - {name: r_x0.55_y-0.50, glas_mitte: [0.55, -0.50, 1.505]}
+
+ziele:
+  ablage:
+    platte: false
+    glaeser:
+      - r_x0.05_y-0.22
+      - r_x0.05_y-0.30
+      - r_x0.05_y-0.40
+      - r_x0.05_y-0.50
+      - r_x0.15_y-0.22
+      - r_x0.15_y-0.30
+      - r_x0.15_y-0.40
+      - r_x0.15_y-0.50
+      - r_x0.25_y-0.22
+      - r_x0.25_y-0.30
+      - r_x0.25_y-0.40
+      - r_x0.25_y-0.50
+      - r_x0.35_y-0.22
+      - r_x0.35_y-0.30
+      - r_x0.35_y-0.40
+      - r_x0.35_y-0.50
+      - r_x0.45_y-0.22
+      - r_x0.45_y-0.30
+      - r_x0.45_y-0.40
+      - r_x0.45_y-0.50
+      - r_x0.55_y-0.22
+      - r_x0.55_y-0.30
+      - r_x0.55_y-0.40
+      - r_x0.55_y-0.50
+    gier_grad: [0, 90, 180, 270]
+
+momente:
+  zugkraft_n: [20.0, 30.0]
+
+name: Regal ueber der Maschine, offenes Fach, 45 Grad / 0.50 m
+beschreibung: >-
+  Roboter kopfueber an einer senkrechten Hubachse (Hub 1,25 m), 45 Grad zur Maschine geneigt,
+  Fussmitte 0,50 m vor der Front. Offenes Wandregal ueber der Spuelmaschine (Rueckwand, Seiten,
+  Decke, Fachboden; Unterkante 1,45 m, 0,35 m tief). Geprueft wird je Rasterplatz das senkrechte
+  Absetzen eines stehenden Glases auf den Fachboden. Plaetze 24 (x 0,05..0,55 m, y -0,22..-0,50 m).
