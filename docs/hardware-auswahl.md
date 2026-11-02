@@ -133,13 +133,17 @@ Mastzahlen). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitsh�
 (x 0,35; y 0,05–0,10; z 1,15 m; 60°) ergibt Gläser 100 %, Dessertteller 83 %,
 Unterkorb-Teller 83 % (6 Rauschseeds) – dieselben Zahlen wie der Mast rechts. Diese Lage
 liegt aber in der Reichweite des Arms: mit konservativem Kamerakörper nimmt sie dem Arm die
-Teller (Erreichbarkeit 0/16 Slots, 0/8 Teller, 4/4 Ablage gegen 8/16, 8/8, 4/4 ohne Kamera).
+Teller (Erreichbarkeit 0/16 Slots, 0/8 Teller; die Ablage bleibt nur beim konservativen
+Körper mit y 0,10 bei 4/4, bei y 0,05 sind es 0/4; ohne Kamera 8/16, 8/8, 4/4).
 Am rechten Maschinenende (x 0,60) ist der Armverlust klein (8/16, 8/8, 3/4 bei schlankem
 Kamerakörper), dafür fällt die Optik (Dessertteller 50 %, Unterkorb 67 %). Eine hohe, voll
 erreichbarkeitsneutrale Montage (z 1,45 m) verliert den Unterkorb (33 %) und die
-Dessertteller (17 %). Die Desserttellerquote liegt bei flacher Neigung über der Maschine
-geometrisch bei 83 % (der hinterste Teller im ausgezogenen Korb liegt hinter der Kamera);
-steiler (70–75°) erreicht sie robust 100 %, dann fällt der Unterkorb aber auf 50 %. Beide
+Dessertteller (17 %); bei x 0,60 ist es umgekehrt (Dessertteller 83 %, Unterkorb 0 %).
+Die Desserttellerquote liegt bei flacher Neigung über der Maschine geometrisch bei 83 %
+(der hinterste Teller im ausgezogenen Korb liegt außerhalb des Sichtbereichs). Steiler
+(70–75°) holt ihn ins Bild, aber **keine** Pose bringt die Dessertteller über mehrere Seeds
+hinweg über 83 % – 83 % ist der höchste belastbare Wert der 6-Seed-Läufe; einzelne Posen
+mit 66–75° zeigen 100 % und kosten dafür den Unterkorb (dort 50 %). Beide
 Körbe zusammen bleiben bei 100/83/83 (wie am Mast rechts). Der ruhige
 Mast rechts bleibt damit die bessere Lösung; über der Maschine löst keine Lage Optik und
 Erreichbarkeit gleichzeitig.
