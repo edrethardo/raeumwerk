@@ -119,6 +119,13 @@ Farbbild und findet klares Glas nicht (0 %); sie bleibt nur für Teller brauchba
 Körbe gleichzeitig ausgezogen, verdeckt der Oberkorb den Unterkorb vollständig – es wird je
 ein Korb herausgezogen.
 
+**Vorbehalte zu den Zahlen.** Die Glasquote (100 % auf ≤ 5 mm) stammt aus einer ideal
+angenommenen Farbsilhouette mit ±1 px Randunsicherheit; an echtem nassem Geschirr ist sie
+schlechter, das muss eine Leihkamera klären. Die Tellerquote 83 % hängt vom Blickwinkel ab.
+Die C57-S liegt am Nahpunkt des Oberkorbs (≈ 0,52 m) dicht an ihrer Arbeitsbereichsgrenze
+(0,50 m), viel Reserve ist dort nicht. Verdeckung durch den Roboterarm in Greifposen ist
+nicht gerechnet – geprüft ist nur, dass die Kamera die Erreichbarkeit nicht verschlechtert.
+
 ## 3. Glas und Nässe
 
 ### 3.1 Was der Hersteller sagt
