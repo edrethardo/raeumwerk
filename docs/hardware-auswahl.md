@@ -126,6 +126,24 @@ Die C57-S liegt am Nahpunkt des Oberkorbs (≈ 0,52 m) dicht an ihrer Arbeitsber
 (0,50 m), viel Reserve ist dort nicht. Verdeckung durch den Roboterarm in Greifposen ist
 nicht gerechnet – geprüft ist nur, dass die Kamera die Erreichbarkeit nicht verschlechtert.
 
+**Kamera über der Maschine statt am Mast.** Eine feste Kamera auf/über der Arbeitsplatte
+über der Maschine wurde gerastert (x 0,05–0,60 m, y −0,15…+0,10 m, z 0,95–1,45 m, Neigung
+30–75° gegen die Waagerechte, Blick jeweils zur Korbmitte; C57-S, gleiches Werkzeug wie die
+Mastzahlen). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitshöhe**:
+(x 0,35; y 0,05–0,10; z 1,15 m; 60°) ergibt Gläser 100 %, Dessertteller 83 %,
+Unterkorb-Teller 83 % (6 Rauschseeds) – dieselben Zahlen wie der Mast rechts. Diese Lage
+liegt aber in der Reichweite des Arms: mit konservativem Kamerakörper nimmt sie dem Arm die
+Teller (Erreichbarkeit 0/16 Slots, 0/8 Teller, 4/4 Ablage gegen 8/16, 8/8, 4/4 ohne Kamera).
+Am rechten Maschinenende (x 0,60) ist der Armverlust klein (8/16, 8/8, 3/4 bei schlankem
+Kamerakörper), dafür fällt die Optik (Dessertteller 50 %, Unterkorb 67 %). Eine hohe, voll
+erreichbarkeitsneutrale Montage (z 1,45 m) verliert den Unterkorb (33 %) und die
+Dessertteller (17 %). Die Desserttellerquote liegt bei flacher Neigung über der Maschine
+geometrisch bei 83 % (der hinterste Teller im ausgezogenen Korb liegt hinter der Kamera);
+steiler (70–75°) erreicht sie robust 100 %, dann fällt der Unterkorb aber auf 50 %. Beide
+Körbe zusammen bleiben bei 100/83/83 (wie am Mast rechts). Der ruhige
+Mast rechts bleibt damit die bessere Lösung; über der Maschine löst keine Lage Optik und
+Erreichbarkeit gleichzeitig.
+
 ## 3. Glas und Nässe
 
 ### 3.1 Was der Hersteller sagt
