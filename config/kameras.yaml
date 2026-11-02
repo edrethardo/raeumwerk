@@ -4,11 +4,19 @@
 # aus Distributor-Seiten, dem Ensenso-Handbuch und Suchauszuegen. Preise: EUR = "ab"-Preis des
 # Herstellers (Grundkonfiguration, netto), USD = Listenpreis eines US-Haendlers (nur Plausibilitaet).
 #
+# C-Serie: Werte jetzt aus dem IDS-Datenblatt "Ensenso C-Serie - Coloured 3D Vision" (Stand 2024-04-24,
+# c_datenblatt) und der Optonic-Produktseite (optonic_c57). Distributor-/Suchwerte der C-Serie sind
+# dort eine Bandbreite ueber ALLE Fokusvarianten (z. B. "6 mm: 500-5000 mm") und NICHT der
+# Betriebsabstand eines lieferbaren Modells. Der Betriebsabstand gilt je Bestellvariante
+# (Brennweite + Fokusdistanz + Basislinie S/M) und ist im Datenblatt als "Operating Distance"
+# angegeben; die Datentabelle (Z-Genauigkeit) reicht etwas enger. Bestellname:
+# <Typ>-<Optik>-<Basislinie>, z. B. C57-6-S (voll: C57-5M2C-6/2.8|8/1.6|3.7/2.8|975-240/7).
+#
 # sigma_k: Tiefenrauschen sigma(z) = sigma_k * z^2 (z in m, sigma in m), aus der z-Genauigkeit des
 # Datenblatts angepasst. Die z-Genauigkeit des Herstellers rechnet nur die Geometrie (Disparitaet
 # 1/4 px Einzelaufnahme, 1/8 px FlexView, Quelle selector_formel); auf nassem Geschirr und Glas ist
 # das echte Rauschen groesser.
-stand: 2026-10-31
+stand: 2026-11-02
 quellen:
   ids_uebersicht: https://en.ids-imaging.com/ensenso-stereo-3d-camera.html
   b_datenblatt: https://www.tvcnet.1stvision.com/cameras/IDS/Ensenso/dataman/Ensenso-B-series-datasheet.pdf
@@ -17,6 +25,8 @@ quellen:
   n36_tabelle: https://www.hopetw.com/modules/cart/index.php/product/view/172-N36-604-16
   n46_bereich: https://rodavigo.net/en/p/3d-camera-ensenso-n46-604-16-bl-370-800-mm-flexview-ref-ids-1008601/8071008601
   c_haendler: https://www.1stvision.com/cameras/IDS-imaging-Ensenso-C-series-3D-cameras
+  c_datenblatt: https://www.imagesspa.it/image/catalog/pdf/landing/Ensenso_C57_datasheet.pdf
+  optonic_c57: https://www.optonic.com/en/products/ensenso/c57
   x_haendler: https://www.1stvision.com/cameras/IDS-imaging-Ensenso-X-series-3D-cameras
   s_haendler: https://www.1stvision.com/cameras/IDS-imaging-Ensenso-S-series-3D-cameras
   handbuch_hw: https://manual.ensenso.com/latest/hardware/index.html
@@ -103,24 +113,67 @@ kameras:
     schnittstelle: 1 GigE; 12-24 V DC oder PoE
     preis: {eur_ab: 5160, usd: 9302, quelle: ids_uebersicht, stand: "2026-10-31 (EUR = N-Serie ab, Suchauszug; USD usd_n36)"}
     quelle: [n_haendler, n36_tabelle, usd_n36]
-  c57_s:
-    name: Ensenso C57-S (Basis 240 mm, Objektiv 6 mm)
+  # C-Serie: lieferbare Modelle, offizieller Betriebsabstand je Variante (Datenblatt 2024-04-24).
+  # Nur das C57-6-S deckt das Sichtvolumen des Aufbaus "ohne Ueberstand" (~0,8-1,2 m) ab; die
+  # Varianten 8-S/12-S sind kuerzer fokussiert (siehe docs/hardware-auswahl.md §2.3).
+  c57_6_s:
+    name: Ensenso C57-6-S (6 mm, Fokus 975 mm, Basislinie 240 mm)
+    artikelnummer: "1009348"
+    voller_name: "C57-5M2C-6/2.8|8/1.6|3.7/2.8|975-240/7"
     serie: C
     prinzip: Stereo mit Musterprojektor (200 W LED), FlexView 3, eigener RGB-Sensor 2 MP
-    arbeitsbereich_m: [0.50, 5.0]           # 6 mm; 8 mm: 0,65-2,2 m; 12 mm: 0,8-1,3 m
-    sichtfeld_mm: {1.0: [1421, 1187]}       # berechnet aus 2472 px x 3,45 um und f 6 mm (Annahme, nicht Datenblatt)
-    z_genauigkeit_mm: {1.0: 0.1}
-    sigma_k: 0.10e-3
+    arbeitsbereich_m: [0.75, 1.50]          # Betriebsabstand (Datenblatt); Z-Tabelle bis 1,45 m
+    sichtfeld_mm: {1.0: [954, 867]}         # View Field X/Y bei 1 m (Datenblatt-Arbeitsvolumen)
+    z_genauigkeit_mm: {0.75: 0.123, 1.0: 0.219, 1.45: 0.46}
+    sigma_k: 0.214e-3
     aufloesung_px: [2472, 2064]
     farbe: true
     projektor: 200 W LED, C-Mount, FlexView 3
     basis_mm: 240
-    bildrate_hz: bis 10 Punktwolken/s
+    bildrate_hz: 3-10 Punktwolken/s
     masse_kg: 1.16
     masse_mm: [290, 58, 100]
     schnittstelle: 1 GigE; 24 V DC oder PoE++ 802.3bt 90 W
-    preis: {eur_ab: 8900, usd: 13017, quelle: ids_uebersicht, stand: "2026-10-31 (EUR Suchauszug; USD usd_c57, 13017-14552 je Variante)"}
-    quelle: [c_haendler, handbuch_hw, ids_uebersicht, usd_c57]
+    preis: {eur_ab: 8900, usd: 13017, quelle: ids_uebersicht, stand: "2026-11-02 (EUR Suchauszug; USD usd_c57, 13017-14552 je Variante)"}
+    quelle: [c_datenblatt, optonic_c57, c_haendler, handbuch_hw, ids_uebersicht, usd_c57]
+  c57_8_s:
+    name: Ensenso C57-8-S (8 mm, Fokus 975 mm, Basislinie 240 mm)
+    artikelnummer: "1009349"
+    serie: C
+    prinzip: wie C57-6-S (kuerzere Fokusdistanz/engeres Sichtfeld)
+    arbeitsbereich_m: [0.85, 1.10]          # Betriebsabstand (Datenblatt); Z-Tabelle 0,86-1,14 m
+    sichtfeld_mm: {1.0: [738, 657]}         # View Field X/Y bei 1 m (Datenblatt)
+    z_genauigkeit_mm: {0.86: 0.123, 1.0: 0.166, 1.1: 0.201}
+    sigma_k: 0.1663e-3
+    aufloesung_px: [2472, 2064]
+    farbe: true
+    projektor: 200 W LED, C-Mount, FlexView 3
+    basis_mm: 240
+    bildrate_hz: 3-10 Punktwolken/s
+    masse_kg: 1.16
+    masse_mm: [290, 58, 100]
+    schnittstelle: 1 GigE; 24 V DC oder PoE++ 802.3bt 90 W
+    preis: {eur_ab: 8900, usd: 13017, quelle: ids_uebersicht, stand: "2026-11-02 (EUR Suchauszug; USD usd_c57)"}
+    quelle: [c_datenblatt, optonic_c57, c_haendler, handbuch_hw, ids_uebersicht, usd_c57]
+  c57_12_s:
+    name: Ensenso C57-12-S (12 mm, Fokus 975 mm, Basislinie 240 mm)
+    artikelnummer: "1009350"
+    serie: C
+    prinzip: wie C57-6-S (engstes Sichtfeld der S-Varianten)
+    arbeitsbereich_m: [0.90, 1.10]          # Betriebsabstand (Datenblatt); Z-Tabelle 0,91-1,06 m
+    sichtfeld_mm: {1.0: [502, 440]}         # View Field X/Y bei 1 m (Datenblatt)
+    z_genauigkeit_mm: {0.91: 0.092, 1.0: 0.111, 1.06: 0.125}
+    sigma_k: 0.111e-3
+    aufloesung_px: [2472, 2064]
+    farbe: true
+    projektor: 200 W LED, C-Mount, FlexView 3
+    basis_mm: 240
+    bildrate_hz: 3-10 Punktwolken/s
+    masse_kg: 1.16
+    masse_mm: [290, 58, 100]
+    schnittstelle: 1 GigE; 24 V DC oder PoE++ 802.3bt 90 W
+    preis: {eur_ab: 8900, usd: 13017, quelle: ids_uebersicht, stand: "2026-11-02 (EUR Suchauszug; USD usd_c57)"}
+    quelle: [c_datenblatt, optonic_c57, c_haendler, handbuch_hw, ids_uebersicht, usd_c57]
   x36_5cp:
     name: Ensenso X36 (5 MP, modular; gerechnet mit 8 mm und Basis 200 mm)
     serie: X
@@ -184,7 +237,7 @@ auswahl:
     abstand_m: [0.62, 0.80]                 # Glaeser 0,62-0,80, Teller 0,66-0,84 (untere Tellerflaechen ausserhalb)
     begruendung: >-
       Glaeser 96 % auf <= 5 mm aus dem Farbbild, Teller 71 % (Arm verdeckt den Rest); gleich gut wie die
-      C57-S am selben Ort, guenstiger und kompakter. Mast unter 1,15 m stoesst an den Arm.
+      C57-6-S am selben Ort, guenstiger und kompakter. Mast unter 1,15 m stoesst an den Arm.
   sparvariante:
     kamera: n46_604_16
     montage: wie Empfehlung

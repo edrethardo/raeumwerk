@@ -71,7 +71,9 @@ bereit [Q26].
 | **B57-4** (B-Serie) | 200-W-LED, FlexView 3; 2 × 5 MP (2472 × 2064), Basis 75 mm, f = 4 mm, Vergenz 7° | ja (GN-Variante: RGB-Stereo, grüner Projektor) oder mono (BL) | 210–2000 mm; GN laut Handbuch max. 800 mm | 0,138 mm @ 300, 0,383 @ 500, 0,751 @ 700, 0,981 @ 800 mm | 403 × 380 mm @ 300, 621 × 633 @ 500, 949 × 1012 @ 800 mm | 120 × 56 × 104 mm, **1,10 kg** | 1 GigE; 24 V DC oder PoE++ (802.3bt) 40 W | 65/67 | **7.950 €** | [Q1][Q2][Q6] |
 | **N46-604-16-BL** (N4x, Kunststoff) | LED blau 465 nm, FlexView; 2 × 2,3 MP (1936 × 1216), Basis 100 mm, f = 6 mm, Vergenz 4° | nein | 370–800 mm (N4x allgemein ab 330 mm) | wie N36-604-16 (gleiche Optik, *Annahme*): 0,117 @ 400, 0,183 @ 500, 0,264 @ 600, 0,359 @ 700 mm | 435 × 285 @ 400, 565 × 356 @ 500, 751 × 499 @ 700 mm | 193 × 52 × 60 mm, **0,55 kg** | 1 GigE; 24 V DC oder PoE Klasse 3 (≤ 12,95 W) | 65/67 | N-Serie **5.160 €** (Einstieg; Preis N46 offen) | [Q1][Q4][Q5][Q16] |
 | N36-604-16 (N3x, Alu) | wie N46 | nein | 370–800 mm | 0,183 mm @ 500 mm (s. o.) | wie N46 | 192 × 50 × 52 mm, 0,65 kg | wie N46 | 65/67 | N-Serie 5.160 € | [Q4][Q5] |
-| C57-S / C67-S (C-Serie) | 200-W-LED, FlexView 3; 2 × 5 MP + RGB 2 MP (C67: 8 MP), Basis 240 mm | ja (eigener RGB-Sensor) | 8 mm: 650–2200 mm; 6 mm: 500–5000 mm | 0,1 mm @ 1 m | groß (ab 0,5 m) | 290 × 58 × 100 mm, 1,16 kg | C57: 1 GigE, C67: 5 GigE; 24 V oder PoE++ 90 W | 65/67 | 8.900 € | [Q1][Q3][Q6][Q27] |
+| **C57-6-S** (C-Serie) | 200-W-LED, FlexView 3; 2 × 5 MP (2472 × 2064) + RGB 2 MP, Basis 240 mm, f = 6 mm, Fokus 975 mm | ja (eigener RGB-Sensor) | **750–1500 mm** (Datentabelle bis 1450 mm) | 0,123 @ 750, 0,219 @ 1000, 0,460 @ 1450 mm | 954 × 867 mm @ 1000 mm | 290 × 58 × 100 mm, 1,16 kg | 1 GigE; 24 V oder PoE++ 90 W | 65/67 | 8.900 € (C-Serie ab) | [Q44][Q45][Q1][Q6][Q27] |
+| C57-8-S / C57-12-S (C-Serie) | wie C57-6-S, f = 8 bzw. 12 mm, Fokus 975 mm | ja | **850–1100 mm** / **900–1100 mm** | 0,123 @ 860 … 0,201 @ 1100 (8 mm); 0,111 @ 1000 (12 mm) | 738 × 657 / 502 × 440 mm @ 1000 mm | 290 × 58 × 100 mm, 1,16 kg | wie C57-6-S | 65/67 | wie C57-6-S | [Q44][Q45] |
+| C57-6-M (C-Serie) | wie C57-6-S, Basis 455 mm, Fokus 1850 mm | ja | **1100–5000 mm** | 0,2 mm @ 2 m (Datenblatttabelle ab 1,3 m) | groß (Arbeitsvolumen ~1,0 × 0,9 m @ 1,3 m) | 506 × 58 × 100 mm, **1,66 kg** | wie C57-6-S | 65/67 | wie C57-6-S | [Q44][Q45] |
 | CR-Serie | wie C, Tiefe auf der Kamera gerechnet, 8 MP RGB | ja | wie C | wie C | wie C | ab 1,16 kg | 1 GigE, PoE++ | 65/67 | 10.250 € | [Q1][Q3][Q6] |
 | X30/X36 | 100-W-Projektor, zwei uEye-Kameras modular, 1,6/5 MP | nein | bis > 5 m | modellabhängig | bis 8 m³ | 1,1 kg (1,7 kg mit Basisverlängerung) | 1–2 GigE | optional 65/67 | 9.360 € | [Q1][Q3][Q28] |
 | XR30/XR36 | wie X, Rechnung auf der Projektoreinheit | nein | bis > 5 m | modellabhängig | bis 8 m³ | 1,6 kg (2,2 kg) | 1 GigE | 65/67 | 12.000 € | [Q1][Q3][Q28] |
@@ -96,8 +98,12 @@ gemessene Genauigkeit auf realen Oberflächen [Q32]. Auf Glas gilt sie nicht (§
   z-Werte bei 0,5–0,7 m als B57 (größere Basis 100 mm), aber **kein Farbbild**
   und bei 0,5 m nur 356 mm Sichtfeld in y (Korb 475 mm tief → Abstand ≥ 0,65 m
   oder zwei Aufnahmen).
-- **C/CR/X/XR:** zu groß oder zu weit (ab 0,5–0,65 m), schwer, teurer; keine
-  Vorteile auf Glas. Verworfen.
+- **C/CR/X/XR:** als Kamera für den einen (Ober-)Korb ohne Vorteil (schwer, teurer,
+  keine Besserung auf Glas) — dafür bleibt die B57-4 die Wahl. Für **beide Körbe**
+  ist die C-Serie dagegen nötig, und dort entscheidet der **Betriebsabstand je
+  Variante** (§2.3): nur das **C57-6-S** (750–1500 mm) passt; C57-8-S (850–1100 mm),
+  C57-12-S (900–1100 mm) und C57-6-M (1100–5000 mm) sind zu kurz oder zu weit.
+  C67 ist der Nachfolger der C57.
 - **S10:** abgekündigt. Verworfen.
 
 ### 2.3 Beide Körbe (Ober- und Unterkorb) mit einer festen Kamera
@@ -110,26 +116,50 @@ sie den Oberkorb vollständig, den Unterkorb zu 0 % (0,9 m Abstand); tiefer am s
 Erst ein tiefer, weit auskragender Ausleger (Kamera (0,30; 0,55; 0,90 m), y 0,55 m) bringt
 beide Körbe mit der B57-Farbe ins Bild (Gläser 97 % sichtbar / 100 % ≤ 5 mm, Dessertteller
 92 % / 100 %, Unterkorb-Teller 100 % / 100 %, erreichbarkeitsneutral), hängt aber tief über
-der offenen Maschine und hat am 0,80-m-Ende keine Reserve. Die **C57-S (6 mm)** deckt beide
-Körbe aus demselben, erreichbarkeitsneutralen Mast (0,55; 0,40; 1,15 m) ab (Gläser 100 % /
-100 %, Dessertteller 100 % / 83 %, Unterkorb-Teller 100 % / 83 %) und ist die Empfehlung für
-beide Körbe; sie kostet 950 € mehr und ist 290 mm breit. Zwei B57-4 (je eine über einem Korb)
-erreichen die besten Einzelwerte, kosten aber rund 2 × 7.950 €. Die monochrome N46 hat kein
-Farbbild und findet klares Glas nicht (0 %); sie bleibt nur für Teller brauchbar. Sind beide
-Körbe gleichzeitig ausgezogen, verdeckt der Oberkorb den Unterkorb vollständig – es wird je
-ein Korb herausgezogen.
+der offenen Maschine und hat am 0,80-m-Ende keine Reserve.
+
+**Die C-Serie: entscheidend ist der Betriebsabstand je Variante.** Der frühere Eintrag
+„C57-S, 0,50–5,00 m" war eine Händlerbandbreite über *alle* Fokusvarianten, nicht der
+Betriebsabstand eines lieferbaren Modells. Laut IDS-Datenblatt (Stand 2024-04-24, [Q44])
+gilt je Bestellvariante: **C57-6-S (Art. 1009348) 750–1500 mm**, C57-8-S (1009349)
+850–1100 mm, C57-12-S (1009350) 900–1100 mm, C57-6-M (1009366) 1100–5000 mm. Am Mast aus
+dem Vorlauf (Kamera (0,55; 0,40; 1,15) m über der Korbfront) liegen die Objekte nur
+0,61–1,00 m entfernt: die oberste Glaskante (≈ 0,61 m) **unterschreitet** die
+750-mm-Untergrenze, der Oberkorb fällt aus dem Betriebsbereich (Sichtbarkeit 0 %). Der
+Mast muss weiter weg. Mit dem C57-6-S an **(0,55; 0,50; 1,35) m** liegen Oberkorb
+0,82–0,98 m und Unterkorb 1,02–1,20 m – beide im Bereich 750–1500 mm (≥ 70 mm zur Unter-,
+≥ 300 mm zur Obergrenze), und die Optik bleibt erhalten:
+
+| Kamera / Mast (x; y; z) m | Abstand Oberkorb | Abstand Unterkorb | Oberkorb Gläser sicht / erk | Oberkorb Teller sicht / erk | Unterkorb Teller sicht / erk | Erreichbarkeit |
+|---|---|---|---|---|---|---|
+| C57-6-S, (0,55; 0,40; 1,15) alt | 0,61–0,77 m | 0,81–1,00 m | **0 %** (unter 750 mm) | 30 % / 0 % | 100 % / 83 % | 8/16, 8/8, 4/4 |
+| **C57-6-S, (0,55; 0,50; 1,35)** | 0,82–0,98 m | 1,02–1,20 m | **100 % / 100 %** (1,6 mm) | 100 % / 100 % (1,3 mm) | 100 % / 67–83 % (0,7 mm) | **8/16, 8/8, 4/4** |
+
+Damit ist das **C57-6-S (Art. 1009348)** die Kamera für beide Körbe; die erhöhte Montage
+ist erreichbarkeitsneutral (kein Slot, kein Teller verloren, Ablage 4/4) und kostet rund
+950 € mehr als die B57-4. Zwei B57-4 (je eine über einem Korb) liefern die besten
+Einzelwerte, kosten aber rund 2 × 7.950 €. Die monochrome N46 hat kein Farbbild und findet
+klares Glas nicht (0 %); sie bleibt nur für Teller brauchbar. Sind beide Körbe gleichzeitig
+ausgezogen, verdeckt der Oberkorb den Unterkorb vollständig – es wird je ein Korb
+herausgezogen. Reicht der Bereich einer Standardvariante nicht, baut IDS laut
+Kamera-Selector (Optonic/IDS, [Q45]) Arbeitsbereich und Abstand nach Bedarf; die
+Standard-Varianten decken unser Volumen aber ab.
 
 **Vorbehalte zu den Zahlen.** Die Glasquote (100 % auf ≤ 5 mm) stammt aus einer ideal
 angenommenen Farbsilhouette mit ±1 px Randunsicherheit; an echtem nassem Geschirr ist sie
-schlechter, das muss eine Leihkamera klären. Die Tellerquote 83 % hängt vom Blickwinkel ab.
-Die C57-S liegt am Nahpunkt des Oberkorbs (≈ 0,52 m) dicht an ihrer Arbeitsbereichsgrenze
-(0,50 m), viel Reserve ist dort nicht. Verdeckung durch den Roboterarm in Greifposen ist
-nicht gerechnet – geprüft ist nur, dass die Kamera die Erreichbarkeit nicht verschlechtert.
+schlechter, das muss eine Leihkamera klären. Die Tellerquote (67 % über 8 Seeds, 83 % über 2)
+hängt vom Blickwinkel ab; einzelne Teller liegen mit rund 10 mm über der 5-mm-Grenze. Der
+Abstand wird als Tiefe im Kamerarahmen gemessen (Betriebsabstands-Grenzen 0,75/1,50 m des
+Datenblatts). Verdeckung durch den Roboterarm in Greifposen ist nicht gerechnet – geprüft
+ist nur, dass die Kamera die Erreichbarkeit nicht verschlechtert. Die Optikzahlen sind mit
+dem korrigierten Datenblattmodell (Betriebsabstand, Z-Genauigkeit, Arbeitsvolumen)
+gerechnet.
 
 **Kamera über der Maschine statt am Mast.** Eine feste Kamera auf/über der Arbeitsplatte
 über der Maschine wurde gerastert (x 0,05–0,60 m, y −0,15…+0,10 m, z 0,95–1,45 m, Neigung
-30–75° gegen die Waagerechte, Blick jeweils zur Korbmitte; C57-S, gleiches Werkzeug wie die
-Mastzahlen). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitshöhe**:
+30–75° gegen die Waagerechte, Blick jeweils zur Korbmitte; C57-6-S, gleiches Werkzeug wie die
+Mastzahlen, aber noch mit der früheren Bereichsannahme 0,5–5 m – die Optikzahlen gelten nur,
+soweit die wahren Abstände in 750–1500 mm liegen). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitshöhe**:
 (x 0,35; y 0,05–0,10; z 1,15 m; 60°) ergibt Gläser 100 %, Dessertteller 83 %,
 Unterkorb-Teller 83 % (6 Rauschseeds) – dieselben Zahlen wie der Mast rechts. Diese Lage
 liegt aber in der Reichweite des Arms: mit konservativem Kamerakörper nimmt sie dem Arm die
@@ -375,6 +405,22 @@ Halter sind Annahmen und am echten Teil zu wiegen.
 
 Der Jetson AGX Orin ist in beiden Varianten nicht enthalten (schon geplant).
 
+### 7.3 Variante „beide Körbe“ (Ober- und Unterkorb mit einer Kamera)
+
+| Pos. | Teil | Teilenummer | Preis | Quelle |
+|---|---|---|---|---|
+| 1 | ReBeL 6 DOF + 7. Achse 1000 mm, iRC-Version (Bundle) | RBTX-IGUS-0238 | 10.499,07 € | [Q17] |
+| 2 | **Ensenso C57-6-S** (6 mm, Fokus 975 mm, Basis 240 mm; Betriebsabstand 750–1500 mm) | **1009348** | 8.900,00 € (C-Serie ab) | [Q44][Q45][Q1] |
+| 3 | igus ReBeL-Greifer + eigene Finger | 0-LCA-GRI-0100 | 1.954,07 € | [Q20] |
+| 4 | Kalibrierplatte 390 × 390 × 3 mm, Raster 15 × 15 / 48 mm | — | offen | [Q44] |
+| 5 | PoE++-Injektor 90 W (802.3bt) oder 24-V-Netzteil, GigE-Kabel M12 | — | offen | [Q44][Q6] |
+| 6 | Kameramast und -ausleger (Eigenbau Aluprofil); Kamera (0,55; 0,50; 1,35) m | — | offen | — |
+| 7–8 | Podest und Sicherheitstechnik wie Hauptvariante | — | offen | — |
+| | **Summe bekannter Posten** | | **21.353,14 €** | |
+
+Die Kamera sitzt höher als in der B57-Variante (z 1,35 m statt 1,15 m) und bleibt
+erreichbarkeitsneutral (§2.3). Summe = Hauptvariante − 7.950 € + 8.900 €.
+
 ## 8. Was in die Simulation muss
 
 | Was | Wert | Wohin |
@@ -382,6 +428,7 @@ Der Jetson AGX Orin ist in beiden Varianten nicht enthalten (schon geplant).
 | Wiederholgenauigkeit 7. Achse (iRC-Version) | ±1,5 mm statt 0,3 mm (0,3 mm gilt für die DIO-Version) | `config/robot.yaml` `achse7.wiederholgenauigkeit_m`, Quelle [Q17] |
 | Lastkurve | 2 kg ≤ 400 mm, 1 kg bei 500 mm | Prüfung je Wegpunkt: Hebelarm ≤ r_max(m) |
 | Kamera B57-4 | 2 Kameras 2472 × 2064, f = 4 mm, Pixel aus Sichtfeld (621 mm bei 500 mm), Basis 75 mm, Vergenz 7°, Fokus 350 mm, Bereich 210–800 mm (Farbe), z-Rauschen nach Tabelle §2.1 | neues Sensormodell: zwei gerenderte Kameras + Tiefe mit Rauschen |
+| Kamera C57-6-S (beide Körbe) | 2 Kameras 2472 × 2064, Arbeitsvolumen 954 × 867 mm @ 1000 mm, Basis 240 mm, Fokus 975 mm, **Bereich 750–1500 mm**, z-Rauschen σ(z) = 0,214 · z² mm (0,219 mm @ 1 m), 3–10 fps | wie B57 (Sensormodell + Bereichsgrenzen) |
 | Glasverhalten | Tiefe auf Glaspixeln entfernen (Typ II) oder durch Hintergrundtiefe ersetzen (Typ I) [Q35] | Maske aus der Semantik der Szene |
 | Kameralage | Mast auf dem Schlitten, Blick schräg auf den ausgezogenen Korb | Szene, Hand-Auge-Transformation als Parameter |
 | Greifer | igus-Greifer: Maße aus CAD (igus Download), Masse 0,5 kg (*Annahme* bis gewogen), Kraft offen | `config/robot.yaml` `greifer` |
@@ -452,3 +499,5 @@ einfache Tiefenmodell mit Glasmaske.
 - [Q41] IDS, Polarisationskameras: https://www.ids-imaging.us/techtipp-details/items/techtip-on-camera-polarization.html
 - [Q42] igus, ReBeL Cobot-Zertifizierung: https://www.igus.com/automation/news/n23-rebel-cobot
 - [Q43] VIRTUS-FPP, virtuelle Streifenprojektion in Isaac Sim: https://arxiv.org/abs/2509.22685
+- [Q44] IDS, Datenblatt „Ensenso C-Serie – Coloured 3D Vision“ (Deckblatt + Einzeldatenblätter C57-6-S/8-S/12-S und C57-6-M/8-M/12-M), Stand 2024-04-24/22; Exemplar: https://www.imagesspa.it/image/catalog/pdf/landing/Ensenso_C57_datasheet.pdf (Betriebsabstand „Operating Distance“, Z-Genauigkeitstabelle, Arbeitsvolumen „View Field“, Artikelnummern 1009348/49/50/66/67/68)
+- [Q45] Optonic/IDS, Ensenso C57 – Produktseite und Kamera-Selector (Arbeitsbereich/Abstand wählbar, Kamera „nach Bedarf gebaut“): https://www.optonic.com/en/products/ensenso/c57

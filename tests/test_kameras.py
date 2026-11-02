@@ -62,3 +62,22 @@ def test_empfehlung_verweist_auf_katalog():
     lo, hi = kat["kameras"][a["empfehlung"]["kamera"]]["arbeitsbereich_m"]
     d0, d1 = a["empfehlung"]["abstand_m"]
     assert lo <= d0 < d1 <= hi
+
+
+def test_c57_modelle_offizielle_betriebsabstaende():
+    """Die C-Serie traegt den Betriebsabstand je Bestellvariante (IDS-Datenblatt), nicht die
+    Haendlerbandbreite ueber alle Fokusvarianten. Die Variante C57-6-S deckt das Sichtvolumen
+    des Aufbaus ohne Ueberstand (~0,82-1,20 m); 8-S und 12-S reichen dorthin nicht."""
+    k = _kat()["kameras"]
+    erwartet = {
+        "c57_6_s": ("1009348", [0.75, 1.50]),
+        "c57_8_s": ("1009349", [0.85, 1.10]),
+        "c57_12_s": ("1009350", [0.90, 1.10]),
+    }
+    for name, (artikel, bereich) in erwartet.items():
+        assert k[name]["artikelnummer"] == artikel, name
+        assert k[name]["arbeitsbereich_m"] == bereich, name
+    zt = k["c57_6_s"]["z_genauigkeit_mm"]
+    assert zt == pytest.approx({0.75: 0.123, 1.0: 0.219, 1.45: 0.46}), zt
+    for name in ("c57_8_s", "c57_12_s"):
+        assert k[name]["arbeitsbereich_m"][1] < 1.20, name
