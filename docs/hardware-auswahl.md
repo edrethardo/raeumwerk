@@ -100,6 +100,25 @@ gemessene Genauigkeit auf realen Oberflächen [Q32]. Auf Glas gilt sie nicht (§
   Vorteile auf Glas. Verworfen.
 - **S10:** abgekündigt. Verworfen.
 
+### 2.3 Beide Körbe (Ober- und Unterkorb) mit einer festen Kamera
+
+Soll eine feste Kamera beide Körbe unterstützen (der Mensch zieht je einen Korb heraus,
+Oberkorb z 0,42–0,64 m, Unterkorb z 0,13–0,27 m), scheidet die B57-4 Farbe als *einzige*
+Kamera aus: ihr Arbeitsbereich endet bei 0,80 m. Am hohen Mast (0,55; 0,40; 1,15 m) sieht
+sie den Oberkorb vollständig, den Unterkorb zu 0 % (0,9 m Abstand); tiefer am selben Mast
+(z 0,90–0,95 m) nimmt sie dem Arm ein Glas und einen Teller weg (Erreichbarkeit 7/16, 7/8).
+Erst ein tiefer, weit auskragender Ausleger (Kamera (0,30; 0,55; 0,90 m), y 0,55 m) bringt
+beide Körbe mit der B57-Farbe ins Bild (Gläser 97 % sichtbar / 100 % ≤ 5 mm, Dessertteller
+92 % / 100 %, Unterkorb-Teller 100 % / 100 %, erreichbarkeitsneutral), hängt aber tief über
+der offenen Maschine und hat am 0,80-m-Ende keine Reserve. Die **C57-S (6 mm)** deckt beide
+Körbe aus demselben, erreichbarkeitsneutralen Mast (0,55; 0,40; 1,15 m) ab (Gläser 100 % /
+100 %, Dessertteller 100 % / 83 %, Unterkorb-Teller 100 % / 83 %) und ist die Empfehlung für
+beide Körbe; sie kostet 950 € mehr und ist 290 mm breit. Zwei B57-4 (je eine über einem Korb)
+erreichen die besten Einzelwerte, kosten aber rund 2 × 7.950 €. Die monochrome N46 hat kein
+Farbbild und findet klares Glas nicht (0 %); sie bleibt nur für Teller brauchbar. Sind beide
+Körbe gleichzeitig ausgezogen, verdeckt der Oberkorb den Unterkorb vollständig – es wird je
+ein Korb herausgezogen.
+
 ## 3. Glas und Nässe
 
 ### 3.1 Was der Hersteller sagt
