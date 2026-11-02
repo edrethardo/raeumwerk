@@ -73,7 +73,7 @@ bereit [Q26].
 | N36-604-16 (N3x, Alu) | wie N46 | nein | 370–800 mm | 0,183 mm @ 500 mm (s. o.) | wie N46 | 192 × 50 × 52 mm, 0,65 kg | wie N46 | 65/67 | N-Serie 5.160 € | [Q4][Q5] |
 | **C57-6-S** (C-Serie) | 200-W-LED, FlexView 3; 2 × 5 MP (2472 × 2064) + RGB 2 MP, Basis 240 mm, f = 6 mm, Fokus 975 mm | ja (eigener RGB-Sensor) | **750–1500 mm** (Datentabelle bis 1450 mm) | 0,123 @ 750, 0,219 @ 1000, 0,460 @ 1450 mm | 954 × 867 mm @ 1000 mm | 290 × 58 × 100 mm, 1,16 kg | 1 GigE; 24 V oder PoE++ 90 W | 65/67 | 8.900 € (C-Serie ab) | [Q44][Q45][Q1][Q6][Q27] |
 | C57-8-S / C57-12-S (C-Serie) | wie C57-6-S, f = 8 bzw. 12 mm, Fokus 975 mm | ja | **850–1100 mm** / **900–1100 mm** | 0,123 @ 860 … 0,201 @ 1100 (8 mm); 0,111 @ 1000 (12 mm) | 738 × 657 / 502 × 440 mm @ 1000 mm | 290 × 58 × 100 mm, 1,16 kg | wie C57-6-S | 65/67 | wie C57-6-S | [Q44][Q45] |
-| C57-6-M (C-Serie) | wie C57-6-S, Basis 455 mm, Fokus 1850 mm | ja | **1100–5000 mm** | 0,2 mm @ 2 m (Datenblatttabelle ab 1,3 m) | groß (Arbeitsvolumen ~1,0 × 0,9 m @ 1,3 m) | 506 × 58 × 100 mm, **1,66 kg** | wie C57-6-S | 65/67 | wie C57-6-S | [Q44][Q45] |
+| C57-6-M (C-Serie) | wie C57-6-S, Basis 455 mm, Fokus 1850 mm | ja | **1100–5000 mm** | 0,196 @ 1304 … **0,377 @ 1807 mm** (Datentabelle endet bei 1807 mm) | **1321 × 881 mm @ 1304 mm** | 506 × 58 × 100 mm, **1,66 kg** | wie C57-6-S | 65/67 | wie C57-6-S | [Q44][Q45] |
 | CR-Serie | wie C, Tiefe auf der Kamera gerechnet, 8 MP RGB | ja | wie C | wie C | wie C | ab 1,16 kg | 1 GigE, PoE++ | 65/67 | 10.250 € | [Q1][Q3][Q6] |
 | X30/X36 | 100-W-Projektor, zwei uEye-Kameras modular, 1,6/5 MP | nein | bis > 5 m | modellabhängig | bis 8 m³ | 1,1 kg (1,7 kg mit Basisverlängerung) | 1–2 GigE | optional 65/67 | 9.360 € | [Q1][Q3][Q28] |
 | XR30/XR36 | wie X, Rechnung auf der Projektoreinheit | nein | bis > 5 m | modellabhängig | bis 8 m³ | 1,6 kg (2,2 kg) | 1 GigE | 65/67 | 12.000 € | [Q1][Q3][Q28] |
@@ -159,7 +159,10 @@ gerechnet.
 über der Maschine wurde gerastert (x 0,05–0,60 m, y −0,15…+0,10 m, z 0,95–1,45 m, Neigung
 30–75° gegen die Waagerechte, Blick jeweils zur Korbmitte; C57-6-S, gleiches Werkzeug wie die
 Mastzahlen, aber noch mit der früheren Bereichsannahme 0,5–5 m – die Optikzahlen gelten nur,
-soweit die wahren Abstände in 750–1500 mm liegen). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitshöhe**:
+soweit die wahren Abstände in 750–1500 mm liegen; Ursache: die Vorstudien rechneten mit einer
+Brennweite von 1739 px, das echte Arbeitsvolumen der C57-6-S (954 × 867 mm bei 1 m, 3,45 µm
+Pitch) entspricht rund 2590 px – das alte Sichtfeld war also ~35 % zu weit, die Rasterung
+damit optisch zu optimistisch). Optisch erreicht sie den Mast rechts nur **mittig und auf Arbeitshöhe**:
 (x 0,35; y 0,05–0,10; z 1,15 m; 60°) ergibt Gläser 100 %, Dessertteller 83 %,
 Unterkorb-Teller 83 % (6 Rauschseeds) – dieselben Zahlen wie der Mast rechts. Diese Lage
 liegt aber in der Reichweite des Arms: mit konservativem Kamerakörper nimmt sie dem Arm die
@@ -428,7 +431,7 @@ erreichbarkeitsneutral (§2.3). Summe = Hauptvariante − 7.950 € + 8.900 €.
 | Wiederholgenauigkeit 7. Achse (iRC-Version) | ±1,5 mm statt 0,3 mm (0,3 mm gilt für die DIO-Version) | `config/robot.yaml` `achse7.wiederholgenauigkeit_m`, Quelle [Q17] |
 | Lastkurve | 2 kg ≤ 400 mm, 1 kg bei 500 mm | Prüfung je Wegpunkt: Hebelarm ≤ r_max(m) |
 | Kamera B57-4 | 2 Kameras 2472 × 2064, f = 4 mm, Pixel aus Sichtfeld (621 mm bei 500 mm), Basis 75 mm, Vergenz 7°, Fokus 350 mm, Bereich 210–800 mm (Farbe), z-Rauschen nach Tabelle §2.1 | neues Sensormodell: zwei gerenderte Kameras + Tiefe mit Rauschen |
-| Kamera C57-6-S (beide Körbe) | 2 Kameras 2472 × 2064, Arbeitsvolumen 954 × 867 mm @ 1000 mm, Basis 240 mm, Fokus 975 mm, **Bereich 750–1500 mm**, z-Rauschen σ(z) = 0,214 · z² mm (0,219 mm @ 1 m), 3–10 fps | wie B57 (Sensormodell + Bereichsgrenzen) |
+| Kamera C57-6-S (beide Körbe) | 2 Kameras 2472 × 2064, Arbeitsvolumen 954 × 867 mm @ 1000 mm, Basis 240 mm, Fokus 975 mm, **Bereich 750–1500 mm**, z-Rauschen σ(z) = 0,219 · z² mm (0,219 mm @ 1 m), 3–10 fps | wie B57 (Sensormodell + Bereichsgrenzen) |
 | Glasverhalten | Tiefe auf Glaspixeln entfernen (Typ II) oder durch Hintergrundtiefe ersetzen (Typ I) [Q35] | Maske aus der Semantik der Szene |
 | Kameralage | Mast auf dem Schlitten, Blick schräg auf den ausgezogenen Korb | Szene, Hand-Auge-Transformation als Parameter |
 | Greifer | igus-Greifer: Maße aus CAD (igus Download), Masse 0,5 kg (*Annahme* bis gewogen), Kraft offen | `config/robot.yaml` `greifer` |

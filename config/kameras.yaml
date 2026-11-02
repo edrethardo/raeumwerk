@@ -125,7 +125,7 @@ kameras:
     arbeitsbereich_m: [0.75, 1.50]          # Betriebsabstand (Datenblatt); Z-Tabelle bis 1,45 m
     sichtfeld_mm: {1.0: [954, 867]}         # View Field X/Y bei 1 m (Datenblatt-Arbeitsvolumen)
     z_genauigkeit_mm: {0.75: 0.123, 1.0: 0.219, 1.45: 0.46}
-    sigma_k: 0.214e-3
+    sigma_k: 0.219e-3                        # aus 0,219 mm @ 1 m; 0,123/0,75^2 und 0,46/1,45^2 liegen bei 0,219
     aufloesung_px: [2472, 2064]
     farbe: true
     projektor: 200 W LED, C-Mount, FlexView 3
