@@ -18,6 +18,7 @@ from typing import Callable, Dict, List, Optional
 
 import numpy as np
 
+from . import robustheit as RB
 from . import schaetzer as S
 from .sensor import Fehlermodell, aufnehmen, kalibrierfehler, maske_verrauschen
 from .strahlen import ENSENSO, Kamera, Prim, d405_am_greifer, greifer_prims, r_greif
@@ -74,6 +75,15 @@ def _maske(auf, ziel: Prim, rng, negativ, prims, gruppe, fm=None):
     return maske_verrauschen(m, rng, fm.maske_rand_kippen, fm.maske_versatz_px)
 
 
+def _drift_anwenden(out: Dict, e: Dict, posedrift: Dict) -> None:
+    """Posefehler der Station auf die Ensenso-Grobpose ``e`` legen (in place) und im
+    Ergebnis festhalten. Danach baut der D405 die Vorposition aus der gestoerten Lage —
+    die Nahekorrektur sieht das Ziel unabhaengig neu."""
+    RB.wende_an(e, posedrift)
+    out["posedrift"] = {"dp": np.asarray(posedrift["dp"], float).tolist(),
+                        "grad": float(posedrift.get("grad", 0.0))}
+
+
 def _glas(auf, maske, z_boden, c0, rng):
     return S.glas_schaetzen(auf, maske, z_boden, c0, rng=rng)
 
@@ -86,7 +96,8 @@ def nennlage_aus_koerper(k) -> Dict:
 
 def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int = 0, negativ: Optional[str] = None,
               fm: Optional[Fehlermodell] = None, skala_ensenso: float = 2.0, skala_d405: float = 1.0,
-              mit_aufnahmen: bool = False, soll_tol_m: float = 0.015, prims: Optional[List[Prim]] = None) -> Dict:
+              mit_aufnahmen: bool = False, soll_tol_m: float = 0.015, prims: Optional[List[Prim]] = None,
+              posedrift: Optional[Dict] = None) -> Dict:
     """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller').
 
     ``nennlage(korbauszug_delta_m)`` liefert die Nennlage laut Belegungsplan (``mitte``, ``rot``,
@@ -133,11 +144,17 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
             out["gruende"] += [f"ensenso:{g}" for g in e["gruende"]]
             out["ok"] = False
             return out
+        if posedrift is not None:
+            _drift_anwenden(out, e, posedrift)
         c_e = np.asarray(e["c"], float)
         out["ensenso"]["fehler_mm"] = float(1e3 * np.linalg.norm(c_e - wahr[:2]))
         gier = 0.0
         tcp_vor = np.array([c_e[0], c_e[1], z_boden + e["r"] * 0 + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
         oeffnung = 0.099
+        pose0 = np.array([c_e[0], c_e[1], n_mitte[2]])          # S0: Griff auf der Grobpose
+        out["s0_pose_m"] = pose0.tolist()
+        out["s0_fehler_mm"] = float(1e3 * np.linalg.norm(pose0[:2] - wahr[:2]))
+        out["s0_gier_grad"] = 0.0
     else:
         n_soll = np.asarray(nenn["rot"], float)[:, 2]     # Lage der Tellerreihe laut Plan
         e = S.teller_schaetzen(auf_e, m_e, n_soll, n_mitte, halbdicke=float(n_halb[2]), rng=rng)
@@ -148,12 +165,17 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
             out["gruende"] += [f"ensenso:{g}" for g in e["gruende"]]
             out["ok"] = False
             return out
+        if posedrift is not None:
+            _drift_anwenden(out, e, posedrift)
         c_e = np.asarray(e["c"], float)
         out["ensenso"]["fehler_mm"] = float(1e3 * np.linalg.norm(c_e - wahr))
         gier = 90.0
         r_t = float(n_halb[0])
         tcp_vor = np.array([c_e[0], c_e[1], c_e[2] + r_t + 0.02 + VORPOSITION])
         oeffnung = 0.035
+        out["s0_pose_m"] = [float(v) for v in c_e]
+        out["s0_fehler_mm"] = float(1e3 * np.linalg.norm(c_e - wahr))
+        out["s0_gier_grad"] = float(e.get("gier_grad", gier))
     # 2. D405 in der Vorposition ueber der Grobpose
     Rt = r_greif(gier)
     cam_d = d405_am_greifer(tcp_vor, Rt, skala=skala_d405)

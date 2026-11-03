@@ -463,6 +463,10 @@ def main() -> int:
     ap.add_argument("--variante", default=TELLER_VARIANTE, help="Tellergriff-Variante (finger/tellergriff/varianten.yaml)")
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--wahrnehmung", action="store_true")
+    ap.add_argument("--posedrift", default=None, help="Posefehler der Station auf die geschaetzte "
+                                                      "Objektpose, \"T_MM,R_GRAD\" (Richtung/Achse aus --seed)")
+    ap.add_argument("--strategie", choices=["s0", "s1"], default="s1",
+                    help="s0 blind (Griff auf der gestoerten Grobpose), s1 Nahekorrektur (D405)")
     ap.add_argument("--negativ", default=None)
     ap.add_argument("--ohne-pruefung", action="store_true", help="Negativtest: Griff trotz Abbruchgrund")
     ap.add_argument("--voll", action="store_true")
@@ -491,14 +495,26 @@ def main() -> int:
         abw_p, tabw_p = copy.deepcopy(abw), copy.deepcopy(tabw)
         if args.wahrnehmung:
             from wahrnehmung import griffpose as WL
+            from wahrnehmung import robustheit as RB
+            drift = None
+            if args.posedrift:
+                _tm, _rg = (float(x) for x in args.posedrift.split(","))
+                _ax = [0.0, 0.0, 1.0] if art == "teller" else None
+                drift = RB.drift_fest(np.random.default_rng(9000 + (args.seed or 0)), _tm * 1e-3, _rg, achse=_ax)
+                rec["posedrift"] = {k: (v.tolist() if hasattr(v, "tolist") else v) for k, v in drift.items()}
             est = WL.schaetzen(art, w_true, s, nennlage_fn(A, sz, f, art, s), seed=args.seed or 0,
-                               negativ=args.negativ)
+                               negativ=args.negativ, posedrift=drift)
             rec["wahrnehmung"] = est
-            print("WAHRNEHMUNG", json.dumps({k: est[k] for k in ("ok", "gruende", "fehler_mm") if k in est}), flush=True)
-            if not est["ok"] and not args.ohne_pruefung:
+            rec["strategie"] = args.strategie
+            print("WAHRNEHMUNG", json.dumps({k: est[k] for k in ("ok", "gruende", "fehler_mm", "s0_fehler_mm") if k in est}), flush=True)
+            if "s0_pose_m" not in est:
                 rec.update(ok=False, abgebrochen=True, erfolg=None)
                 raise SystemExit(0)
-            p_est = np.asarray(est["pose_m"], float)
+            if not est["ok"] and not args.ohne_pruefung and args.strategie == "s1":
+                rec.update(ok=False, abgebrochen=True, erfolg=None)
+                raise SystemExit(0)
+            p_est = np.asarray(est["s0_pose_m"] if args.strategie == "s0" else est["pose_m"], float)
+            gier_est = float(est.get("s0_gier_grad" if args.strategie == "s0" else "gier_grad", 0.0))
             abw_p.korbauszug_delta_m = float(est["korbauszug_delta_m"])
             if art == "glas":
                 aus = float(A.d["ziele"]["slots"]["oberkorb_auszug_m"])
@@ -512,7 +528,7 @@ def main() -> int:
                 km = w_true.pruefer.m["oberkorb"]
                 vorne = km["vorne_eingeschoben_y_m"] + aus + abw_p.korbauszug_delta_m
                 tl = list(tabw_p["teller"])
-                tl[s] = (float(p_est[0] - TELLER_X), float(p_est[1] - (vorne - TELLER_TIEFE[s])), float(est.get("gier_grad", 0.0)))
+                tl[s] = (float(p_est[0] - TELLER_X), float(p_est[1] - (vorne - TELLER_TIEFE[s])), gier_est)
                 tabw_p["teller"] = tl
         w_plan = welt(A, sz, f, abw_p, tabw_p)
         if art == "glas":
