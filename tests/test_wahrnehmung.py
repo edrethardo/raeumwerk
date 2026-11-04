@@ -7,12 +7,17 @@ import numpy as np
 import pytest
 
 from finger.tellergriff import varianten as TV
+from wahrnehmung import griffpose as WG
 from wahrnehmung import schaetzer as S
 from wahrnehmung.sensor import Fehlermodell, aufnehmen, kalibrierfehler, maske_verrauschen
-from wahrnehmung.strahlen import D405, ENSENSO, Kamera, Prim, d405_am_greifer, r_greif, schnitt
+from wahrnehmung.strahlen import (D405, ENSENSO, ENSENSO_ALT, Kamera, Prim, d405_am_greifer, ensenso_modell,
+                                  modell_aus_katalog, r_greif, schnitt)
 
 KOPF = np.diag([1.0, -1.0, -1.0])
 TELLER_ROT = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+# Stationskamera: neuer Standard (C57-6-S, Mast 1,35 m) und alter Stand (B57, Mast 1,10 m)
+STATION = pytest.mark.parametrize("kamera,pose", [(ENSENSO, WG.ENSENSO_POSE), (ENSENSO_ALT, WG.ENSENSO_POSE_ALT)],
+                                  ids=["c57_6_s", "b57_alt"])
 
 
 def _boden():
@@ -108,10 +113,11 @@ def _teller_szene(c):
     return prims
 
 
-def test_teller_ebene_und_kreis_aus_der_ensenso():
+@STATION
+def test_teller_ebene_und_kreis_aus_der_ensenso(kamera, pose):
     c = np.array([0.15, 0.30])
     prims = _teller_szene(c)
-    cam = Kamera.zielend("e", ENSENSO, (0.55, 0.40, 1.10), (0.30, 0.17, 0.48), skala=3.0)
+    cam = Kamera.zielend("e", kamera, *pose, skala=3.0)
     rng = np.random.default_rng(5)
     auf = aufnehmen(prims, cam, rng, Fehlermodell(), roi=(np.r_[c, 0.6], 0.2))
     e = S.teller_schaetzen(auf, auf.maske_wahr("teller_1"), [0, 1, 0], np.r_[c, 0.595], rng=rng)
@@ -121,10 +127,11 @@ def test_teller_ebene_und_kreis_aus_der_ensenso():
     assert e["modell"] == "Teller Ø 190 mm"
 
 
-def test_negativ_teller_doppelt_wird_abgelehnt():
+@STATION
+def test_negativ_teller_doppelt_wird_abgelehnt(kamera, pose):
     c = np.array([0.15, 0.30])
     prims = _teller_szene(c)
-    cam = Kamera.zielend("e", ENSENSO, (0.55, 0.40, 1.10), (0.30, 0.17, 0.48), skala=3.0)
+    cam = Kamera.zielend("e", kamera, *pose, skala=3.0)
     rng = np.random.default_rng(5)
     auf = aufnehmen(prims, cam, rng, Fehlermodell(), roi=(np.r_[c, 0.6], 0.2))
     m = auf.maske_wahr("teller_1") | auf.maske_wahr("teller_0")
@@ -218,11 +225,16 @@ def test_griffpose_glas_folgt_der_szene():
     from wahrnehmung import griffpose as WG
     w = _welt_glas()
     w2 = _verschoben(w, 0, (0.004, 0.0, 0.0))
-    a = WG.schaetzen("glas", w, 0, _nenn_glas(), seed=1, skala_ensenso=2.0, skala_d405=1.5)
-    b = WG.schaetzen("glas", w2, 0, _nenn_glas(), seed=1, skala_ensenso=2.0, skala_d405=1.5)
-    assert a["ok"] and b["ok"], (a["gruende"], b["gruende"])
-    assert b["pose_m"][0] - a["pose_m"][0] == pytest.approx(0.004, abs=0.0015)
-    assert b["fehler_mm"] < 4.0
+    # Rauschen und Greiferposition aendern sich mit dem Ensenso-Ergebnis: ueber vier Seeds mitteln
+    delta, fehler = [], []
+    for seed in (1, 2, 3, 4):
+        a = WG.schaetzen("glas", w, 0, _nenn_glas(), seed=seed, skala_ensenso=2.0, skala_d405=1.5)
+        b = WG.schaetzen("glas", w2, 0, _nenn_glas(), seed=seed, skala_ensenso=2.0, skala_d405=1.5)
+        assert a["ok"] and b["ok"], (a["gruende"], b["gruende"])
+        delta.append(b["pose_m"][0] - a["pose_m"][0])
+        fehler.append(b["fehler_mm"])
+    assert float(np.mean(delta)) == pytest.approx(0.004, abs=0.0015)
+    assert max(fehler) < 4.0
 
 
 def _welt_teller(c=(0.15, 0.30)):
@@ -287,10 +299,90 @@ def test_griffpose_teller_widerspruch_ensenso_d405():
     assert not v["ok"]
 
 
-@pytest.mark.parametrize("modell,z", [(ENSENSO, 0.6), (D405, 0.3)])
+def test_standardkamera_ist_c57_6_s_aus_dem_katalog():
+    """Brennweite aus dem Arbeitsvolumen 954 x 867 mm bei 1 m und 2472 x 2064 px; Betriebsabstand und
+    sigma_k aus dem Katalog; der Standard der Station ist dieses Modell, der alte Stand bleibt waehlbar."""
+    assert ENSENSO["w"] == 2472 and ENSENSO["h"] == 2064
+    assert ENSENSO["f"] == pytest.approx(2472 / 0.954, rel=1e-9)        # 2591,2 px
+    assert ENSENSO["fy"] == pytest.approx(2064 / 0.867, rel=1e-9)       # 2380,6 px
+    assert (ENSENSO["dmin"], ENSENSO["dmax"]) == (0.75, 1.50)
+    assert ENSENSO["sigma_k"] == pytest.approx(0.219e-3)
+    # Rueckrechnung: bei 1 m deckt das Bild genau 954 x 867 mm
+    assert 2472 / ENSENSO["f"] == pytest.approx(0.954)
+    assert 2064 / ENSENSO["fy"] == pytest.approx(0.867)
+    assert ensenso_modell() is ENSENSO and ensenso_modell(None) is ENSENSO
+    assert ensenso_modell("b57_alt") is ENSENSO_ALT
+    assert ENSENSO_ALT["f"] == pytest.approx(1628.7) and ENSENSO_ALT["dmin"] == 0.21
+    assert WG.ensenso().modell is ENSENSO
+    assert WG.ensenso(modell="b57_alt").modell is ENSENSO_ALT
+    # anderer Katalogeintrag ueber den Schluessel: C57-8-S hat ein engeres Sichtfeld (738 mm) und 0,85-1,10 m
+    m8 = modell_aus_katalog("c57_8_s")
+    assert m8["f"] == pytest.approx(2472 / 0.738, rel=1e-3) and (m8["dmin"], m8["dmax"]) == (0.85, 1.10)
+    with pytest.raises(KeyError):
+        modell_aus_katalog("gibt_es_nicht")
+
+
+def test_standardpose_neigung_und_beide_koerbe_im_betriebsabstand():
+    (c, a) = WG.ENSENSO_POSE
+    assert c == (0.55, 0.50, 1.35)
+    v = np.asarray(a) - np.asarray(c)
+    assert math.degrees(math.atan2(-v[2], math.hypot(v[0], v[1]))) == pytest.approx(60.0)
+    # Alter Mast: Blickachse ebenfalls ~60 Grad (Vorstudien)
+    va = np.asarray(WG.ENSENSO_POSE_ALT[1]) - np.asarray(WG.ENSENSO_POSE_ALT[0])
+    assert math.degrees(math.atan2(-va[2], math.hypot(va[0], va[1]))) == pytest.approx(61.0, abs=1.0)
+    # eigene Neigung: 45 Grad
+    c2, a2 = WG.ensenso_pose_aus((0.55, 0.50, 1.35), 45.0)
+    v2 = np.asarray(a2) - np.asarray(c2)
+    assert math.degrees(math.atan2(-v2[2], math.hypot(v2[0], v2[1]))) == pytest.approx(45.0)
+
+
+def _boden_punkte_kamera(modell, z):
+    boden = Prim("boden", "tisch", "box", np.array([0.0, 0.0, -0.005]), np.array([2.0, 2.0, 0.005]))
+    cam = Kamera("k", modell, np.array([0.0, 0.0, z]), r_greif(0.0), skala=8.0)
+    fm = Fehlermodell(nass_ausfall=0.0, kante_ausfall=0.0)
+    return aufnehmen([boden], cam, np.random.default_rng(3), fm)
+
+
+@pytest.mark.parametrize("z,wert", [(0.70, False), (0.74, False), (0.76, True), (1.00, True), (1.49, True), (1.51, False),
+                                    (1.80, False)])
+def test_betriebsabstand_ausserhalb_ist_nicht_gemessen(z, wert):
+    """Punkte ausserhalb 0,75-1,50 m (Kamerarahmen-z) haben keinen Wert (Grund 'bereich'); der Rest schon.
+    Kamera senkrecht ueber ebenem Boden: z der Bodenpunkte = Hoehe der Kamera."""
+    auf = _boden_punkte_kamera(ENSENSO, z)
+    treffer = np.isfinite(auf.t_wahr)
+    assert treffer.sum() > 100
+    gueltig = float(np.isfinite(auf.mess[treffer]).mean())
+    if wert:
+        assert gueltig > 0.9
+    else:
+        assert gueltig == 0.0
+        assert np.all(auf.grund[treffer] == 1)
+
+
+def test_altes_modell_misst_im_nahbereich_das_neue_nicht():
+    """Gleiche Szene, 0,6 m: altes B57 (0,21-2,0 m) misst, C57-6-S (ab 0,75 m) nicht."""
+    assert np.isfinite(_boden_punkte_kamera(ENSENSO_ALT, 0.6).mess).mean() > 0.5
+    assert np.isfinite(_boden_punkte_kamera(ENSENSO, 0.6).mess).sum() == 0
+
+
+def test_sichtfeld_ist_954_x_867_mm_bei_1_m():
+    """Das Bild der C57-6-S deckt bei 1 m eine Flaeche von 954 x 867 mm ab: Randpunkte projizieren auf die
+    Bildraender (Raster volle Aufloesung)."""
+    cam = Kamera("k", ENSENSO, np.array([0.0, 0.0, 1.0]), r_greif(0.0), skala=1.0)
+    h, w, _, _ = cam.raster()
+    assert (w, h) == (2472, 2064)
+    # r_greif(0): Bild-rechts = Welt-y, Bild-unten = Welt-x; Kamera 1 m ueber dem Boden
+    Q = (np.array([[0.0, 0.477, 0.0], [0.0, -0.477, 0.0], [0.4335, 0.0, 0.0], [-0.4335, 0.0, 0.0]]) - cam.C) @ cam.R
+    u = Q[:, 0] / Q[:, 2] * cam.raster()[2]
+    v = Q[:, 1] / Q[:, 2] * cam.raster()[3]
+    assert u[:2] == pytest.approx([w / 2, -w / 2], abs=1e-6)
+    assert v[2:] == pytest.approx([h / 2, -h / 2], abs=1e-6)
+
+
+@pytest.mark.parametrize("modell,z", [(ENSENSO, 1.0), (ENSENSO_ALT, 0.6), (D405, 0.3)])
 def test_tiefenrauschen_sigma_wie_datenblatt(modell, z):
-    """Rauschen entlang des Strahls: Streuung = sigma_k * z^2 (Ensenso 0,55 mm bei 0,6 m, D405 1,8 mm bei
-    0,3 m). Mit sigma 0 (Mutation) oder doppeltem sigma wird der Test rot."""
+    """Rauschen entlang des Strahls: Streuung = sigma_k * z^2 (C57-6-S 0,219 mm bei 1 m, altes Modell
+    0,55 mm bei 0,6 m, D405 1,8 mm bei 0,3 m). Mit sigma 0 (Mutation) oder doppeltem sigma wird der Test rot."""
     boden = Prim("boden", "tisch", "box", np.array([0.0, 0.0, -0.005]), np.array([0.5, 0.5, 0.005]))
     cam = Kamera("k", modell, np.array([0.0, 0.0, z]), r_greif(0.0), skala=4.0)
     fm = Fehlermodell(nass_ausfall=0.0, kante_ausfall=0.0)

@@ -6,6 +6,11 @@ Liefert die Tabellen "Wahrnehmung allein" und "Negativtests" in docs/griff-verra
     griff_wahrnehmung.py --art glas|teller --seeds 1-20 [--negativ MODUS] [--ziel N]
                          [--bild DATEI.png] [--json DATEI.json]
     griff_wahrnehmung.py --alle AUSGABE     # 20 Seeds je Objekt + 3 Negativtests je 5 Seeds
+    griff_wahrnehmung.py --vergleich AUSGABE [--seeds 1-16]   # altes Sichtfeld gegen C57-6-S
+
+Stationskamera: ``--kamera`` (Standard c57_6_s; ``b57_alt`` = altes Sichtfeld), ``--mast X,Y,Z`` und
+``--neigung GRAD`` (Standard Mast 0,55;0,50;1,35 und 60 Grad), ``--pose-alt`` = Mast des alten Stands
+(0,55;0,40;1,10, Blick auf (0,30;0,17;0,48)).
 
 Negativtests: glas zwei_glaeser | versatz | nachbar, teller teller_doppelt | versatz | nachbar.
 """
@@ -69,13 +74,14 @@ def bild(est, pfad, titel):
     fig.savefig(pfad, dpi=80)
 
 
-def reihe(art, lo, hi, negativ=None, ziel=None, bild_pfad=None, json_pfad=None):
+def reihe(art, lo, hi, negativ=None, ziel=None, bild_pfad=None, json_pfad=None, kamera=None, pose=None):
     s = (ziel or (3 if art == "glas" else 1)) - 1
     rows = []
     for seed in range(lo, hi + 1):
         w, nenn = welt(art, seed, s)
         t0 = time.monotonic()
-        est = WG.schaetzen(art, w, s, nenn, seed=seed, negativ=negativ, mit_aufnahmen=bool(bild_pfad))
+        est = WG.schaetzen(art, w, s, nenn, seed=seed, negativ=negativ, mit_aufnahmen=bool(bild_pfad),
+                          ensenso_kamera=kamera, ensenso_pose=pose)
         dt = time.monotonic() - t0
         if bild_pfad and seed == lo:
             bild(est, bild_pfad, f"{art} seed {seed} negative {negativ}: ok={est['ok']} {est['gruende']}")
@@ -93,30 +99,89 @@ def reihe(art, lo, hi, negativ=None, ziel=None, bild_pfad=None, json_pfad=None):
     return rows
 
 
+VARIANTEN = {
+    # Name: (Kamera, Pose): alt = Stand der Vorstudien; neu = C57-6-S am Mast 1,35 m; dazwischen je eine
+    # Achse geaendert, damit sichtbar wird, was Modell und was Mastpose verschiebt
+    "alt": ("b57_alt", WG.ENSENSO_POSE_ALT),
+    "c57_alter_mast": ("c57_6_s", WG.ENSENSO_POSE_ALT),
+    "b57_neuer_mast": ("b57_alt", WG.ENSENSO_POSE),
+    "neu": ("c57_6_s", WG.ENSENSO_POSE),
+}
+
+
+def zusammenfassung(rows):
+    """Angenommen (Sichtbarkeit), Lagefehler Median/Max gegen die Wahrheit und Abbruchgruende."""
+    from collections import Counter
+    ok = [r for r in rows if r["kurz"]["ok"]]
+    fe = [r["kurz"]["fehler_mm"] for r in rows if r["kurz"]["fehler_mm"] is not None]
+    fe_ok = [r["kurz"]["fehler_mm"] for r in ok]
+    gr = Counter(g for r in rows for g in r["kurz"]["gruende"])
+    stat = [r["kurz"]["stat_e"] for r in rows if r["kurz"]["stat_e"]]
+    px = [r["voll"].get("ensenso", {}).get("maske_px", 0) for r in rows]
+    return {"n": len(rows), "angenommen": len(ok),
+            "fehler_median_mm": float(np.median(fe)) if fe else None,
+            "fehler_max_mm": float(max(fe)) if fe else None,
+            "fehler_angenommen_median_mm": float(np.median(fe_ok)) if fe_ok else None,
+            "fehler_angenommen_max_mm": float(max(fe_ok)) if fe_ok else None,
+            "ensenso_maske_px_median": float(np.median(px)),
+            "ensenso_gueltig_prozent_median": float(np.median([s["gueltig_%"] for s in stat])) if stat else None,
+            "gruende": dict(gr.most_common())}
+
+
+def vergleich(o: Path, lo: int, hi: int):
+    """Glas Platz 5 und vorderster Teller in allen Varianten mit denselben Seeds."""
+    o.mkdir(parents=True, exist_ok=True)
+    erg = {}
+    for name, (kam, pose) in VARIANTEN.items():
+        erg[name] = {"kamera": kam, "mast": list(pose[0])}
+        for art in ("glas", "teller"):
+            rows = reihe(art, lo, hi, kamera=kam, pose=pose)
+            (o / f"{art}-{name}.json").write_text(json.dumps(rows, indent=1, default=str))
+            erg[name][art] = zusammenfassung(rows)
+            print(name, art, json.dumps(erg[name][art]), flush=True)
+    (o / "zusammenfassung.json").write_text(json.dumps({"seeds": [lo, hi], "varianten": erg}, indent=1))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--art", choices=["glas", "teller"])
-    ap.add_argument("--seeds", default="1-3")
+    ap.add_argument("--seeds", default=None, help="Bereich LO-HI (Standard 1-3, bei --vergleich 1-16)")
+    ap.add_argument("--kamera", default=None, help="Stationsmodell: c57_6_s (Standard) | b57_alt (altes Sichtfeld)")
+    ap.add_argument("--mast", default=None, help="X,Y,Z des Masts (Standard 0.55,0.50,1.35)")
+    ap.add_argument("--neigung", type=float, default=WG.ENSENSO_NEIGUNG_GRAD, help="Blickneigung unter der Waagerechten")
+    ap.add_argument("--pose-alt", action="store_true", help="Mastpose des alten Stands (1,10 m)")
+    ap.add_argument("--vergleich", default=None, help="Ausgabeordner: Glas Platz 5 / vorderster Teller, alt gegen neu")
     ap.add_argument("--negativ", default=None)
     ap.add_argument("--ziel", type=int, default=None)
     ap.add_argument("--bild", default=None)
     ap.add_argument("--json", default=None)
     ap.add_argument("--alle", default=None, help="Ausgabeordner: alle Reihen der Doku (wahrnehmung/*.json, bilder/)")
     a = ap.parse_args()
+    pose = None
+    if a.pose_alt:
+        pose = WG.ENSENSO_POSE_ALT
+    elif a.mast:
+        pose = WG.ensenso_pose_aus([float(v) for v in a.mast.split(",")], a.neigung)
+    elif a.neigung != WG.ENSENSO_NEIGUNG_GRAD:
+        pose = WG.ensenso_pose_aus(WG.ENSENSO_POSE[0], a.neigung)
+    if a.vergleich:
+        lo, hi = (int(x) for x in (a.seeds or "1-16").split("-"))
+        vergleich(Path(a.vergleich), lo, hi)
+        return
     if a.alle:
         o = Path(a.alle)
         (o / "wahrnehmung").mkdir(parents=True, exist_ok=True)
         (o / "bilder").mkdir(parents=True, exist_ok=True)
         for art in ("glas", "teller"):
-            reihe(art, 1, 20, json_pfad=o / "wahrnehmung" / f"{art}.json")
+            reihe(art, 1, 20, json_pfad=o / "wahrnehmung" / f"{art}.json", kamera=a.kamera, pose=pose)
             for n in NEGATIV[art]:
                 reihe(art, 1, 5, negativ=n, json_pfad=o / "wahrnehmung" / f"{art}-{n}.json",
-                      bild_pfad=o / "bilder" / f"negativ-{art}-{n}.png")
+                      bild_pfad=o / "bilder" / f"negativ-{art}-{n}.png", kamera=a.kamera, pose=pose)
         return
     if not a.art:
         ap.error("--art oder --alle")
-    lo, hi = (int(x) for x in a.seeds.split("-"))
-    reihe(a.art, lo, hi, a.negativ, a.ziel, a.bild, a.json)
+    lo, hi = (int(x) for x in (a.seeds or "1-3").split("-"))
+    reihe(a.art, lo, hi, a.negativ, a.ziel, a.bild, a.json, a.kamera, pose)
 
 
 if __name__ == "__main__":

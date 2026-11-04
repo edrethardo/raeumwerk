@@ -21,9 +21,25 @@ import numpy as np
 from . import robustheit as RB
 from . import schaetzer as S
 from .sensor import Fehlermodell, aufnehmen, kalibrierfehler, maske_verrauschen
-from .strahlen import ENSENSO, Kamera, Prim, d405_am_greifer, greifer_prims, r_greif
+from .strahlen import ENSENSO, Kamera, ensenso_modell, Prim, d405_am_greifer, greifer_prims, r_greif
 
-ENSENSO_POSE = ((0.55, 0.40, 1.10), (0.30, 0.17, 0.48))   # Mast + Ausleger, Blick auf die Korbmitte
+ENSENSO_ZIEL_XY = (0.30, 0.17)     # Korbmitte (Blickziel in der Grundrissebene)
+ENSENSO_NEIGUNG_GRAD = 60.0        # Blickachse gegen die Waagerechte (nach unten)
+
+
+def ensenso_pose_aus(mast, neigung_grad: float = ENSENSO_NEIGUNG_GRAD, ziel_xy=ENSENSO_ZIEL_XY):
+    """(Kameraort, Blickpunkt) fuer einen Mast und eine Neigung der Blickachse unter die Waagerechte:
+    der Blick geht auf ``ziel_xy`` im Grundriss, die Blickpunkthoehe folgt aus der Neigung."""
+    mast = tuple(float(v) for v in mast)
+    horizontal = math.hypot(ziel_xy[0] - mast[0], ziel_xy[1] - mast[1])
+    return mast, (float(ziel_xy[0]), float(ziel_xy[1]), mast[2] - horizontal * math.tan(math.radians(neigung_grad)))
+
+
+# Standard: Mast rechts (0,55; 0,50; 1,35), 60 Grad geneigt. Beide Koerbe liegen damit im Betriebsabstand
+# 0,75-1,50 m des C57-6-S. ENSENSO_POSE_ALT = Stand der Vorstudien (Mast 1,10 m; mit dem C57-6-S liegt
+# der Oberkorb dann unter 0,75 m und wird nicht gemessen).
+ENSENSO_POSE = ensenso_pose_aus((0.55, 0.50, 1.35))
+ENSENSO_POSE_ALT = ((0.55, 0.40, 1.10), (0.30, 0.17, 0.48))   # Mast + Ausleger, Blick auf die Korbmitte
 GLAS_GRIFF_UNTER_OBERKANTE = 0.022
 VORPOSITION = 0.10
 TOL_GLAS_M = 0.006       # Ensenso <-> D405 (xy)
@@ -56,8 +72,12 @@ def prims_aus_welt(w, art: str) -> List[Prim]:
     return out
 
 
-def ensenso(skala=2.0) -> Kamera:
-    return Kamera.zielend("ensenso", ENSENSO, ENSENSO_POSE[0], ENSENSO_POSE[1], skala)
+def ensenso(skala=2.0, modell=None, pose=None) -> Kamera:
+    """Stationskamera am Mast. ``modell``: None = C57-6-S (Standard), ``"b57_alt"`` = alter Stand,
+    sonst Katalogschluessel oder Modell-dict; ``pose`` = (Ort, Blickpunkt), Standard ``ENSENSO_POSE``."""
+    m = modell if isinstance(modell, dict) else ensenso_modell(modell)
+    pose = pose or ENSENSO_POSE
+    return Kamera.zielend("ensenso", m, pose[0], pose[1], skala)
 
 
 def _nachbar(prims, ziel: Prim, gruppe: str) -> Prim:
@@ -97,7 +117,8 @@ def nennlage_aus_koerper(k) -> Dict:
 def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int = 0, negativ: Optional[str] = None,
               fm: Optional[Fehlermodell] = None, skala_ensenso: float = 2.0, skala_d405: float = 1.0,
               mit_aufnahmen: bool = False, soll_tol_m: float = 0.015, prims: Optional[List[Prim]] = None,
-              posedrift: Optional[Dict] = None) -> Dict:
+              posedrift: Optional[Dict] = None,
+              ensenso_kamera=None, ensenso_pose=None) -> Dict:
     """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller').
 
     ``nennlage(korbauszug_delta_m)`` liefert die Nennlage laut Belegungsplan (``mitte``, ``rot``,
@@ -105,6 +126,9 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
     der einzige Startwert der Schaetzer (Suchstart, ROI, Normale, Bodenhoehe); liegt die Schaetzung
     mehr als ``soll_tol_m`` neben ihr, ist es nicht das geplante Objekt (z. B. Nachbar segmentiert)
     -> Abbruch.
+
+    ``ensenso_kamera`` waehlt das Stationsmodell (None = C57-6-S, ``"b57_alt"`` = alter Stand),
+    ``ensenso_pose`` die Mastpose (Standard ``ENSENSO_POSE``).
 
     Die wahre Lage (``w.glas_start[s]``) geht nur in die Szene ein, die die Kameras sehen
     (``prims``, Standard: aus ``w``), und in die Fehlerangaben (``fehler_mm`` usw.); der
@@ -126,7 +150,7 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
     n_halb = np.asarray(nenn["halb"], float)
     out["nenn_m"] = n_mitte.tolist()
     # 1. Ensenso
-    cam_e = ensenso(skala_ensenso)
+    cam_e = ensenso(skala_ensenso, ensenso_kamera, ensenso_pose)
     auf_e = aufnehmen(prims, cam_e, rng, fm, roi=(n_mitte, 0.16))
     m_e = _maske(auf_e, ziel, rng, negativ, prims, gruppe, fm)
     kalibrierfehler(auf_e, rng, fm.kalib_ensenso_mm * 1e-3, fm.kalib_ensenso_grad)

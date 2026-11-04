@@ -3,15 +3,60 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import numpy as np
 
-# Ensenso B57 (Farbvariante): Datenblatt 2024-09: Pixel 0,307 mm bei 500 mm -> f = 1628,7 px,
-# 2024 x 2061 px, z-Genauigkeit 0,383 mm bei 500 mm (waechst mit d^2: 1,533 mm bei 1 m),
-# Bereich 0,21-2,0 m, Farbe laut Handbuch bis 0,8 m.
-ENSENSO = dict(name="ensenso", f=1628.7, fy=1628.7, w=2024, h=2061, dmin=0.21, dmax=2.0,
-               sigma_k=1.533e-3, winkel_max=60.0)
+# Altes Modell (bis zur Umstellung auf das C57-6-S): Ensenso B57 (Farbvariante), Datenblatt 2024-09:
+# Pixel 0,307 mm bei 500 mm -> f = 1628,7 px, 2024 x 2061 px, z-Genauigkeit 0,383 mm bei 500 mm
+# (waechst mit d^2: 1,533 mm bei 1 m), Bereich 0,21-2,0 m, Farbe laut Handbuch bis 0,8 m.
+ENSENSO_ALT = dict(name="ensenso_b57_alt", f=1628.7, fy=1628.7, w=2024, h=2061, dmin=0.21, dmax=2.0,
+                   sigma_k=1.533e-3, winkel_max=60.0)
+KATALOG_PFAD = Path(__file__).resolve().parents[1] / "config" / "kameras.yaml"
+STANDARD_KAMERA = "c57_6_s"
+
+
+def modell_aus_katalog(schluessel: str = STANDARD_KAMERA, pfad: Optional[Path] = None,
+                       winkel_max: float = 60.0) -> dict:
+    """Kameramodell fuer den Strahlschnitt aus einem Katalogeintrag (``config/kameras.yaml``).
+
+    Aufloesung ``aufloesung_px``; Brennweite aus dem Arbeitsvolumen bei 1 m (``sichtfeld_mm``):
+    ``f = Breite_px * z / Breite_m`` (x) bzw. ``Hoehe_px * z / Hoehe_m`` (y); Betriebsabstand
+    ``arbeitsbereich_m`` als Gueltigkeitsbereich (dmin/dmax: Punkte ausserhalb sind nicht gemessen);
+    Rauschen ``sigma_k`` (sigma = k z^2)."""
+    import yaml
+    kat = yaml.safe_load(Path(pfad or KATALOG_PFAD).read_text(encoding="utf-8"))
+    eintrag = None
+    for wert in (kat or {}).values():
+        if isinstance(wert, dict) and schluessel in wert:
+            eintrag = wert[schluessel]
+            break
+    if eintrag is None:
+        raise KeyError(f"Kamera {schluessel!r} nicht im Katalog")
+    w, h = (int(v) for v in eintrag["aufloesung_px"])
+    z, (bx, by) = next(iter(eintrag["sichtfeld_mm"].items()))
+    dmin, dmax = (float(v) for v in eintrag["arbeitsbereich_m"])
+    return dict(name=schluessel, f=w * float(z) / (bx / 1e3), fy=h * float(z) / (by / 1e3), w=w, h=h,
+                dmin=dmin, dmax=dmax, sigma_k=float(eintrag["sigma_k"]), winkel_max=winkel_max,
+                artikelnummer=str(eintrag.get("artikelnummer", "")))
+
+
+# Standard der Stationskamera: Ensenso C57-6-S (Art. 1009348): 2472 x 2064 px, f = 2591 / 2381 px (aus
+# 954 x 867 mm bei 1 m), Betriebsabstand 0,75-1,50 m, sigma = 0,219 mm * z^2 (z in m).
+ENSENSO = modell_aus_katalog(STANDARD_KAMERA)
+ENSENSO_MODELLE = {"c57_6_s": ENSENSO, "b57_alt": ENSENSO_ALT}
+
+
+def ensenso_modell(name: Optional[str] = None) -> dict:
+    """Modellwahl: ``None`` = Standard (C57-6-S), ``b57_alt`` = alter Stand, sonst Katalogschluessel."""
+    if name is None:
+        return ENSENSO
+    if name in ENSENSO_MODELLE:
+        return ENSENSO_MODELLE[name]
+    return modell_aus_katalog(name)
+
+
 # D405: Tiefe 87 x 58 Grad, 848 x 480, Min-Z 7 cm, ideal 7-50 cm, +-2 % bei 50 cm (als 2 sigma, ~d^2).
 D405 = dict(name="d405", f=424 / math.tan(math.radians(43.5)), fy=240 / math.tan(math.radians(29.0)),
             w=848, h=480, dmin=0.07, dmax=0.50, sigma_k=0.02, winkel_max=70.0)

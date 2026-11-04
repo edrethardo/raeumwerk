@@ -6,8 +6,10 @@ Raten (Annahmen, aus ``kamerasim`` der Kamerastudie uebernommen, dort begruendet
   Naesse: 5 % zufaellige Ausfaelle auf nassen Flaechen (Glas, Teller, Korb). Glanz: Ausfall, wenn
   die Flaechennormale weniger als 10 Grad vom Sehstrahl abweicht (Teller, Glas).
   Kanten: an Tiefenspruengen > 2 cm faellt jeder zweite Pixel aus. Flache Winkel: kein Wert ueber
-  60 Grad (Ensenso) bzw. 70 Grad (D405) zwischen Normale und Sehstrahl.
-  Rauschen entlang des Strahls: sigma = k * z^2 (Ensenso k = 1,533e-3 1/m, D405 k = 0,02 1/m).
+  60 Grad (Ensenso) bzw. 70 Grad (D405) zwischen Normale und Sehstrahl. Ausserhalb des Betriebsabstands
+  des Modells (``dmin``/``dmax`` in Kamerarahmen-z; C57-6-S 0,75-1,50 m) gilt ein Punkt als nicht gemessen.
+  Rauschen entlang des Strahls: sigma = k * z^2 (Ensenso C57-6-S k = 0,219e-3 1/m, altes B57-Modell
+  k = 1,533e-3 1/m, D405 k = 0,02 1/m).
 Farbsegmentierung (Instanzmaske je Objekt): ideal aus dem Strahlschnitt, Randpixel kippen mit
 50 % (+-1 px); Glas ist in der Farbe sichtbar (Kanten/Spiegelung), in der Tiefe aber nicht.
 """
