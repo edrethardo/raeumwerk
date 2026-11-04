@@ -185,7 +185,8 @@ Newton-Kurzlauf braucht auf der CPU (8 Kerne) ~5,5 min (Glas) / ~9,5 min (Teller
 ## Empfehlung (vorläufig)
 
 - **Glas:** S1 (D405 in der Vorposition) ist stark: Restfehler ≤ 3,8 mm bis 2 cm Versatz und
-  beliebiger Drehung, immer im Fangbereich. Die heutige Prüfung (Abbruch bei Widerspruch) wirft diesen
+  beliebiger Drehung, im Fangbereich, solange die D405 die Schätzung annimmt (σ frei: 2 von 16
+  verworfen). Die heutige Prüfung (Abbruch bei Widerspruch) wirft diesen
   Griff weg (0/16 bei 20 mm) und löst bei 5 mm sogar Fehlalarme aus (7/16). Sinnvoll ist, bei
   Widerspruch die D405-Pose zu nehmen, solange sie den Fangbereich und den Plan trägt, statt
   abzubrechen; „neu hinsehen" statt Abbruch ist eine Option, nicht gerechnet.
