@@ -19,8 +19,15 @@ in der Welt, die die Wahrnehmung liefert, simuliert (Newton 1.6.1) in der wahren
 
 ## Wahrnehmung
 
-1. **Ensenso** (fest am Mast mit Ausleger, (0,55; 0,40; 1,10), Blick auf die Korbmitte; halbe
-   Auflösung) nimmt den Korb auf. Das Ziel kommt als Instanzmaske aus der Farbsegmentierung.
+1. **Ensenso** (Ensenso C57-6-S, Art. 1009348, fest am Mast rechts bei (0,55; 0,50; 1,35), 60° unter
+   der Waagerechten auf die Korbmitte (0,30; 0,17); halbe Auflösung, also 1236 × 1032 px) nimmt den
+   Korb auf. Das Modell kommt aus `config/kameras.yaml` (`c57_6_s`): 2472 × 2064 px, Brennweite aus
+   dem Arbeitsvolumen 954 × 867 mm bei 1 m (f = 2591 / 2381 px), Betriebsabstand 0,75–1,50 m
+   (Punkte außerhalb gelten als nicht gemessen), σ = 0,219 mm · z². Der Stand der Vorstudien (B57,
+   f = 1629 px, 0,21–2,0 m, Mast 1,10 m) bleibt wählbar (`--kamera b57_alt --pose-alt`,
+   `griffpose.schaetzen(..., ensenso_kamera="b57_alt", ensenso_pose=griffpose.ENSENSO_POSE_ALT)`); alle
+   Zahlen mit diesem Stand sind unten als **altes Sichtfeld** gekennzeichnet. Das Ziel kommt als
+   Instanzmaske aus der Farbsegmentierung.
    Grobpose: Glas aus der Silhouette, Teller aus Ebene + Kreis (siehe unten). Die Korbpose
    (Auszug) kommt aus der Ensenso mit σ 1,5 mm.
 2. **D405** am Greifer (60 mm seitlich der Werkzeugachse, 13 cm über dem TCP, 20° zur Achse
@@ -60,17 +67,18 @@ Feinpose korrigiert die Lage im Teller, die Normale kommt aus der Ensenso.
 
 | Größe | Wert | Herkunft |
 |---|---|---|
-| Tiefenrauschen entlang des Strahls | σ = k·z², Ensenso k = 1,533·10⁻³ 1/m (0,38 mm bei 0,5 m), D405 k = 0,02 1/m (±2 % bei 0,5 m als 2σ) | Datenblätter; `test_tiefenrauschen_sigma_wie_datenblatt` |
+| Tiefenrauschen entlang des Strahls | σ = k·z², Ensenso C57-6-S k = 0,219·10⁻³ 1/m (0,22 mm bei 1 m; altes Sichtfeld: B57 k = 1,533·10⁻³ 1/m, 0,38 mm bei 0,5 m), D405 k = 0,02 1/m (±2 % bei 0,5 m als 2σ) | Datenblätter; `test_tiefenrauschen_sigma_wie_datenblatt` |
 | Glas, je gültigem Glaspixel | 50 % kein Wert, 35 % Durchblick (Tiefe des Hintergrunds), 15 % Reflex (Glasfläche ± 8 mm) | Annahme nach Literatur zu transparenten Objekten (Kamerastudie) |
 | Nässe / Glanz | 5 % zufällige Ausfälle auf nassen Flächen; Ausfall, wenn Normale < 10° zum Sehstrahl (Teller, Glas) | Annahme |
 | Kanten / flache Winkel | Sprung > 2 cm: jeder zweite Pixel fällt aus; kein Wert über 60° (Ensenso) / 70° (D405) | Annahme |
+| Betriebsabstand Ensenso | C57-6-S: kein Wert unter 0,75 m und über 1,50 m (Kamerarahmen-z); altes Sichtfeld: 0,21–2,0 m | Datenblatt; `test_betriebsabstand_ausserhalb_ist_nicht_gemessen` |
 | Farbmaske | Randpixel kippen mit 50 % (±1 px), dazu ganze Maske um N(0; 0,7 px) je Achse versetzt (Registrierung) | Annahme; `test_maskenversatz_verschiebt_ganze_maske` |
 | Kalibrierung je Aufnahme | Ensenso 1,5 mm / 0,05°, D405 (Hand-Auge) 1,0 mm / 0,2° | Annahme |
 
-### Ergebnis Wahrnehmung allein (20 Seeds, Fehler gegen die Wahrheit)
+### Ergebnis Wahrnehmung allein, altes Sichtfeld (B57, Mast 1,10 m; 20 Seeds, Fehler gegen die Wahrheit)
 
-Reproduzieren: `scripts/griff_wahrnehmung.py --alle AUSGABE`, dann `scripts/griff_auswertung.py
-AUSGABE` (CPU, ~5 s je Objekt).
+Reproduzieren: `scripts/griff_wahrnehmung.py --alle AUSGABE --kamera b57_alt --pose-alt`, dann
+`scripts/griff_auswertung.py AUSGABE` (CPU, ~5 s je Objekt).
 
 | Objekt | angenommen | Ensenso Mittel / Max | D405 = Griffpose Mittel / Max |
 |---|---|---|---|
@@ -82,7 +90,57 @@ Mit dem früheren Startwert aus der Wahrheit waren es Glas 20/20 (Ensenso 2,0 / 
 die Glas-Grobpose etwas schlechter (Max 4,1 → 5,5 mm), ein Glas fällt als Widerspruch heraus (sicherer
 Abbruch, kein Fehlgriff); beim Teller ändert sich der Fehler der Griffpose im Mittel um 0,4 mm.
 
-### Negativtests (je 5 Seeds): alle abgelehnt
+### Ergebnis mit dem Ensenso C57-6-S (Standard) gegen das alte Sichtfeld
+
+Glas Platz 5 und vorderster Dessertteller, **16 Seeds** (1–16, gleiche Welt, gleiche Rauschseeds), nur die
+Stationskamera ändert sich (`scripts/griff_wahrnehmung.py --vergleich AUSGABE`). „Lagefehler“ =
+Griffpose gegen die Wahrheit (Glas xy, Teller xyz), alle 16 Seeds. Die zwei mittleren Zeilen trennen,
+was am Modell und was am Mast liegt.
+
+| Stationskamera / Mast | Objekt | angenommen | Lagefehler Median / Max | Abbruchgründe | gültige Tiefe Ensenso (Median) |
+|---|---|---|---|---|---|
+| **altes Sichtfeld**: B57, Mast (0,55; 0,40; 1,10) | Glas | 16/16 | 1,21 / 2,05 mm | – | 70 % |
+| | Teller | 16/16 | 3,22 / 5,27 mm | – | 62 % |
+| C57-6-S, **alter** Mast | Glas | 16/16 (!) | 1,32 / 3,19 mm | – | 27 % |
+| | Teller | **0/16** | – | `ensenso:normale_weicht_ab` 8, `kein_kreis` 7, `bogen_zu_kurz` 5 | 33 % |
+| B57, **neuer** Mast (0,55; 0,50; 1,35) | Glas | 16/16 | 1,49 / 2,81 mm | – | 65 % |
+| | Teller | 16/16 | 3,08 / 4,32 mm | – | 55 % |
+| **C57-6-S, Mast (0,55; 0,50; 1,35), 60°** | Glas | 16/16 | 1,63 / 3,37 mm | – | 67 % |
+| | Teller | 16/16 | 3,29 / 4,47 mm | – | 56 % |
+
+Dazu die Reihe der Doku (20 Seeds, `--alle`): Glas 20/20 (Ensenso 2,0 / 5,9 mm, Griffpose
+1,4 / 3,4 mm), Teller 20/20 (Ensenso 3,4 / 7,7 mm, Griffpose 2,9 / 4,5 mm); altes Sichtfeld Glas 19/20,
+Teller 20/20 wie oben.
+
+Was sich verschiebt und warum:
+
+- **Der Oberkorb liegt am alten Mast außerhalb des Betriebsabstands.** Mit dem echten Betriebsabstand
+  (ab 0,75 m) sind am Mast 1,10 m Glas Platz 5 (z 0,64 m) und der vorderste Teller (z 0,67 m) zu 0 %
+  messbar (`docs/stationssichtbarkeit.md`: Oberkorb 0,48–0,84 m); die Ensenso-Tiefe fällt im Median auf 27 %
+  (Glas) bzw. 33 % (Teller). Der Teller (Ebene aus der Tiefe) wird dann in 16/16 Fällen abgelehnt. Die
+  Vorstudien-Zahlen setzten stillschweigend 0,21 m als Untergrenze an.
+- **Das Glas wird trotzdem „angenommen“, weil es im Modell nur als Silhouette eingeht** (Strahlen durch die
+  wahre Maske, Tiefe wird nicht gebraucht). Die Zeile „C57-6-S, alter Mast, Glas 16/16“ ist deshalb
+  keine echte Sichtbarkeit: dort sind nur 0 % der Zielpunkte von Platz 5 im Betriebsabstand. Die
+  Sichtbarkeit steht in der Stationstabelle, nicht in der Annahmequote.
+- **Am neuen Mast ändert das Modell die Zahlen wenig:** Lagefehler Median Glas 1,2 → 1,6 mm, Teller
+  3,2 → 3,3 mm, Max Glas 2,0 → 3,4 mm, Teller 5,3 → 4,5 mm; alle 32 Läufe angenommen. Die Brennweite
+  wächst von 1629 auf 2591 px (×1,6), der Abstand zum Ziel aber von 0,64 auf 0,89 m (×1,4): die Pixeldichte
+  am Objekt steigt nur um etwa 14 %. Dazu dominieren Maskenrand (±1 px, Versatz 0,7 px) und Kalibrierung
+  (1,5 mm), nicht das Tiefenrauschen (σ 0,17 mm statt 0,63 mm). Die Streuung liegt im Rauschen der 16 Seeds: ein
+  Unterschied von 0,3–0,4 mm im Median ist nicht belegt.
+- **Das Tiefenrauschen sinkt** (Glas Platz 5: 0,63 → 0,17 mm; vorderster Teller: 0,70 → 0,18 mm), ist aber
+  nicht der Engpass.
+- Der Ensenso-Fehler im 20-Seed-Lauf wird beim Teller größer (Mittel 3,0 → 3,4, Max 5,8 → 7,7 mm), die
+  Griffpose nach der D405 etwas besser (3,2 → 2,9, Max 5,3 → 4,5 mm). Alle Prüfungen bleiben bestanden.
+- Die Newton-Läufe (Robustheit, Voller Ablauf) unten sind mit dem **alten Sichtfeld** erzeugt und nicht neu
+  gerechnet; ihre Pose-Fehler (Glas 0,4–1,6 mm, Teller 2,0–5,3 mm) liegen im selben Bereich wie die neuen
+  Wahrnehmungsfehler.
+
+Rohdaten je Seed: JSON je Lauf mit Abbruchgründen und Ensenso-Statistik (Ablage im Ticketartefakt, nicht im
+Repo).
+
+### Negativtests (je 5 Seeds): alle abgelehnt (altes Sichtfeld; mit C57-6-S ebenfalls 0/5 angenommen)
 
 | Fehler | Glas | Teller | Grund |
 |---|---|---|---|
@@ -168,6 +226,13 @@ nicht nachgeführt (keine Messung des Tellers in der Hand, kein Ausrichten am St
 - Wahrnehmung einmal vor dem Griff (Ensenso) und einmal in der Vorposition (D405); kein
   Nachführen während des Absenkens und keine Messung des Objekts in der Hand vor der Ablage.
   Primitive statt Meshes im Strahlschnitt.
-- Instanzsegmentierung ideal bis auf Randrauschen, Versatz und die Negativtests.
+- Instanzsegmentierung ideal bis auf Randrauschen, Versatz und die Negativtests (die **wahre Maske** aus dem
+  Strahlschnitt, keine Erkennung auf Bildern). Das Glas geht als **Silhouette** ein: seine Tiefe wird nicht
+  verwendet, deshalb ist die Glas-Annahmequote nicht vom Betriebsabstand abhängig (nur die Sichtbarkeit der
+  Zielpunkte, `docs/stationssichtbarkeit.md`).
+- Pixelrauschen der Maske in Bildpixeln des halbierten Rasters: mit dem C57-6-S sind die Pixel auf dem Objekt
+  kleiner, die Rauschannahme (±1 px, 0,7 px Versatz) wurde nicht neu begründet.
+- Ensenso-Stationstabelle ohne Arm im Bild, ohne Zwischenstellungen des Auszugs, ohne Fehlermodell
+  (Strahlschnitt auf Zielpunkte).
 - Newton auf der GPU ist nicht bitgleich wiederholbar: derselbe Seed liefert leicht andere Zahlen
   (Teller Seed 2 fiel in zwei Läufen, mit verschiedener Endlage).
