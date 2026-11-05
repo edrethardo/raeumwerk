@@ -262,3 +262,7 @@ RAM-/VRAM-Spitze) stehen in `docs/STATUS.md`. Die PNGs, USDs und Videos
 bleiben außerhalb des Repos. Tests ohne Isaac: `tests/test_isaac_render.py`;
 der echte Render-Test läuft nur mit `RAEUMWERK_RUN_GPU_SMOKE=1` und dem
 Isaac-Sim-venv.
+
+## Kameratag P3 (synthetische Bilder, Erkennung)
+
+Szenen, Render, Erkennung, Auswertung: `docs/kameratag-p3.md`. Render nur unter GPU-Lock (`scripts/isaac_p3.sh`), Gewichte per `scripts/p3_modell_holen.sh`.
