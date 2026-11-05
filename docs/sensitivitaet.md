@@ -170,7 +170,7 @@ Kalibrier-Versatz fällt auf 0,07 / 0,00. Bei großer Kalibrierabweichung (10–
 | Tellergier (Physik-Limit 4°, Annahme) | B 100 % bis 3° | B 33 % bei 4–5°, 0 % ab 6° | geometrisch: kein Effekt bis 8° |
 | Erkennung Glas | Erfolg (A/B) = Erkennungsrate × (1 − Verwechslung) × sauberer Anteil (97–100 % im Plan-Bereich); linear, keine Schwelle | – | Baseline Tag 86 % (P3) liefert ≈ 80 % Erfolg, Küche 66 % und dunkel 0 % nicht |
 
-Messung **wertlos** (kein Einfluss im Modell, ST ≤ 0,03 bei K und B, auch in den Sweeps ohne klare Wirkung): Mastort, Tiefenrauschen der Station,
+Messung **im Modell wertlos** (kein Einfluss im Modell, ST ≤ 0,03 bei K und B, auch in den Sweeps ohne klare Wirkung; **Vorbehalt:** Mastort, weil Verdeckung und Einfallswinkel hier nicht eingehen (siehe Mastposition-Doku), und Maske, weil das Modell mit wahrer Maske rechnet und die echte Maskenqualität unterschätzt — die Baseline-Maske liefert beim Teller nur 4 von 131 Posen): Mastort, Tiefenrauschen der Station,
 Maske (Versatz, Kippen, Bias im Bereich ±3 px), Glaslage 0–10 mm (A und B fangen sie ab; K schwankt mit Kalibrierfehlalarmen), Zielverwechslung (ST ≤ 0,02:
 sie kostet im Modell linear Griffe, aber keine unbemerkten Fehlgriffe).
 
