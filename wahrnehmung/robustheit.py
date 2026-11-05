@@ -150,6 +150,7 @@ def erfolg_mechanisch(art: str, fehler_mm: float, gier_grad: float, f,
 # Annahme (UNGETESTET, Katalog-Zeilen 9/10, docs/griff-verrauscht.md): der Korb legt die Lage vor.
 # Glas +-5 mm je Achse (+-3 Grad Drehung, fuer den Zylinder ohne Wirkung), Teller x/y +-5 mm,
 # Gier +-1 Grad (Staebe). Die Kamera beschneidet ihre Schaetzung auf Prior +- Toleranz.
+# Teller-z +-5 mm ist eine zusaetzliche Annahme (steht nicht in den Katalog-Zeilen 9/10).
 
 PRIOR_STANDARD: Dict[str, Dict[str, float]] = {
     "glas": {"tol_xy_m": 0.005, "tol_dreh_grad": 3.0, "band_sigma": 3.0},

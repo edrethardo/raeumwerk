@@ -131,9 +131,9 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
     ``ensenso_kamera`` waehlt das Stationsmodell (None = C57-6-S, ``"b57_alt"`` = alter Stand),
     ``ensenso_pose`` die Mastpose (Standard ``ENSENSO_POSE``).
 
-    ``neu_hinsehen`` (A, Standard aus): bei Widerspruch Ensenso <-> D405 wird NICHT abgebrochen,
+    ``neu_hinsehen`` (Mechanik-Prior-Reihe, A, Standard aus): bei Widerspruch Ensenso <-> D405 wird NICHT abgebrochen,
     solange die D405-Pose im Plan liegt (``soll_tol_m``); es zaehlt die D405-Pose (``neu_hingesehen``).
-    ``prior`` (B, Standard None = unveraendert; ``robustheit.prior_standard``): die Lage kommt
+    ``prior`` (Mechanik-Prior-Reihe, B, Standard None = unveraendert; ``robustheit.prior_standard``): die Lage kommt
     aus der Mechanik (Nennlage +- Toleranz), die Stationsschaetzung wird darauf beschnitten (Gier des
     Tellers aus der Nennlage +- Toleranz), die D405 sieht von dieser Vorposition und wird ebenfalls
     beschnitten; Plausibilitaet = D405 gegen Prior (``prior_widerspruch``). Die Kreuzprobe Ensenso <->
@@ -182,7 +182,7 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
         c_e = np.asarray(e["c"], float)
         out["ensenso"]["fehler_mm"] = float(1e3 * np.linalg.norm(c_e - wahr[:2]))
         gier = 0.0
-        tcp_vor = np.array([c_e[0], c_e[1], z_boden + e["r"] * 0 + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
+        tcp_vor = np.array([c_e[0], c_e[1], z_boden + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
         oeffnung = 0.099
         pose0 = np.array([c_e[0], c_e[1], n_mitte[2]])          # S0: Griff auf der Grobpose
         out["s0_pose_m"] = pose0.tolist()
@@ -216,7 +216,7 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
         if art == "glas":
             pr["station_roh_abw_mm"] = float(1e3 * np.max(np.abs(c_e - n_mitte[:2])))
             c_e = RB.beschneiden(c_e, n_mitte[:2], tol_xy)
-            tcp_vor = np.array([c_e[0], c_e[1], z_boden + e["r"] * 0 + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
+            tcp_vor = np.array([c_e[0], c_e[1], z_boden + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
         else:
             n_nenn = np.asarray(nenn["rot"], float)[:, 2]
             g_nenn = RB.gier_aus_normale(n_nenn)

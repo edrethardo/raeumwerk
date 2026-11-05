@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" (Kameratag P2): Mechanik-Prior-Kette, "neu hinsehen", Zielverwechslung.
+"""Kameratag P2: Mechanik-Prior-Kette, "neu hinsehen", Zielverwechslung.
 
 Wahrnehmung allein (ohne Newton), CPU. Je Objekt/Seed/Fehlerstufe zwei Schaetzungen:
 
@@ -9,7 +9,7 @@ Wahrnehmung allein (ohne Newton), CPU. Je Objekt/Seed/Fehlerstufe zwei Schaetzun
     ``neu_hinsehen=True`` steht in ``tests/test_prior.py``), N0 = Nennlage blind (nur Prior).
   * Prior (``prior=``): B = Schaetzung auf Nennlage +- Toleranz beschnitten.
 
-Teile:  raster (Raster {0,5,15} Grad x {0,5,20} mm + Gauss-sigma frei/hart, Welt wie),
+Teile:  raster (Raster {0,5,15} Grad x {0,5,20} mm + Gauss-sigma frei/hart, Welt wie in der Griffrobustheit-Reihe),
         welt   (sigma frei/hart; die WELT weicht um das 1x..Nx von dem ab, was der Prior annimmt),
         c      (Zielverwechslung: Nachbarmaske fuer beide Kameras).
 

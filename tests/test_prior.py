@@ -1,4 +1,4 @@
-""""neu hinsehen" (A), Mechanik-Prior (B), skalierte Welt, Zielverwechslung (C)."""
+"""Mechanik-Prior-Reihe: "neu hinsehen" (A), Mechanik-Prior (B), skalierte Welt, Zielverwechslung (C)."""
 from __future__ import annotations
 
 import math

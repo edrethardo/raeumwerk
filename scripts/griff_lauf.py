@@ -75,7 +75,7 @@ def auf_neue_lage(sz):
 def abweichung(art, seed, skala_xy=1.0, skala_dreh=1.0):
     """Glas: +-5 mm, +-3 Grad je Glas, Korb 0..-1 cm (am Anschlag). Teller: je Teller x +-5 mm,
     Reihe y +-5 mm (Staebe wandern mit), Gier +-1 Grad (Staebe, 1 mm Luft).
-    ``skala_xy``/``skala_dreh`` (Standard 1 = unveraendert) weiten Versatz bzw. Drehung/Gier:
+    ``skala_xy``/``skala_dreh`` (Mechanik-Prior-Reihe, Standard 1 = unveraendert) weiten Versatz bzw. Drehung/Gier:
     die *Welt* liegt dann ausserhalb dessen, was der Mechanik-Prior annimmt."""
     n = len(GLAS_SLOTS)
     if seed is None:
@@ -472,11 +472,11 @@ def main() -> int:
                     help="s0 blind (Griff auf der gestoerten Grobpose), s1 Nahekorrektur (D405)")
     ap.add_argument("--negativ", default=None)
     ap.add_argument("--neu-hinsehen", action="store_true",
-                    help=" A: bei Widerspruch Ensenso<->D405 die D405-Pose nehmen, solange sie im Plan liegt")
+                    help="A (neu hinsehen): bei Widerspruch Ensenso<->D405 die D405-Pose nehmen, solange sie im Plan liegt")
     ap.add_argument("--prior", action="store_true",
-                    help=" B: Mechanik-Prior (Nennlage +- Toleranz, Teller-Gier +-1 Grad) beschneidet die Schaetzung")
+                    help="B (Prior): Mechanik-Prior (Nennlage +- Toleranz, Teller-Gier +-1 Grad) beschneidet die Schaetzung")
     ap.add_argument("--gier-wahr", type=float, default=None,
-                    help="wahre Gier (Grad) des Ziel-Tellers statt der Seed-Abweichung (Welt, nicht Plan)")
+                    help="Mechanik-Prior-Reihe: wahre Gier (Grad) des Ziel-Tellers statt der Seed-Abweichung (Welt, nicht Plan)")
     ap.add_argument("--ohne-pruefung", action="store_true", help="Negativtest: Griff trotz Abbruchgrund")
     ap.add_argument("--voll", action="store_true")
     ap.add_argument("--nur-plan", action="store_true")

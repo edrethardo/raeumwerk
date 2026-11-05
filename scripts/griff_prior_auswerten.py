@@ -100,7 +100,7 @@ def raster(zs, art):
     if not rows:
         return
     namen = list(dict.fromkeys(z["stufe"] for z in rows))
-    print(f"\n### {art}: Raster und Gauss-σ (Welt wie, Prior stimmt)\n\n{KOPF.format(k='Stufe')}")
+    print(f"\n### {art}: Raster und Gauss-σ (Welt wie in der Griffrobustheit-Reihe, Prior stimmt)\n\n{KOPF.format(k='Stufe')}")
     for n in namen:
         print(zeile(n, [z for z in rows if z["stufe"] == n]))
     print(f"\nRestfehler gegen die Wahrheit (Mittel / Max; Gier-Fehler gegen die wahre Gier)\n\n{MMKOPF.format(k='Stufe')}")
