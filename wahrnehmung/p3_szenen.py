@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import copy
 import math
+import os
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -32,10 +33,12 @@ LICHT = ("tag", "kueche", "dunkel")
 AUSZUEGE = (0.225, 0.45)          # halb / voll (auszug_max_m 0,45)
 NASS = (False, True)
 DESSERT_R, ESS_R = 0.095, 0.13
-TELLER_DICKE = 0.012              # Prim: flacher Zylinder (Wulst), nicht die Mulde
+# Prim: flacher Zylinder (Randwulst), nicht die Mulde. Standard 12 mm; die wahre Randdicke ist eine Kameratag-Messgroesse.
+# Umgebungsvariable RW_TELLER_DICKE_MM ueberschreibt (Fuer fertige Szenen: ``dicke_anwenden``).
+TELLER_DICKE = float(os.environ.get("RW_TELLER_DICKE_MM", "12")) / 1000.0
 TELLER_ROT = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])   # Normale entlang -y
 KOPFUEBER = np.diag([1.0, -1.0, -1.0])
-MAST = (0.55, 0.50, 1.35)         # Ensenso C57-6-S, 60 Grad
+MAST = (0.55, 0.50, 1.35)         # Ensenso C57-6-S (Mastpose der Griffpose-Studie), 60 Grad
 GRUPPE_MATERIAL = {
     "korpus": "edelstahl", "tuer": "edelstahl", "oberkorb": "korb", "unterkorb": "korb",
     "glashalter": "korb_kunststoff", "tellerhalter": "korb_kunststoff", "arbeitsplatte": "arbeitsplatte_hell",
@@ -182,6 +185,26 @@ def baue_szene(spec: Dict) -> Dict:
     return {"id": spec["id"], "korb": korb, "seed": int(spec["seed"]), "licht": spec["licht"],
             "auszug_m": float(spec["auszug_m"]), "nass": nass, "layout": layout, "mast_m": list(MAST),
             "auszug_ober_m": auszug_o, "auszug_unter_m": auszug_u, "objekte": objekte, "statisch": statisch}
+
+
+def dicke_anwenden(d: Dict, dicke_m: float) -> Dict:
+    """Kopie der Szene ``d`` mit anderer Tellerdicke (Zylinderhoehe und Abstand der Tellerstaebe); Mittelpunkte bleiben."""
+    d = copy.deepcopy(d)
+    alt = {}
+    for o in d["objekte"]:
+        if o["klasse"] == "teller":
+            alt[o["name"].split("_")[-1]] = o["hoehe"]
+            o["hoehe"] = dicke_m
+    for k in d["statisch"]:
+        if k["gruppe"] != "tellerhalter":
+            continue
+        n = k["name"].split("_")[1]
+        if n not in alt:
+            continue
+        ys = [s["mitte"][1] for s in d["statisch"] if s["name"].startswith(f"tellerhalter_{n}_")]
+        y0 = sum(ys) / len(ys)
+        k["mitte"][1] += math.copysign((dicke_m - alt[n]) / 2.0, k["mitte"][1] - y0)
+    return d
 
 
 def prims_aus_szene(d: Dict) -> List[Prim]:

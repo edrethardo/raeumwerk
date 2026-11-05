@@ -114,5 +114,5 @@ jeweiligen Rechner (siehe `docs/umgebung.md`).
 | Erkennung vortrainiertes Instanzmodell (Mask R-CNN COCO, ungetunt) | nachgewiesen (negativ) | Glas 31 %, Teller 0 % klassenrichtig; Nachbar/Verschmelzung Teller 56 % |
 | Schalter erkannte Maske in `griffpose.schaetzen` (`maske_ensenso`) | nachgewiesen | `tests/test_p3.py` |
 | Glas-Pose mit erkannter Maske | experimentell | wahr 92 %, Baseline 14 %, Mask R-CNN 6 % freigegeben (je 85 Ziele) |
-| Teller-Pose Ensenso in dichter Belegung (Mastpose 0,55/0,50/1,35 m, 60 Grad) | blockiert | 0 von 131 Zielen freigegeben, auch mit wahrer Maske (Einfallswinkel 70-80 Grad > 60 Grad) |
+| Teller-Pose Ensenso in dichter Belegung (Mastpose 0,55/0,50/1,35 m, 60 Grad) | experimentell, hängt an der Randwulst-Dicke | wahre Maske: Dicke 12 mm 0 von 131 Zielen freigegeben, Dicke 5 mm 96 von 131 (Median 3,3 mm); Einfallswinkel 61-80 Grad machen die Tellerfläche blind, der Rand trägt; echte Randdicke = Kameratag-Messgröße; Baseline-Maske 0/131 bzw. 4/131, Mask R-CNN 0/131 (`docs/kameratag-p3.md`) |
 | Übertragbarkeit auf echte Bilder | nicht nachgewiesen | Domänenlücke, kein Projektormuster, Nässe/Reflexe nur angenähert |

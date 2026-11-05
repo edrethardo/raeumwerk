@@ -1,6 +1,6 @@
 # Kameratag P3: synthetische Isaac-Bilder und echte Erkennung (Glas, Teller)
 
-Frage: Findet eine echte Erkennung Gläser und Teller im Ensenso-RGB-Bild des Spülmaschinenkorbs,
+Kameratag-Paket P3. Frage: Findet eine echte Erkennung Gläser und Teller im Ensenso-RGB-Bild des Spülmaschinenkorbs,
 verwechselt sie Nachbarn, verpasst sie transparentes Glas — und wie wirkt eine erkannte statt der wahren Maske auf die
 Griffpose? Bis dahin bekamen beide Kameras die wahre Objektmaske (`maske_wahr`) mit verrauschtem Rand.
 
@@ -20,7 +20,7 @@ Griffpose? Bis dahin bekamen beide Kameras die wahre Objektmaske (`maske_wahr`) 
   Baseline eingestellt wurden; sie stehen **nicht** in den Tabellen. Gesamt 72 Auswertungsszenen mit 770 Objekten
   (Oberkorb 155 Gläser + 155 Dessertteller; Unterkorb 115 Gläser + 92 Dessertteller + 253 Essteller). Davon sind 727 mit
   ≥ 1500 sichtbaren Pixeln (Instanzkarte) auswertbar; 43 sind fast ganz verdeckt.
-* **Kamera:** Ensenso C57-6-S wie in (Mast 0,55 / 0,50 / 1,35 m, Blick 60° nach unten, f = 2591 / 2381 px,
+* **Kamera:** Ensenso C57-6-S wie in der Griffpose-Studie (Mast 0,55 / 0,50 / 1,35 m, Blick 60° nach unten, f = 2591 / 2381 px,
   2472 × 2064 px; Isaac-Kamera mit gleichen Brennweiten und Aperturen, Pixelraster identisch zum Strahlschnitt).
 * **Render:** Isaac Sim 6.2 RTX, `scripts/isaac_p3_render.py` (Aufruf über `scripts/isaac_p3.sh`), je Szene RGB-PNG,
   Tiefe (`uint16` mm) und Instanzkarte (Replicator `instance_id_segmentation`, ein Objekt = eine ID, Glas inklusive
@@ -81,9 +81,12 @@ Tiefe, Fehlermodell und Pose-Schätzer sind die des Strahlschnitt-Simulators; da
   Besteck, keine Schüsseln, kein Roboterarm im Bild. Eine Szene, ein Blickpunkt (die feste Mastpose).
 * Die Baseline nutzt Nennmaße und die Kamerapose; sie ist keine „blinde“ Erkennung. Schwellen kommen von sechs Szenen.
 * Unterkorb-Szenen haben den Oberkorb eingeschoben; halber Auszug verdeckt dort viele Plätze (daher die Verpasst-Rate).
-* Zwei Gütegrenzen des Pose-Schätzers sind Annahmen aus/1427: Flächen, die flacher als 60° zum Sehstrahl liegen,
-  liefern keinen Tiefenwert. Hochkant stehende Teller werden in dieser Mastpose unter 70–80° gesehen; nur 19–29 % der
-  Tellerpixel haben dann Tiefe (Diagnose in den Rohdaten), die Ebenenanpassung scheitert.
+* Zwei Gütegrenzen des Pose-Schätzers sind Annahmen aus den früheren Griffpose-Studien: Flächen, die flacher als 60° zum
+  Sehstrahl liegen, liefern keinen Tiefenwert. Hochkant stehende Teller werden in dieser Mastpose unter 61–80° gesehen;
+  nur 19–29 % der Tellerpixel haben dann Tiefe (Diagnose in den Rohdaten). Ob die Ebenenanpassung trotzdem gelingt, hängt
+  an der angenommenen Randwulst-/Tellerdicke (12 mm in den Szenen, 5 mm in `config/finger.yaml`), siehe „Lagefehler“.
+* `tests/test_p3.py::test_baseline_findet_ellipsen` braucht OpenCV (`cv2`) und wird ohne cv2 übersprungen; die übrigen
+  Tests laufen ohne.
 
 ## Reproduktion
 
@@ -94,6 +97,7 @@ scripts/p3_modell_holen.sh                                          # Gewichte +
 scripts/p3_erkennen.py szenen.json <render> --out <erk> --modell <pth> [--verfahren baseline,maskrcnn]
 scripts/p3_auswertung.py szenen.json <render> <erk> --out <aus> --schwelle 0.3
 scripts/p3_lage.py szenen.json <render> <erk> --out <lage> --quellen wahr,maskrcnn,baseline --schwelle 0.3
+# Baseline-Schwelle fuer p3_lage: --schwelle-baseline, Standard 0,6 (Mask R-CNN: --schwelle 0,3); Tellerdicke: --teller-dicke-mm 5
 scripts/p3_abdeckung.py szenen.json --out <abdeckung>
 ```
 Rohdaten (Bilder, Tiefe, Instanzkarten, Erkennungen, CSV) liegen nicht im Repo.
@@ -128,7 +132,8 @@ Kernaussagen, alle aus den Tabellen darunter (72 Szenen, 727 auswertbare Objekte
 
 ### Lagefehler mit erkannter statt wahrer Maske
 
-`scripts/p3_lage.py`, bis zu 3 Ziele je Szene (85 Gläser, 131 Teller je Quelle, jeweils dieselben Ziele und Seeds).
+`scripts/p3_lage.py`, bis zu 3 Ziele je Szene (85 Gläser, 131 Teller je Quelle, jeweils dieselben Ziele und Seeds). Die
+Baseline-Maske wird dort mit Score ≥ 0,6 genommen (nicht die 0,75/0,45 der Erkennungs-Tabellen), Mask R-CNN mit ≥ 0,3.
 „Griff freigegeben“ = alle Plausibilitätsprüfungen von `griffpose.schaetzen` bestanden.
 
 * **Glas, wahre Maske** (bisheriger Stand): 92 % freigegeben, Fehler Median 1,4 mm, P90 2,5 mm.
@@ -136,11 +141,31 @@ Kernaussagen, alle aus den Tabellen darunter (72 Szenen, 727 auswertbare Objekte
   keine Erkennung am Nennort 36, Ensenso–D405-Widerspruch 27, Kontur-Inlier gering 10, Modell passt nicht 3.
 * **Glas, Mask-R-CNN-Maske:** 6 % freigegeben (5 von 85), Median 1,1 mm; Abbrüche: keine Erkennung 64, Widerspruch 15.
   Dunkel: 0 % bei beiden Erkennungen.
-* **Teller: 0 % in allen drei Quellen, auch mit der wahren Maske.** Das liegt am Pose-Schätzer und am Fehlermodell,
-  nicht an der Erkennung: hochkant stehende Teller werden in der Mastpose unter 70–80° zur Flächennormale gesehen
-  (Grenze 60°); 70–80 % der Tellerpixel haben keinen Tiefenwert (Diagnose: ober_030 teller_3 19 % gültig,
-  ober_026 teller_1 29 %), Abbruchgrund meist `ebene_inlier_gering`. Die Tellerzahlen in sind damit mit dieser
-  Mastpose in dichter gepackten, verdeckten Szenen nicht haltbar — das ist ein Befund für P4, kein Ergebnis dieses Pakets.
+* **Teller-Pose hängt an der Randwulst-Dicke.** Wahre Maske, alle 131 Ziele, Strahlschnitt-Simulator, gleiche Ziele
+  und Seeds (`p3_lage.py --teller-dicke-mm`, Rohdaten `teller_dicke/` in den Artefakten):
+
+  | Tellerdicke | Quelle | freigegeben | Fehler Median / P90 | Abbruchgründe (Anzahl Ziele; mehrere je Ziel möglich) |
+  |---|---|---:|---|---|
+  | 12 mm (Standard der Szenen) | wahre Maske | **0 / 131** | – | `ensenso:ebene_inlier_gering` 100, `ensenso:normale_weicht_ab` 23, `d405:zu_wenig_punkte` 20, `ensenso:kein_kreis` 5, übrige 4 |
+  | 5 mm (`config/finger.yaml: wulst_dicke_mm`) | wahre Maske | **96 / 131 (73 %)** | 3,3 / 4,6 mm | `d405:zu_wenig_punkte` 28, `ensenso:` normale_weicht_ab 2, kein_kreis 2, ebene_inlier_gering 2, zu_wenig_punkte 1 |
+  | 12 mm | Baseline-Maske | 0 / 131 | – | keine Erkennung 86, ebene_inlier_gering 23, normale_weicht_ab 20, kein_kreis 15 |
+  | 5 mm | Baseline-Maske | 4 / 131 (3 %) | 4,0 / 5,3 mm | keine Erkennung 86, normale_weicht_ab 24, ebene_inlier_gering 10, Ensenso–D405-Widerspruch 6 |
+  | beide | Mask R-CNN | 0 / 131 | – | keine Erkennung 131 (klassenrichtig erkennt es keinen Teller) |
+
+  Die Einfallswinkel sind in beiden Fällen gleich (80,2° bis 63,6° bei x = 0,15 m; 79,2° bis 61,3° bei x = 0,45 m), die
+  Tellerfläche liefert also in beiden Fällen nur wenige Tiefenwerte (Review-Messung: ca. 12 % gültige Pixel): **die Winkel von 61–80° machen die
+  Tellerfläche blind, der Rand trägt.** Mit 5 mm stützt sich die Ebenenanpassung auf den schmalen Randwulst und gelingt;
+  mit 12 mm gelingt sie nicht (Kontrollversuch Review: 10 Teller einer Reihe, 12 mm 0/10, 5 mm 8/10). Gleicher Befund an
+  den 131 Zielen: 0 gegen 96. Die Dicke ändert in dieser Simulation die Zylinderhöhe des Tellers und den Abstand der Stäbe;
+  das Isaac-Bild bleibt das mit 12 mm (für die Pose zählt nur der Strahlschnitt).
+  Grenzen: Der Teller ist ein flacher Vollzylinder (keine Mulde, keine Fahne). Bei 5 mm bleiben 35 Ziele ohne Pose,
+  davon 28 mit zu wenigen D405-Punkten (halber Auszug, nasse Szenen).
+* **Welche Dicke gilt für den echten Dessertteller?** Die Finger-Dokumentation nimmt den Randwulst mit **5 mm** an
+  (`config/finger.yaml: wulst_dicke_mm = 5,0`, Quelle „auftrag“, Auftrag 3–6 mm; `docs/finger.md`, Griff an der Kerbe unter
+  dem Wulst; `docs/griff-verrauscht.md` rechnet mit Wulst 5 mm). Die 12 mm der Szenen sind eine Annahme ohne Quelle (grober
+  Plattenzylinder). Die Tabelle gilt also für zwei Annahmen, nicht für einen Messwert. **Die wahre Randdicke ist eine
+  Kameratag-Messgröße:** liefert die Ensenso am Tellerrand genug Tiefenpunkte (Randwulst, Fahne)? Mit Messschieber an den
+  echten Tellern und einer Ensenso-Aufnahme in der Mastpose prüfen, bevor Teller-Posen aus der Ensenso verplant werden.
 * Wenn die Erkennung ein Glas trifft, ist die Pose so gut wie mit der wahren Maske (1,1–1,5 mm). Die Lücke steckt in
   „gefunden und am richtigen Platz“, nicht in der Genauigkeit.
 

@@ -98,6 +98,57 @@ def test_schalter_externe_synthetische_maske():
     assert est["ensenso"]["fehler_mm"] < 6.0, est["ensenso"]
 
 
+def test_schalter_verschobene_maske_aendert_die_pose():
+    """Die externe Maske geht wirklich in die Pose ein: 40 px Versatz (~1 cm) -> Ensenso-Fehler >> 5 mm oder Abbruch."""
+    w = _welt()
+    cam = WG.ensenso(1.0)
+    auf = aufnehmen(WG.prims_aus_welt(w, "glas"), cam, np.random.default_rng(0), Fehlermodell(glas_an=False),
+                    roi=(np.array([0.30, 0.20, 0.555]), 0.16))
+    m = auf.maske_wahr("glas_1")
+    ref = WG.schaetzen("glas", w, 0, _nenn, maske_ensenso=m, **_kw())
+    versch = WG.schaetzen("glas", w, 0, _nenn, maske_ensenso=np.roll(m, 40, axis=1), **_kw())
+    assert ref["ok"] and ref["ensenso"]["fehler_mm"] < 3.0
+    assert not versch["ok"] and versch["ensenso"]["fehler_mm"] > 5.0, versch["gruende"]
+
+
+def _teller_schaetzung(dicke_m, name="teller_1"):
+    """Pose des vordersten Tellers der Tellerreihe (wahre Maske, voller Auszug) bei gegebener Randwulst-Dicke."""
+    from types import SimpleNamespace as NS
+    d = P3.dicke_anwenden(P3.baue_szene({"id": "x", "korb": "ober", "seed": 11, "licht": "tag", "auszug_m": 0.45,
+                                         "nass": False, "layout": "teller"}), dicke_m)
+    o = next(x for x in d["objekte"] if x["name"] == name)
+    r, h = o["radius"], o["hoehe"]
+    assert h == pytest.approx(dicke_m)
+    ziel = NS(name=name, gruppe="teller", mitte=np.asarray(o["mitte"], float), halb=np.array([r, r, h / 2]),
+              rot=np.asarray(o["rot"], float))
+    voll = np.asarray(o["nenn_mitte"], float)
+    w = NS(glas_start=[ziel], teller=[], statisch_ohne_teller=[], aufbau=NS(abw=NS(korbauszug_delta_m=0.0)))
+
+    def nenn(delta):
+        return {"mitte": voll + [0.0, delta, 0.0], "rot": P3.TELLER_ROT, "halb": np.array([r, r, h / 2])}
+    return WG.schaetzen("teller", w, 0, nenn, seed=5, prims=P3.prims_aus_szene(d), fm=Fehlermodell(),
+                        skala_ensenso=2.0, skala_d405=1.0)
+
+
+def test_teller_pose_haengt_an_der_randdicke():
+    """Randwulst 5 mm: Pose moeglich; 12 mm: Ebenenanpassung scheitert (Tellerflaeche unter 61-80 Grad blind, Rand traegt)."""
+    duenn = _teller_schaetzung(0.005)
+    dick = _teller_schaetzung(0.012)
+    assert duenn["ok"] and duenn["fehler_mm"] < 6.0, duenn["gruende"]
+    assert not dick["ok"] and "ensenso:ebene_inlier_gering" in dick["gruende"], dick["gruende"]
+
+
+def test_dicke_anwenden_verschiebt_tellerstaebe():
+    d = P3.baue_szene({"id": "x", "korb": "ober", "seed": 11, "licht": "tag", "auszug_m": 0.45, "nass": False,
+                       "layout": "teller"})
+    e = P3.dicke_anwenden(d, 0.005)
+    assert all(o["hoehe"] == 0.005 for o in e["objekte"] if o["klasse"] == "teller")
+    a = {k["name"]: k["mitte"][1] for k in d["statisch"] if k["gruppe"] == "tellerhalter"}
+    b = {k["name"]: k["mitte"][1] for k in e["statisch"] if k["gruppe"] == "tellerhalter"}
+    assert a and all(abs(abs(a[n] - b[n]) - 0.0035) < 1e-9 for n in a)     # (12 - 5) / 2 mm je Stab
+    assert d["objekte"][0]["hoehe"] == P3.TELLER_DICKE                  # Original unveraendert
+
+
 def test_schalter_leere_maske_bricht_ab():
     est = WG.schaetzen("glas", _welt(), 0, _nenn, maske_ensenso=np.zeros((2064, 2472), bool), **_kw())
     assert est["ok"] is False and "ensenso:keine_erkennung" in est["gruende"]
@@ -158,6 +209,7 @@ def test_erk_ablage_rundlauf(tmp_path):
 
 
 def test_baseline_findet_ellipsen():
+    # Ohne OpenCV (cv2) wird der Test uebersprungen; die Baseline selbst braucht cv2 (siehe docs/kameratag-p3.md).
     cv2 = pytest.importorskip("cv2")
     cam = WG.ensenso(skala=1.0)
     d = P3.baue_szene({**P3.plan("ober", 1)[0], "layout": "glas"})

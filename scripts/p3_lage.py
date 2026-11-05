@@ -46,7 +46,10 @@ def ziele_waehlen(d, render, n, rng):
 
 
 def _lauf(args):
-    d, o, quelle, erk_pfad, schwelle, seed = args
+    d, o, quelle, erk_pfad, schwelle, seed, dicke = args
+    if dicke is not None:           # andere Tellerdicke (m) als in der Szenendatei
+        d = P3.dicke_anwenden(d, dicke)
+        o = next(x for x in d["objekte"] if x["name"] == o["name"])
     prims = P3.prims_aus_szene(d)
     art = o["klasse"]
     r, h = o["radius"], o["hoehe"]
@@ -124,6 +127,9 @@ def main(argv=None) -> int:
     ap.add_argument("--schwelle", type=float, default=0.5)
     ap.add_argument("--schwelle-baseline", type=float, default=0.6)
     ap.add_argument("--auswerten-nur", action="store_true")
+    ap.add_argument("--teller-dicke-mm", type=float, default=None,
+                    help="Tellerdicke (Randwulst) in mm statt der Szenendatei (Standard dort 12 mm)")
+    ap.add_argument("--klassen", default="glas,teller", help="auszuwertende Klassen (Zielwahl bleibt dieselbe)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -141,11 +147,14 @@ def main(argv=None) -> int:
                 continue
             rng = np.random.default_rng(int(d["seed"]) + 5)
             for o in ziele_waehlen(d, a.render, a.je_szene, rng):
+                if o["klasse"] not in a.klassen.split(","):
+                    continue
                 for q in a.quellen.split(","):
                     ep = Path(a.erkennung) / f"{d['id']}_{q}.npz"
                     if (d["id"], o["name"], q) in fertig or (q != "wahr" and not ep.is_file()):
                         continue
-                    jobs.append((d, o, q, ep, a.schwelle_baseline if q == "baseline" else a.schwelle, int(d["seed"]) % 1000))
+                    jobs.append((d, o, q, ep, a.schwelle_baseline if q == "baseline" else a.schwelle, int(d["seed"]) % 1000,
+                                 None if a.teller_dicke_mm is None else a.teller_dicke_mm / 1000.0))
         print(len(jobs), "Laeufe", flush=True)
         with ProcessPoolExecutor(a.jobs) as ex, open(jl, "a", encoding="utf-8") as fh:
             for r in ex.map(_lauf, jobs):
