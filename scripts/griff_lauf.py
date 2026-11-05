@@ -72,15 +72,18 @@ def auf_neue_lage(sz):
 
 # --- Abweichungen ------------------------------------------------------------------------------
 
-def abweichung(art, seed):
+def abweichung(art, seed, skala_xy=1.0, skala_dreh=1.0):
     """Glas: +-5 mm, +-3 Grad je Glas, Korb 0..-1 cm (am Anschlag). Teller: je Teller x +-5 mm,
-    Reihe y +-5 mm (Staebe wandern mit), Gier +-1 Grad (Staebe, 1 mm Luft)."""
+    Reihe y +-5 mm (Staebe wandern mit), Gier +-1 Grad (Staebe, 1 mm Luft).
+    ``skala_xy``/``skala_dreh`` (Standard 1 = unveraendert) weiten Versatz bzw. Drehung/Gier:
+    die *Welt* liegt dann ausserhalb dessen, was der Mechanik-Prior annimmt."""
     n = len(GLAS_SLOTS)
     if seed is None:
         return a1.abweichung(n), {"teller": [(0.0, 0.0, 0.0)] * len(TELLER_TIEFE)}
     rng = np.random.default_rng(seed)
-    abw = a1.abweichung(n, rng)
-    tel = [(float(rng.uniform(-0.005, 0.005)), float(rng.uniform(-0.005, 0.005)), float(rng.uniform(-1.0, 1.0)))
+    abw = a1.abweichung(n, rng, versatz=0.005 * skala_xy, gier=3.0 * skala_dreh)
+    tel = [(float(rng.uniform(-0.005, 0.005)) * skala_xy, float(rng.uniform(-0.005, 0.005)) * skala_xy,
+            float(rng.uniform(-1.0, 1.0)) * skala_dreh)
            for _ in TELLER_TIEFE]
     return abw, {"teller": tel}
 
@@ -468,6 +471,12 @@ def main() -> int:
     ap.add_argument("--strategie", choices=["s0", "s1"], default="s1",
                     help="s0 blind (Griff auf der gestoerten Grobpose), s1 Nahekorrektur (D405)")
     ap.add_argument("--negativ", default=None)
+    ap.add_argument("--neu-hinsehen", action="store_true",
+                    help=" A: bei Widerspruch Ensenso<->D405 die D405-Pose nehmen, solange sie im Plan liegt")
+    ap.add_argument("--prior", action="store_true",
+                    help=" B: Mechanik-Prior (Nennlage +- Toleranz, Teller-Gier +-1 Grad) beschneidet die Schaetzung")
+    ap.add_argument("--gier-wahr", type=float, default=None,
+                    help="wahre Gier (Grad) des Ziel-Tellers statt der Seed-Abweichung (Welt, nicht Plan)")
     ap.add_argument("--ohne-pruefung", action="store_true", help="Negativtest: Griff trotz Abbruchgrund")
     ap.add_argument("--voll", action="store_true")
     ap.add_argument("--nur-plan", action="store_true")
@@ -488,6 +497,10 @@ def main() -> int:
             rec["variante"] = {"name": var.name, "beschreibung": var.beschreibung, "breite_m": var.breite_m(),
                                "greifkraft_n": var.greifkraft_n, "tempo": var.tempo}
         abw, tabw = abweichung(art, args.seed)
+        if args.gier_wahr is not None and art == "teller":
+            _t = list(tabw["teller"])
+            _t[s] = (_t[s][0], _t[s][1], float(args.gier_wahr))
+            tabw["teller"] = _t
         rec["abweichung"] = {"glas": abw.as_dict(), "teller": tabw}
         welt = welt_glas if art == "glas" else welt_teller
         w_true = welt(A, sz, f, abw, tabw)
@@ -503,7 +516,8 @@ def main() -> int:
                 drift = RB.drift_fest(np.random.default_rng(9000 + (args.seed or 0)), _tm * 1e-3, _rg, achse=_ax)
                 rec["posedrift"] = {k: (v.tolist() if hasattr(v, "tolist") else v) for k, v in drift.items()}
             est = WL.schaetzen(art, w_true, s, nennlage_fn(A, sz, f, art, s), seed=args.seed or 0,
-                               negativ=args.negativ, posedrift=drift)
+                               negativ=args.negativ, posedrift=drift, neu_hinsehen=args.neu_hinsehen,
+                               prior=RB.prior_standard(art) if args.prior else None)
             rec["wahrnehmung"] = est
             rec["strategie"] = args.strategie
             print("WAHRNEHMUNG", json.dumps({k: est[k] for k in ("ok", "gruende", "fehler_mm", "s0_fehler_mm") if k in est}), flush=True)

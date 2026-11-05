@@ -144,3 +144,48 @@ def erfolg_mechanisch(art: str, fehler_mm: float, gier_grad: float, f,
         grund = "greifpunkt_verschoben"
     return {"ok": bool(ok), "grund": grund, "grenze_grad": grenze, "grenze_mm": versatz_max_mm,
             "gier_grad": float(gier_grad), "fehler_mm": float(fehler_mm)}
+
+
+# --- Mechanik-Prior (Teil B) --------------------------------------------------------------
+# Annahme (UNGETESTET, Katalog-Zeilen 9/10, docs/griff-verrauscht.md): der Korb legt die Lage vor.
+# Glas +-5 mm je Achse (+-3 Grad Drehung, fuer den Zylinder ohne Wirkung), Teller x/y +-5 mm,
+# Gier +-1 Grad (Staebe). Die Kamera beschneidet ihre Schaetzung auf Prior +- Toleranz.
+
+PRIOR_STANDARD: Dict[str, Dict[str, float]] = {
+    "glas": {"tol_xy_m": 0.005, "tol_dreh_grad": 3.0, "band_sigma": 3.0},
+    "teller": {"tol_xy_m": 0.005, "tol_z_m": 0.005, "tol_gier_grad": 1.0, "band_gier_grad": 1.0,
+               "band_sigma": 3.0},
+}
+
+
+def prior_standard(art: str, skala: float = 1.0) -> Dict[str, float]:
+    """Kopie der Prior-Annahmen; ``skala`` weitet nur die *Toleranz* (nicht die Welt)."""
+    p = dict(PRIOR_STANDARD[art])
+    for k in ("tol_xy_m", "tol_z_m", "tol_dreh_grad", "tol_gier_grad"):
+        if k in p:
+            p[k] = p[k] * float(skala)
+    return p
+
+
+def wrap_gier(g: float) -> float:
+    """Gier ist 180-Grad-periodisch (Teller symmetrisch): Wert in [-90, 90]."""
+    g = (float(g) + 90.0) % 180.0 - 90.0
+    return g
+
+
+def gier_aus_normale(n) -> float:
+    """Gier (Grad) aus der Tellernormalen, gleiche Definition wie ``wende_an``/Schaetzer."""
+    n = np.asarray(n, float)
+    g = math.degrees(math.atan2(-n[0], n[1])) if abs(n[1]) > 1e-9 else 90.0
+    return wrap_gier(g)
+
+
+def normale_aus_gier(n_nenn, delta_grad: float) -> np.ndarray:
+    """Nennnormale um die Hochachse um ``delta_grad`` gedreht (Neigung = Nennneigung)."""
+    return rodrigues([0.0, 0.0, 1.0], delta_grad) @ np.asarray(n_nenn, float)
+
+
+def beschneiden(wert, mitte, tol):
+    """Je Achse auf ``mitte +- tol`` beschneiden (``tol`` skalar oder je Achse)."""
+    w, m, t = np.asarray(wert, float), np.asarray(mitte, float), np.asarray(tol, float)
+    return np.clip(w, m - t, m + t)

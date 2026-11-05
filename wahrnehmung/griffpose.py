@@ -118,7 +118,8 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
               fm: Optional[Fehlermodell] = None, skala_ensenso: float = 2.0, skala_d405: float = 1.0,
               mit_aufnahmen: bool = False, soll_tol_m: float = 0.015, prims: Optional[List[Prim]] = None,
               posedrift: Optional[Dict] = None,
-              ensenso_kamera=None, ensenso_pose=None) -> Dict:
+              ensenso_kamera=None, ensenso_pose=None,
+              neu_hinsehen: bool = False, prior: Optional[Dict] = None) -> Dict:
     """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller').
 
     ``nennlage(korbauszug_delta_m)`` liefert die Nennlage laut Belegungsplan (``mitte``, ``rot``,
@@ -129,6 +130,14 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
 
     ``ensenso_kamera`` waehlt das Stationsmodell (None = C57-6-S, ``"b57_alt"`` = alter Stand),
     ``ensenso_pose`` die Mastpose (Standard ``ENSENSO_POSE``).
+
+    ``neu_hinsehen`` (A, Standard aus): bei Widerspruch Ensenso <-> D405 wird NICHT abgebrochen,
+    solange die D405-Pose im Plan liegt (``soll_tol_m``); es zaehlt die D405-Pose (``neu_hingesehen``).
+    ``prior`` (B, Standard None = unveraendert; ``robustheit.prior_standard``): die Lage kommt
+    aus der Mechanik (Nennlage +- Toleranz), die Stationsschaetzung wird darauf beschnitten (Gier des
+    Tellers aus der Nennlage +- Toleranz), die D405 sieht von dieser Vorposition und wird ebenfalls
+    beschnitten; Plausibilitaet = D405 gegen Prior (``prior_widerspruch``). Die Kreuzprobe Ensenso <->
+    D405 entfaellt als Abbruchgrund (nur festgehalten). S0-Werte bleiben die unbeschnittene Station.
 
     Die wahre Lage (``w.glas_start[s]``) geht nur in die Szene ein, die die Kameras sehen
     (``prims``, Standard: aus ``w``), und in die Fehlerangaben (``fehler_mm`` usw.); der
@@ -200,6 +209,31 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
         out["s0_pose_m"] = [float(v) for v in c_e]
         out["s0_fehler_mm"] = float(1e3 * np.linalg.norm(c_e - wahr))
         out["s0_gier_grad"] = float(e.get("gier_grad", gier))
+    pr = None
+    if prior is not None:
+        pr = {"tol": dict(prior)}
+        tol_xy = float(prior["tol_xy_m"])
+        if art == "glas":
+            pr["station_roh_abw_mm"] = float(1e3 * np.max(np.abs(c_e - n_mitte[:2])))
+            c_e = RB.beschneiden(c_e, n_mitte[:2], tol_xy)
+            tcp_vor = np.array([c_e[0], c_e[1], z_boden + e["r"] * 0 + h - GLAS_GRIFF_UNTER_OBERKANTE + VORPOSITION])
+        else:
+            n_nenn = np.asarray(nenn["rot"], float)[:, 2]
+            g_nenn = RB.gier_aus_normale(n_nenn)
+            g_roh = float(e.get("gier_grad", g_nenn))
+            dg = RB.wrap_gier(g_roh - g_nenn)
+            tg = float(prior["tol_gier_grad"])
+            dg_c = float(np.clip(dg, -tg, tg))
+            pr.update(station_roh_abw_mm=float(1e3 * np.max(np.abs(c_e - n_mitte))), gier_roh_grad=g_roh,
+                      gier_abw_roh_grad=dg,
+                      widerspruch_gier=bool(abs(dg) > tg + float(prior["band_gier_grad"])))
+            c_e = RB.beschneiden(c_e, n_mitte, [tol_xy, tol_xy, float(prior["tol_z_m"])])
+            e["normale"] = RB.normale_aus_gier(n_nenn, dg_c).tolist()
+            e["gier_grad"] = RB.wrap_gier(g_nenn + dg_c)
+            tcp_vor = np.array([c_e[0], c_e[1], c_e[2] + r_t + 0.02 + VORPOSITION])
+        e["c"] = c_e.tolist()
+        pr["station_c_m"] = c_e.tolist()
+        out["prior"] = pr
     # 2. D405 in der Vorposition ueber der Grobpose
     Rt = r_greif(gier)
     cam_d = d405_am_greifer(tcp_vor, Rt, skala=skala_d405)
@@ -237,8 +271,23 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
         out["d405"]["fehler_mm"] = float(1e3 * np.linalg.norm(c_d - wahr))
         out["gier_grad"] = float(e["gier_grad"])
     out["ensenso_d405_abstand_mm"] = 1e3 * abw
-    if abw > tol:
-        out["gruende"].append("ensenso_d405_widerspruch")
+    if pr is not None:
+        # Plausibilitaet gegen den Prior (unabhaengige Kamera D405); die Kreuzprobe entfaellt als Abbruchgrund
+        mid = n_mitte[:2] if art == "glas" else n_mitte
+        tolv = tol_xy if art == "glas" else np.array([tol_xy, tol_xy, float(prior["tol_z_m"])])
+        band = float(prior["band_sigma"]) * 1e-3 * RB.SIGMA_MM[art]["d405"]
+        pr["d405_roh_abw_mm"] = float(1e3 * np.max(np.abs(c_d - mid)))
+        pr["widerspruch_xy"] = bool(np.any(np.abs(c_d - mid) > tolv + band))
+        pr["kreuzprobe_roh_anschlag"] = bool(abw > tol)
+        c_p = RB.beschneiden(c_d, mid, tolv)
+        pose = np.array([c_p[0], c_p[1], n_mitte[2]]) if art == "glas" else c_p
+        if pr["widerspruch_xy"]:
+            out["gruende"].append("prior_widerspruch")
+    elif abw > tol:
+        if neu_hinsehen:
+            out["neu_hingesehen"] = True       # D405-Pose zaehlt; die Plan-Pruefung (soll_tol_m) folgt
+        else:
+            out["gruende"].append("ensenso_d405_widerspruch")
     d_soll = float(np.linalg.norm(pose[:2] - n_mitte[:2]))
     out["abstand_soll_mm"] = 1e3 * d_soll
     if d_soll > soll_tol_m:
