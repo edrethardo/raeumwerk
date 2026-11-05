@@ -97,7 +97,7 @@ def baseline(rgb: np.ndarray, roi: tuple, vorlagen: Dict, schwelle: Optional[Dic
     ``matchTemplate`` bei mehreren Massstaeben, Maximumsuche. Score = mittlere Kantendichte laengs des Umrisses
     (0..1). Rueckgabe: Liste {maske, klasse, score, unter} im Vollbild."""
     import cv2
-    schwelle = schwelle or {"glas": 0.50, "teller": 0.42}
+    schwelle = schwelle or {"glas": 0.75, "teller": 0.45}   # an den Tuning-Szenen (t_*) eingestellt, siehe docs/kameratag-p3.md
     x0, y0, x1, y1 = roi
     s = arbeits_skala
     g = cv2.cvtColor(cv2.resize(rgb[y0:y1, x0:x1], None, fx=s, fy=s, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)

@@ -79,8 +79,8 @@ def tabelle(rows, fehl, titel):
     for a in (0.225, 0.45):
         gruppen.append((f"Auszug {'halb' if a < 0.3 else 'voll'}", lambda r, a=a: abs(r["auszug_m"] - a) < 1e-6))
     out = [f"### {titel}", "",
-           "| Klasse | Bedingung | n sichtbar | Treffer % (95 %-Intervall) | IoU Treffer (Median) | IoU alle (Mittel) | Klassenverw. % | Nachbar % | ungenau % | verpasst % | Fehldet./Bild |",
-           "|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|"]
+           "| Klasse | Bedingung | n sichtbar | Treffer % (95 %-Intervall) | klassenfrei % | IoU Treffer (Median) | IoU alle (Mittel) | Klassenfehler % | Nachbar % | ungenau % | verpasst % | Fehldet./Bild |",
+           "|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for klasse in ("glas", "teller", "alle"):
         for gname, f in gruppen:
             sel = [r for r in obj if f(r) and (klasse == "alle" or r["klasse"] == klasse)]
@@ -94,6 +94,7 @@ def tabelle(rows, fehl, titel):
             sz = {r["szene"] for r in bilder if f(r)}
             nf = sum(1 for x in fehl if x["szene"] in sz and (klasse == "alle" or x["klasse"] == klasse))
             out.append(f"| {klasse} | {gname} | {n} | {100 * k / n:.0f} ({100 * lo:.0f}-{100 * hi:.0f}) | "
+                       f"{100 * sum(r['klassenfrei'] for r in sel) / n:.0f} | "
                        f"{np.median(ious_t) if ious_t else float('nan'):.2f} | {iou_all:.2f} | "
                        f"{100 * sum(r['klassenfehler'] for r in sel) / n:.0f} | {100 * sum(r['nachbar'] for r in sel) / n:.0f} | "
                        f"{100 * sum(r['ungenau'] for r in sel) / n:.0f} | {100 * sum(r['verpasst'] for r in sel) / n:.0f} | "
