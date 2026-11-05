@@ -229,6 +229,8 @@ def wilson(k: float, n: float, z: float = 1.96) -> Tuple[float, float]:
 # --------------------------------------------------------------------------------------------------
 
 def urteil_intervall(wert: float, lo: float, hi: float, groesser_ist_schlechter: bool = True) -> str:
+    # Gleitkomma-Rest an der Schwelle abfangen (z. B. -20,000000000000018 mm bei Soll-Abweichung -20 mm)
+    wert, lo, hi = round(wert, 9), round(lo, 9), round(hi, 9)
     if lo <= wert <= hi:
         return STIMMT
     ueber = wert > hi
