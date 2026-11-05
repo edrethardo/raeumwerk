@@ -115,6 +115,32 @@ def glas_mesh(radius: float, hoehe: float, wand: float = 0.0025, boden: float = 
     return rotationskoerper(profil, n)
 
 
+def teller_mesh(radius: float, rand_hoehe: float = None, wand: float = 0.004, n: int = 96):
+    """Flacher Teller (Mulde), Achse z, Mulde zeigt nach +z, Mitte des Koerpers im Ursprung."""
+    hr = rand_hoehe if rand_hoehe is not None else 0.11 * radius
+    z0 = -hr / 2.0
+    profil = [(0.0, z0), (0.62 * radius, z0), (0.97 * radius, z0 + hr), (radius, z0 + hr),
+              (radius - wand, z0 + hr), (0.62 * radius, z0 + wand), (0.0, z0 + wand)]
+    return rotationskoerper(profil, n)
+
+
+def tropfen_mesh(zentren, normalen, radien, n: int = 10, flach: float = 0.55):
+    """Viele Wassertropfen (abgeflachte Halbkugeln) als ein Mesh. ``zentren``/``normalen`` (k, 3), ``radien`` (k,)."""
+    v_all, f_all = [], []
+    prof = [(0.0, 0.0), (0.7, 0.0), (0.95, 0.25), (1.0, 0.5), (0.9, 0.8), (0.6, 1.0), (0.0, 1.1)]
+    v0, f0 = rotationskoerper([(r, z * flach) for r, z in prof], n)
+    for c, nz, a in zip(np.asarray(zentren, float), np.asarray(normalen, float), np.asarray(radien, float)):
+        nz = nz / np.linalg.norm(nz)
+        t = np.array([0.0, 0.0, 1.0]) if abs(nz[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+        x = np.cross(t, nz)
+        x /= np.linalg.norm(x)
+        y = np.cross(nz, x)
+        R = np.column_stack([x, y, nz])
+        v_all.append((v0 * a) @ R.T + c - nz * 0.0002)
+        f_all.append(f0 + sum(len(v) for v in v_all[:-1]))
+    return np.vstack(v_all), np.vstack(f_all)
+
+
 def scheibe(radius: float, dicke: float = 0.001, n: int = 64):
     """Flache Kreisscheibe, Unterseite bei z = 0."""
     return rotationskoerper([(0.0, 0.0), (radius, 0.0), (radius, dicke), (0.0, dicke)], n)

@@ -46,6 +46,13 @@ MATERIALIEN: Dict[str, dict] = {
     "marke_ziel": {"farbe": [0.10, 0.62, 0.30], "rauheit": 0.5, "metall": 0.0},
     "marke_start": {"farbe": [0.35, 0.37, 0.40], "rauheit": 0.5, "metall": 0.0},
     "glas": {"glas": True, "farbe": [0.97, 0.99, 1.0], "ior": 1.5},
+    # Kameratag P3 (Teller, nasser Korb); Nass = glattere Oberflaeche, Tropfen kommen als Geometrie dazu
+    "porzellan": {"farbe": [0.92, 0.92, 0.90], "rauheit": 0.18, "metall": 0.0},
+    "porzellan_nass": {"farbe": [0.92, 0.92, 0.90], "rauheit": 0.04, "metall": 0.0},
+    "steingut_blau": {"farbe": [0.14, 0.22, 0.36], "rauheit": 0.30, "metall": 0.0},
+    "steingut_blau_nass": {"farbe": [0.14, 0.22, 0.36], "rauheit": 0.06, "metall": 0.0},
+    "korb_nass": {"farbe": [0.55, 0.57, 0.60], "rauheit": 0.22, "metall": 0.2},
+    "opak_maske": {"farbe": [0.5, 0.5, 0.5], "rauheit": 0.5, "metall": 0.0},
 }
 
 # URDF-Link -> Material (ReBeL-Glieder: anthrazit mit orangen Ringen)
