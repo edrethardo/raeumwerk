@@ -19,6 +19,7 @@ C57-6-S-Sichtfeld neu zu rechnen.
 | Auswertung zu Tabellen | `scripts/griff_robustheit_auswerten.py` |
 | Newton-Lauf, Strategie S0/S1 | `scripts/griff_lauf.py` (`--posedrift`, `--strategie`) |
 | Tests | `tests/test_robustheit.py` |
+| „Neu hinsehen“, Mechanik-Prior, Zielverwechslung | `docs/griff-prior.md` |
 
 ## Fehlermodell
 
