@@ -104,6 +104,16 @@ def _drift_anwenden(out: Dict, e: Dict, posedrift: Dict) -> None:
                         "grad": float(posedrift.get("grad", 0.0))}
 
 
+def maske_auf_raster(m, hw) -> np.ndarray:
+    """Maske (bool) auf das Strahlraster ``hw`` = (Zeilen, Spalten) bringen (Nachbarpixel, Mitte-zu-Mitte)."""
+    m = np.asarray(m, bool)
+    if m.shape == tuple(hw):
+        return m
+    ys = np.minimum(((np.arange(hw[0]) + 0.5) * m.shape[0] / hw[0]).astype(int), m.shape[0] - 1)
+    xs = np.minimum(((np.arange(hw[1]) + 0.5) * m.shape[1] / hw[1]).astype(int), m.shape[1] - 1)
+    return m[np.ix_(ys, xs)]
+
+
 def _glas(auf, maske, z_boden, c0, rng):
     return S.glas_schaetzen(auf, maske, z_boden, c0, rng=rng)
 
@@ -119,7 +129,8 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
               mit_aufnahmen: bool = False, soll_tol_m: float = 0.015, prims: Optional[List[Prim]] = None,
               posedrift: Optional[Dict] = None,
               ensenso_kamera=None, ensenso_pose=None,
-              neu_hinsehen: bool = False, prior: Optional[Dict] = None) -> Dict:
+              neu_hinsehen: bool = False, prior: Optional[Dict] = None,
+              maske_ensenso=None) -> Dict:
     """Griffpose fuer Objekt ``s`` (0-basiert) der Welt ``w`` (art 'glas' | 'teller').
 
     ``nennlage(korbauszug_delta_m)`` liefert die Nennlage laut Belegungsplan (``mitte``, ``rot``,
@@ -162,6 +173,17 @@ def schaetzen(art: str, w, s: int, nennlage: Callable[[float], Dict], seed: int 
     cam_e = ensenso(skala_ensenso, ensenso_kamera, ensenso_pose)
     auf_e = aufnehmen(prims, cam_e, rng, fm, roi=(n_mitte, 0.16))
     m_e = _maske(auf_e, ziel, rng, negativ, prims, gruppe, fm)
+    out["maske_quelle"] = "wahr"
+    if maske_ensenso is not None:
+        # Schalter: Maske der Erkennung (Bild der Stationskamera) statt ``maske_wahr`` (+ Randrauschen);
+        # die D405 bekommt weiter die wahre Maske (es gibt kein D405-Bild aus der Erkennung)
+        m_e = maske_auf_raster(maske_ensenso, auf_e.hw)
+        out["maske_quelle"] = "extern"
+        if not m_e.any():
+            out["gruende"].append("ensenso:keine_erkennung")
+            out["ensenso"] = {"statistik": auf_e.statistik(), "maske_px": 0}
+            out["ok"] = False
+            return out
     kalibrierfehler(auf_e, rng, fm.kalib_ensenso_mm * 1e-3, fm.kalib_ensenso_grad)
     out["ensenso"] = {"statistik": auf_e.statistik(), "maske_px": int(m_e.sum())}
     if mit_aufnahmen:

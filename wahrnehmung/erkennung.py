@@ -7,12 +7,14 @@
 * ``bewerten``: Zuordnung Erkennung <-> Instanzkarte (IoU), Treffer, Verwechslung, Verpasst, Fehldetektion.
 
 Definitionen (je sichtbarem Objekt, Sichtbarkeit >= ``MIN_PX`` Pixel in der Instanzkarte):
-  treffer      eine Erkennung der richtigen Klasse mit IoU >= 0,5 (jede Erkennung nur einmal vergeben)
+  treffer      eine Erkennung der richtigen Klasse mit IoU >= 0,5, die nicht mehrere Objekte verschmilzt (jede
+               Erkennung nur einmal vergeben)
   klassenfrei  eine Erkennung beliebiger Klasse mit IoU >= 0,5
   klassenfehler beste Erkennung mit IoU >= 0,5 hat die falsche Klasse (Glas <-> Teller)
-  nachbar      keine Erkennung mit IoU >= 0,5, aber die beste Erkennung (IoU >= 0,3) liegt mit groesserem IoU auf
-               einem anderen Objekt (Nachbarverwechslung) oder deckt >= 2 Objekte mit je >= 30 % von deren Flaeche
-  verpasst     sonst (keine Erkennung mit IoU >= 0,3)
+  nachbar      kein Treffer, und die Erkennung verschmilzt >= 2 Objekte (je >= 30 % von deren Flaeche) oder die
+               beste Erkennung (IoU >= 0,3) liegt mit groesserem IoU auf einem anderen Objekt (Nachbarverwechslung)
+  ungenau      beste Erkennung mit IoU 0,3..0,5 (nicht verwechselt, aber unter der Treffer-Schwelle)
+  verpasst     keine Erkennung mit IoU >= 0,3
 Fehldetektion: Erkennung (Score >= Schwelle), die kein Objekt mit IoU >= 0,1 beruehrt (liegt auf Korb/Hintergrund).
 """
 from __future__ import annotations
@@ -170,9 +172,15 @@ def bewerten(inst: np.ndarray, namen: Sequence[str], klassen: Dict[str, str], er
         for j, e in enumerate(erk):
             iou[i, j] = _iou(gt[n], e["maske"])
     ergeb: Dict[str, Dict] = {}
+    # Verschmelzung: eine Erkennung deckt >= 2 Objekte mit je >= 30 % von deren Flaeche
+    verschm = [False] * n_e
+    for j in range(n_e):
+        ueber = [n2 for n2 in gnamen if (gt[n2] & erk[j]["maske"]).sum() >= 0.3 * gt[n2].sum()]
+        verschm[j] = len(ueber) >= 2
     belegt: set = set()
-    # Treffer: klassenrichtig, groesster IoU zuerst (jede Erkennung nur einmal)
-    paare = sorted(((iou[i, j], i, j) for i in range(n_g) for j in range(n_e) if iou[i, j] >= 0.5), reverse=True)
+    # Treffer: klassenrichtig, groesster IoU zuerst (jede Erkennung nur einmal), nicht verschmolzen
+    paare = sorted(((iou[i, j], i, j) for i in range(n_g) for j in range(n_e) if iou[i, j] >= 0.5 and not verschm[j]),
+                   reverse=True)
     zug: Dict[int, int] = {}
     for v, i, j in paare:
         if i in zug or j in belegt:
@@ -182,34 +190,27 @@ def bewerten(inst: np.ndarray, namen: Sequence[str], klassen: Dict[str, str], er
             belegt.add(j)
     for i, n in enumerate(gnamen):
         res = {"klasse": klassen[n], "px": int(gt[n].sum()), "iou": 0.0, "treffer": False, "klassenfrei": False,
-               "klassenfehler": False, "nachbar": False, "verpasst": False, "best_iou": 0.0}
+               "klassenfehler": False, "nachbar": False, "ungenau": False, "verpasst": False, "best_iou": 0.0}
+        jb = int(np.argmax(iou[i])) if n_e else -1
         if n_e:
-            jb = int(np.argmax(iou[i]))
             res["best_iou"] = float(iou[i, jb])
         if i in zug:
             res["treffer"] = res["klassenfrei"] = True
             res["iou"] = float(iou[i, zug[i]])
-        elif n_e and res["best_iou"] >= 0.5:
+        elif n_e and res["best_iou"] >= 0.5 and not verschm[jb]:
             res["klassenfrei"] = True
-            res["klassenfehler"] = erk[jb]["klasse"] != klassen[n]
             res["iou"] = res["best_iou"]
+            res["klassenfehler"] = erk[jb]["klasse"] != klassen[n]
             if not res["klassenfehler"]:
-                res["treffer"] = True           # Erkennung schon an anderes Objekt vergeben ist nicht moeglich bei IoU>=0,5
+                res["ungenau"] = True             # richtige Klasse, aber die Erkennung gehoert schon einem anderen Objekt
         else:
-            nb = False
-            if n_e and res["best_iou"] >= 0.3:
+            nb = bool(n_e) and any(verschm[j] and (gt[n] & erk[j]["maske"]).sum() >= 0.3 * gt[n].sum()
+                                   for j in range(n_e))
+            if not nb and n_e and res["best_iou"] >= 0.3:
                 nb = int(np.argmax(iou[:, jb])) != i
-            if not nb and n_e:
-                for j in range(n_e):
-                    ueber = sum(1 for k, n2 in enumerate(gnamen)
-                                if (gt[n2] & erk[j]["maske"]).sum() >= 0.3 * gt[n2].sum())
-                    if ueber >= 2 and (gt[n] & erk[j]["maske"]).sum() >= 0.3 * gt[n].sum():
-                        nb = True
-                        break
             res["nachbar"] = bool(nb)
-            res["verpasst"] = not nb and res["best_iou"] < 0.3
-            if not nb and not res["verpasst"]:
-                res["verpasst"] = True            # IoU 0,3..0,5 ohne Nachbar: nicht getroffen, nicht verwechselt
+            res["ungenau"] = (not nb) and res["best_iou"] >= 0.3
+            res["verpasst"] = (not nb) and res["best_iou"] < 0.3
         ergeb[n] = res
     fehl = []
     for j, e in enumerate(erk):
