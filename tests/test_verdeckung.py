@@ -108,3 +108,33 @@ def test_kamera_huellen_enthalten_ort_und_saeule():
     assert hi[0] - lo[0] >= 0.29 - 1e-9
     s_lo, s_hi = h[1][1], h[1][2]
     assert s_lo[2] == pytest.approx(0.86) and s_hi[2] > 1.35
+
+
+_TELLER_ROT = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+
+
+def _stehender_teller():
+    return Prim("t", "teller", "zyl", np.array([0.0, 0.0, 0.1]), np.array([0.095, 0.095, 0.0025]), _TELLER_ROT, "t")
+
+
+def test_teller_streifender_blick_flaeche_nicht_brauchbar():
+    """Stehender Teller (Normale y) unter ~76 Grad: die Flaeche liegt ueber dem Grenzwinkel (60 Grad), nur der
+    schmale Rand erreicht ihn. Die Flaechenzaehlung verwirft ihn, die Zaehlung mit Rand nicht."""
+    cam = Kamera.zielend("t", KAMERA, [0.0, 0.2, 0.9], [0.0, 0.0, 0.1], 4.0)
+    r = V.sichtbarkeit([_stehender_teller()], cam, ["t"])["t"]
+    assert r["winkel_median_grad"] == pytest.approx(76.0, abs=2.0)
+    assert r["anteil_winkel_ok_flaeche"] == 0.0 and not r["brauchbar_flaeche"]
+    assert 0.0 < r["anteil_winkel_ok"] < 0.3                  # der Rand (5 mm) liegt darunter
+
+
+def test_teller_steiler_blick_flaeche_brauchbar():
+    cam = Kamera.zielend("t", KAMERA, [0.0, 0.7, 0.6], [0.0, 0.0, 0.1], 4.0)
+    r = V.sichtbarkeit([_stehender_teller()], cam, ["t"])["t"]
+    assert r["winkel_median_grad"] == pytest.approx(36.0, abs=3.0)
+    assert r["anteil_winkel_ok_flaeche"] > 0.99 and r["brauchbar_flaeche"] and r["brauchbar"]
+
+
+def test_arm_prims_verdecken_wie_andere_koerper():
+    box = {"c": [0.0, 0.0, 0.5], "R": np.eye(3).tolist(), "h": [0.3, 0.3, 0.01]}
+    r = V.sichtbarkeit([_glas()] + V.arm_prims([box]), _cam(), ["g"])["g"]
+    assert r["anteil_sichtbar"] == 0.0 and not r["brauchbar"]

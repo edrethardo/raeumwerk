@@ -169,9 +169,12 @@ def sichtbarkeit(prims: List[Prim], cam: Kamera, ziele: Sequence[str], schaetzer
                  anteil_gemessen=gem / n_voll if n_voll else 0.0)
         if nv:
             r.update(z_mittel_m=float(zt.mean()), z_min_m=float(zt.min()), z_max_m=float(zt.max()),
-                     sigma_mm=1e3 * m["sigma_k"] * float(zt.mean()) ** 2)
+                     sigma_mm=1e3 * m["sigma_k"] * float(zt.mean()) ** 2,
+                     winkel_median_grad=float(np.degrees(np.arccos(np.clip(np.median(cosw), 0.0, 1.0)))),
+                     anteil_winkel_ok=float(np.mean(cosw >= math.cos(math.radians(m["winkel_max"])))))
         else:
-            r.update(z_mittel_m=None, z_min_m=None, z_max_m=None, sigma_mm=None)
+            r.update(z_mittel_m=None, z_min_m=None, z_max_m=None, sigma_mm=None,
+                     winkel_median_grad=None, anteil_winkel_ok=0.0)
         if p.gruppe == "glas":
             rd = _rand(vis)
             n_rand = int(rd.sum())
@@ -191,6 +194,21 @@ def sichtbarkeit(prims: List[Prim], cam: Kamera, ziele: Sequence[str], schaetzer
             r["brauchbar"] = bool(r["punkte_s2"] >= MIN_TELLER_PUNKTE and bogen >= MIN_TELLER_BOGEN)
             r["grund"] = "" if r["brauchbar"] else ("zu_wenig_punkte" if r["punkte_s2"] < MIN_TELLER_PUNKTE
                                                     else "bogen_zu_kurz")
+            # Nur die Tellerflaeche (Normale ~ Tellerachse), ohne den schmalen Rand (Wulst): dessen Pixel
+            # liegen fast immer unter dem Grenzwinkel, auch wenn die Flaeche streift.
+            achse = p.R[:, 2] / np.linalg.norm(p.R[:, 2])
+            flaeche = np.abs(nor[vis_sel] @ achse) > 0.7
+            ok_f = ok_pix & flaeche
+            gem_f = int(ok_f.sum())
+            bogen_f = 0.0
+            if mit_bogen and gem_f >= 3:
+                Pf = cam.C + d[vis_idx][ok_f] * t[vis_sel][ok_f][:, None]
+                bogen_f, _ = _tellerbogen(p, Pf, cam)
+            r.update(flaeche_anteil_pixel=float(flaeche.mean()) if nv else 0.0,
+                     anteil_winkel_ok_flaeche=(float(np.mean(cosw[flaeche] >= math.cos(math.radians(m["winkel_max"]))))
+                                               if flaeche.any() else 0.0),
+                     punkte_flaeche_s2=gem_f * skal * skal, kontur_bogen_flaeche_grad=bogen_f)
+            r["brauchbar_flaeche"] = bool(r["punkte_flaeche_s2"] >= MIN_TELLER_PUNKTE and bogen_f >= MIN_TELLER_BOGEN)
         out[name] = r
     return out
 

@@ -29,7 +29,9 @@ from wahrnehmung import griffpose as WG  # noqa: E402
 from wahrnehmung import verdeckung as V  # noqa: E402
 
 BEISPIEL = HIER.parent / "beispiele" / "auf-maschine-ohne-ueberstand.yaml"
-BEDIENRAUM = ([-0.05, 0.05, 0.0], [0.65, 0.75, 2.0])      # Mensch vor der Platte (Annahme)
+# Mensch vor der Platte (Annahme). Der Raum beginnt 5 cm vor der Plattenkante (y 0,05): mit 5 cm Rand bleibt der
+# ruhende Arm hinter der Kante; bei Beginn genau an der Kante beruehrte schon die Halterplatte den Rand.
+BEDIENRAUM = ([-0.05, 0.10, 0.0], [0.65, 0.75, 2.0])
 
 
 def aufbau_mit_kamera(mast=None, neigung=60.0, saeule=False, kamera=True, rand_m=0.0):
@@ -57,7 +59,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     if a.ruhepose:
         A = AU.Aufbau(AU.lade_yaml(BEISPIEL))
-        r = BE.suche_ruhepose(A, bedienraum=BEDIENRAUM, rand_m=0.05, schritt_grad=15.0)
+        r = BE.suche_ruhepose(A, bedienraum=BEDIENRAUM, rand_m=0.05, schritt_grad=15.0, max_pruefungen=40000)
+        r["bedienraum"] = [list(BEDIENRAUM[0]), list(BEDIENRAUM[1])]
+        if not r["ok"]:       # ohne Bedienraum: Lot-Pose (kleinstes Schweremoment), im Bericht kennzeichnen
+            r = dict(BE.suche_ruhepose(A, schritt_grad=15.0, max_pruefungen=40000), bedienraum=None)
         (out / "ruhepose.json").write_text(json.dumps(r, indent=1))
         print(json.dumps(r))
         return
