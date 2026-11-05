@@ -34,10 +34,10 @@ LICHT_PLAENE = {
     "tag": dict(dome=(300.0, (0.92, 0.95, 1.0)), sonne=(1700.0, (1.0, 0.96, 0.9)),
                 flaechen=[(900.0, (1, 1, 1), 1.2, 0.8, (-0.8, 1.8, 1.6), (0.6, 0.3, 0.4))]),
     "kueche": dict(dome=(40.0, (1.0, 0.9, 0.8)), sonne=None,
-                   flaechen=[(2600.0, (1.0, 0.84, 0.66), 1.0, 0.5, (0.15, 0.20, 2.4), (0.3, 0.2, 0.5)),
-                             (2600.0, (1.0, 0.84, 0.66), 1.0, 0.5, (0.55, 0.60, 2.4), (0.3, 0.2, 0.5))]),
-    "dunkel": dict(dome=(6.0, (0.8, 0.85, 1.0)), sonne=None,
-                   flaechen=[(260.0, (1.0, 0.8, 0.6), 0.3, 0.3, (0.9, 1.2, 1.6), (0.3, 0.2, 0.5))]),
+                   flaechen=[(5000.0, (1.0, 0.84, 0.66), 1.0, 0.5, (0.15, 0.20, 2.4), (0.3, 0.2, 0.5)),
+                             (5000.0, (1.0, 0.84, 0.66), 1.0, 0.5, (0.55, 0.60, 2.4), (0.3, 0.2, 0.5))]),
+    "dunkel": dict(dome=(8.0, (0.8, 0.85, 1.0)), sonne=None,
+                   flaechen=[(5500.0, (1.0, 0.8, 0.6), 0.3, 0.3, (0.9, 1.2, 1.6), (0.3, 0.2, 0.5))]),
 }
 
 
@@ -53,7 +53,7 @@ def args_lesen(argv=None):
     ap.add_argument("--von", type=int, default=0)
     ap.add_argument("--bis", type=int, default=None)
     ap.add_argument("--ids", default=None, help="nur diese Szenen-IDs (Komma)")
-    ap.add_argument("--einschwingen", type=int, default=30)
+    ap.add_argument("--einschwingen", type=int, default=4)
     ap.add_argument("--fortsetzen", action="store_true")
     ap.add_argument("--max-minuten", type=float, default=None)
     ap.add_argument("--glas-opak", action="store_true")
@@ -327,7 +327,7 @@ def main(argv=None) -> int:
             rng = np.random.default_rng(int(d["seed"]) + 17)
             glas_prims = szene_bauen(d, rng)
             licht_setzen(d["licht"])
-            for _ in range(max(0, args.einschwingen if j == 0 else 3)):
+            for _ in range(max(0, args.einschwingen if j == 0 else 1)):
                 app.update()
             t_s = time.monotonic()
             rep.orchestrator.step(rt_subframes=max(1, args.subframes), delta_time=0.0)
