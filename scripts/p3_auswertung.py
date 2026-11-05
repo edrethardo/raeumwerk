@@ -106,7 +106,9 @@ def montage(rows, szenen, render, erk_dir, verfahren, schwelle, pfad, n=8):
     import cv2
     from PIL import Image
     obj = [r for r in rows if r["objekt"] != "_bild"]
-    schlecht = sorted(obj, key=lambda r: (r["iou"] if r["treffer"] else r["best_iou"] * 0.5, -r["px"]))[:n]
+    key = lambda r: (r["iou"] if r["treffer"] else r["best_iou"] * 0.5, -r["px"])  # noqa: E731
+    schlecht = sorted((r for r in obj if r["klasse"] == "glas"), key=key)[: n // 2] + \
+        sorted((r for r in obj if r["klasse"] == "teller"), key=key)[: n // 2]
     S = {d["id"]: d for d in szenen}
     kacheln = []
     for r in schlecht:
@@ -137,6 +139,25 @@ def montage(rows, szenen, render, erk_dir, verfahren, schwelle, pfad, n=8):
     zeilen_ = [np.hstack(kacheln[i:i + cols] + [np.zeros_like(kacheln[0])] * (cols - len(kacheln[i:i + cols])))
                for i in range(0, len(kacheln), cols)]
     Image.fromarray(np.vstack(zeilen_)).save(pfad, quality=88)
+    # Gesamtbilder: je Korb eine helle trockene und eine dunkle nasse Szene, alle Erkennungen (rot Glas, orange Teller)
+    ganz = []
+    for korb, licht, nass in (("ober", "tag", 0), ("unter", "kueche", 1), ("ober", "dunkel", 1)):
+        sid = next((r["szene"] for r in rows if r["korb"] == korb and r["licht"] == licht and r["nass"] == nass), None)
+        if sid is None:
+            continue
+        rgb = np.asarray(Image.open(Path(render) / f"{sid}_rgb.png").convert("RGB")).copy()
+        z = np.load(Path(render) / f"{sid}_inst.npz")
+        for e in E.erk_laden(Path(erk_dir) / f"{sid}_{verfahren}.npz"):
+            if e["score"] >= schwelle:
+                c, _ = cv2.findContours(e["maske"].astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(rgb, c, -1, (255, 40, 40) if e["klasse"] == "glas" else (255, 160, 0), 5)
+        for i in range(1, len(z["namen"]) + 1):
+            c, _ = cv2.findContours((z["inst"] == i).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(rgb, c, -1, (0, 230, 0), 3)
+        ganz.append(cv2.putText(cv2.resize(rgb, (824, 688)), f"{sid} {licht} {'nass' if nass else 'trocken'}", (8, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2, cv2.LINE_AA))
+    if ganz:
+        Image.fromarray(np.hstack(ganz)).save(Path(str(pfad).replace(".jpg", "_gesamt.jpg")), quality=88)
 
 
 def main(argv=None) -> int:
