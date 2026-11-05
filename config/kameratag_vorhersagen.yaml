@@ -1,0 +1,673 @@
+# Vorhersagekatalog für den ersten Kameratag (Ensenso C57-6-S, Artikel 1009348; D405 am Handgelenk).
+#
+# EINGEFROREN: Dieser Katalog wird nach dem Einfrieren nicht mehr geändert. Messergebnisse kommen
+# in eine eigene Datei (Ausgabe von scripts/kameratag_auswerten.py), nie hierher.
+# Herkunft jeder Zahl: D = Datenblatt, M = Modell (gerechnet, nicht gemessen), A = Annahme (ohne Messbeleg).
+# Alle Modellzahlen stammen aus den Rechnungen in docs/ (Verweis je Zeile) und sind hier nicht neu gerechnet;
+# einzige neue Rechnung: Zeile 8, Pose-Streuung (Abschnitt dort).
+katalog_version: 1
+stand: "2026-11-05"
+status: eingefroren
+sprache: de
+kamera: {station: "Ensenso C57-6-S (Artikel 1009348)", handgelenk: "Intel RealSense D405"}
+herkunft_schluessel: {D: Datenblatt, M: Modell, A: Annahme}
+verdikte: [stimmt, zu_optimistisch, zu_pessimistisch]
+verdikt_regel: >-
+  zu_optimistisch = die Wirklichkeit ist schlechter als das Modell sagt (Modell zu schön);
+  zu_pessimistisch = die Wirklichkeit ist besser als das Modell sagt;
+  unbekannt = es gibt keine Vorhersage, nur eine Einordnung des Messwerts.
+nicht_vorhersagbar: [nasse_optik, projektorreflexe_metallkorb, ensenso_auf_glas]
+
+# Reihenfolge des ersten Tages (aus docs/sensitivitaet.md, Top 5; Aufwand dort Annahme):
+# 1 Randdicke, 2 Kalibrierung Station, 3 Erkennung bei Licht, 4 Tellerlage/-gier, 5 D405-Rauschen.
+messreihenfolge:
+  - {nr: 1, messung: m1, zeilen: [11], titel: "Randdicke der echten Dessertteller + Ensenso-Aufnahmen der Tellerreihe", minuten: 20, quelle: P4}
+  - {nr: 2, messung: m2, zeilen: [12], titel: "Kalibrierung Station: Versatz und Drehung", minuten: 45, quelle: P4}
+  - {nr: 3, messung: m3, zeilen: [6, 5], titel: "Erkennungsrate bei Tag / Küche / dunkel", minuten: 75, quelle: P4}
+  - {nr: 4, messung: m4, zeilen: [9, 10, 13], titel: "Tellerlage und -gier im Ständer (und Glaslage)", minuten: 35, quelle: P4}
+  - {nr: 5, messung: m5, zeilen: [1], titel: "D405-Rauschen am Teller", minuten: 15, quelle: P4}
+
+zeilen:
+  # ------------------------------------------------------------------------------------------------
+  - id: 1
+    name: Tiefenrauschen
+    einheit: mm
+    prioritaet: {p4_rang: 5, text: "D405-Rauschen ist Nr. 5 der Messreihenfolge (ST 0,12 bei K, 0,01 bei B); Ensenso-Rauschen im Modell wirkungslos (ST <= 0,03)"}
+    aufwand: {minuten: 15, quelle: P4, hilfsmittel: ["ebene matte Platte", "2 Abstände", "je 5 Aufnahmen D405"], ensenso_zusatz: "10 min (Annahme): matte ebene Wand, 3 Abstände, je 3 Aufnahmen"}
+    vorhersage:
+      text: "Ensenso sigma(z) = 0,219 mm * z^2 (z in m): 0,147 mm bei 0,82 m, 0,219 mm bei 1,0 m, 0,315 mm bei 1,20 m. D405 sigma(z) = 20 mm * z^2: 0,8 mm bei 0,2 m, 1,8 mm bei 0,3 m, 3,2 mm bei 0,4 m."
+      herkunft:
+        - {art: D, text: "Ensenso: Z-Genauigkeit 0,123 / 0,219 / 0,46 mm bei 0,75 / 1,0 / 1,45 m (config/kameras.yaml, c57_6_s); die Form k*z^2 reproduziert alle drei Werte"}
+        - {art: A, text: "Das Datenblatt nennt eine Genauigkeit; dass sie dem Streuwert eines Ebenenfits (sigma der Residuen) entspricht, ist eine Annahme"}
+        - {art: A, text: "D405: k = 0,02 1/m aus der Kamerastudie, nicht aus dem Datenblatt belegt (wahrnehmung/sensor.py)"}
+      band: "Ensenso: Faktor 0,5 bis 2 um den Modellwert (obere Grenze 2x aus dem Entwurf, untere Grenze 0,5x ist eine Annahme zur Symmetrie)."
+    schwelle: "stimmt, wenn sigma_gemessen / sigma_Modell(z) zwischen 0,5 und 2 liegt (Ensenso wie D405)"
+    parameter:
+      ensenso: {k_mm_pro_m2: 0.219, faktor_hoch: 2.0, faktor_tief: 0.5}
+      d405: {k_mm_pro_m2: 20.0, faktor_hoch: 2.0, faktor_tief: 0.5}
+    urteil:
+      stimmt: "Faktor 0,5 bis 2 gegenüber sigma(z)."
+      zu_optimistisch: "Gemessenes Rauschen mehr als doppelt so groß wie sigma(z)."
+      zu_pessimistisch: "Gemessenes Rauschen weniger als halb so groß; die Ebenenfläche selbst (Unebenheit der Platte) begrenzt die Auflösung dieser Messung nach unten."
+    konsequenz:
+      stimmt: "Fehlermodell behalten."
+      zu_optimistisch:
+        - {ab: 0, text: "Ensenso: im Modell hat das Station-Rauschen zwischen 0,5x und 3x keine Wirkung (ST <= 0,03); bis 3x kein Entscheidungsgrund. Erst Belichtung, Projektorhelligkeit und Oberfläche der Platte prüfen, dann erneut messen."}
+        - {ab: 3.0, text: "Ensenso über 3x: außerhalb der gerechneten Spanne; Sensitivitätsrechnung mit dem gemessenen Faktor neu laufen lassen."}
+      zu_pessimistisch: "Das Modell ist eine obere Schranke: rausch_ens im Fehlermodell auf den gemessenen Faktor setzen, sonst nichts ändern."
+    konsequenz_d405: "D405 mehr als doppelt so verrauscht (Faktor >= 2): Kette K bricht ab (Teller K 33 %, unbemerkt 17 %), A bei 2x 50 % mit 50 % unbemerkt, bei 3x 0 % mit 100 % unbemerkt; B bleibt 100 % (Modell, 6 Seeds, docs/sensitivitaet.md). Folge: A für den Teller nicht freigeben, B oder Abbruch."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 2
+    name: Abstände Mast zu Referenzpunkten
+    einheit: m
+    prioritaet: {p4_rang: null, text: "nicht in der Top 5; Mastort im Modell ohne Wirkung (ST ~ 0), Vorbehalt: Verdeckung und Einfallswinkel gehen nicht ein"}
+    aufwand: {minuten: 30, quelle: A, hilfsmittel: ["Laser-Entfernungsmesser oder Maßband", "Stativ mit Neigungsmesser", "Markierungen R1 bis R3"], hinweis: "Aufbau und Einmessen je Position; gehört zu m0"}
+    vorhersage:
+      text: "Je Position Abstand Kameraursprung zu R1 (Mitte Plattenvorderkante, Oberseite), R2 (Mitte Oberkorb-Front am Boden bei 0,45 m Auszug), R3 (Mitte Unterkorb-Front am Boden bei 0,45 m Auszug); Werte siehe positionen.<name>.referenz. Haupt 0,80 / 0,91 / 1,18 m, einfacher Ausleger 0,75 / 0,93 / 1,21 m, höher 0,91 / 1,10 / 1,37 m, Bestand 0,71 / 0,97 / 1,25 m."
+      herkunft:
+        - {art: M, text: "Geometrie aus config/spuelmaschine.yaml und der Kameraposition (docs/stationssichtbarkeit.md, Vorhersagezeilen)"}
+        - {art: A, text: "Band +-2 cm aus dem Entwurf; keine Herleitung (Ablesung am Gehäuse, Lage des optischen Zentrums im Gehäuse nicht geklärt)"}
+        - {art: A, text: "Die Zahlen des Entwurfs (Oberkorb 0,82 bis 0,98 m, Unterkorb 1,02 bis 1,20 m) sind für die Hauptposition ersetzt"}
+      band: "+-20 mm je Referenzpunkt (A)"
+    schwelle: "stimmt, wenn |gemessen - Modell| <= 20 mm an allen drei Referenzpunkten"
+    parameter: {tol_mm: 20.0, schlechter: groesser}
+    urteil:
+      stimmt: "Alle drei Abweichungen <= 20 mm."
+      zu_optimistisch: "Mindestens ein Punkt mehr als 20 mm weiter weg als im Modell (Betriebsabstand und Rauschen schlechter)."
+      zu_pessimistisch: "Mindestens ein Punkt mehr als 20 mm näher als im Modell; prüfen, ob Platz-z unter 0,80 m fällt (Reserve zur Betriebsgrenze 0,75 m)."
+    konsequenz:
+      stimmt: "Positionstabelle bleibt Grundlage für Zeilen 3 und 4."
+      zu_optimistisch: "Kamerapose oder Maschinengeometrie (Plattenhöhe, Auszuglänge, Korbhöhe) weicht ab: Mastposition mit den gemessenen Maßen neu rechnen (scripts/mast_raster.py); bis dahin Betriebsbereich 0,75 bis 1,50 m aus den gemessenen Abständen prüfen, Punkte außerhalb gelten als nicht gemessen."
+      zu_pessimistisch: "Wie zu optimistisch; zusätzlich Unterschreitung 0,75 m prüfen (nahe Plätze werden dann nicht gemessen)."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 3
+    name: Bildausschnitt
+    einheit: mm
+    prioritaet: {p4_rang: null, text: "nicht in der Top 5; fällt aus den Aufnahmen von m0/m1 ab"}
+    aufwand: {minuten: 10, quelle: A, hilfsmittel: ["ebene helle Wand oder Platte", "Laser-Entfernungsmesser", "Maßband"], hinweis: "Wandaufnahme bei 1,0 m; Korbecken aus den Aufnahmen von m1"}
+    vorhersage:
+      text: "Sichtfeld 954 x 867 mm bei 1 m (linear in z). An der mittleren Platzebene bei 0,45 m Auszug: Haupt Oberkorb 828 bis 892 x 753 bis 811 mm, Unterkorb 1046 x 950 mm. Ecken der Korbhülle im Bild (von 8): Haupt 8 (0,225 m) / 7 (0,45 m), höher 8 / 8, Bestand 7 / 6, einfacher Ausleger 7 / 7. Details je Position in positionen.<name>.gruppen."
+      herkunft:
+        - {art: D, text: "Arbeitsvolumen 954 x 867 mm bei 1 m (config/kameras.yaml)"}
+        - {art: M, text: "Ecken und Anteile im Bild aus dem Strahlschnitt (docs/stationssichtbarkeit.md); Unterkante des Unterkorbs liegt an der Hauptposition am Bildrand"}
+        - {art: A, text: "Ob die Punktwolke (Überlappung beider Stereobilder) das volle Arbeitsvolumen abdeckt, ist nicht belegt; das Modell nimmt das Bild des Sensors an"}
+      band: "Sichtfeld +-5 % (A); Eckenzahl +-1 (A, die Unterkante liegt an der Hauptposition am Bildrand)"
+    schwelle: "stimmt, wenn gemessenes Sichtfeld bei 1 m innerhalb 5 % um 954 x 867 mm liegt und die Zahl der Korbecken im Bild um höchstens 1 abweicht"
+    parameter:
+      fov_1m_mm: [954.0, 867.0]
+      tol_rel: 0.05
+      ecken_tol: 1
+      ecken_im_bild:
+        haupt: {a225: 8, a450: 7}
+        hoeher: {a225: 8, a450: 8}
+        bestand: {a225: 7, a450: 6}
+        ausleger: {a225: 7, a450: 7}
+    urteil:
+      stimmt: "Sichtfeld innerhalb 5 % und Eckenzahl innerhalb 1."
+      zu_optimistisch: "Sichtfeld kleiner als 95 % des Modells oder mehr als eine Ecke weniger im Bild als gerechnet."
+      zu_pessimistisch: "Sichtfeld größer als 105 % oder mehr als eine Ecke mehr im Bild."
+    konsequenz:
+      stimmt: "Bildlage wie gerechnet."
+      zu_optimistisch: "Neigung nachstellen (55 / 60 Grad sind am Kameratag ohne Umbau verstellbar, docs/stationssichtbarkeit.md) und Aufnahme wiederholen; bleibt eine Ecke fehlen, gelten die Plätze am Bildrand (Unterkorb unten) als nicht erfasst und Zeile 4 wird mit der tatsächlichen Bildlage ausgewertet."
+      zu_pessimistisch: "Keine Änderung nötig; Sichtfeld-Parameter in config/kameras.yaml auf den gemessenen Wert setzen."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 4
+    name: Sichtbarkeit je Platz
+    einheit: "Plätze nutzbar (n von N); sichtbare Fläche in %"
+    prioritaet: {p4_rang: null, text: "nicht in der Top 5; Entscheidung Haupt gegen einfachen Ausleger hängt an der Randdicke (Zeile 11)"}
+    aufwand: {minuten: 40, quelle: A, hilfsmittel: ["Stativ", "Auszugsmarkierungen 0,225 / 0,45 m", "Ensenso-Aufnahmen je Auszug"], hinweis: "je Position; die Aufnahmen entstehen mit m1"}
+    vorhersage:
+      text: "Zählung 'Fläche' (nutzbar), 16 Gläser, 8 Oberkorb-Teller, 6 Unterkorb-Teller, Auszug 0,225 / 0,45 m. Haupt: Gläser 16 / 16, Oberkorb-Teller 8 / 5, Unterkorb-Teller 5 / 0. Einfacher Ausleger: Gläser 16 / 16, Oberkorb-Teller 8 / 1, Unterkorb-Teller 1 / 0. Höher: 16 / 16, 8 / 2, 1 / 0. Bestand: Gläser 12 / 16, Oberkorb-Teller 5 / 0, Unterkorb-Teller 0 / 0. Mit Rand-Zählung (obere Schranke) an allen Positionen fast alle Teller. Je Platz sichtbarer Anteil, Abstand und Einfallswinkel in positionen.<name>.plaetze."
+      herkunft:
+        - {art: M, text: "Strahlschnitt mit Verdeckung durch Stäbe, Rahmen, Nachbarn, Kamerakörper; Glas als Silhouette (docs/stationssichtbarkeit.md)"}
+        - {art: A, text: "Nutzbar-Kriterium (Glas >= 30 Konturpixel, Teller >= 60 Punkte, Einfallswinkel < 60 Grad, Konturbogen >= 40 Grad) sind Annahmen der Schätzer, nicht gemessen"}
+        - {art: A, text: "Ob die Rand-Zählung oder die Flächen-Zählung gilt, entscheidet die Randdicke (Zeile 11)"}
+      band: "Anzahl +-1 (A); sichtbarer Anteil +-15 Prozentpunkte im Mittel (A)"
+    schwelle: "stimmt, wenn je Gruppe und Auszug die Zahl nutzbarer Plätze um höchstens 1 von der Vorhersage abweicht (Summe der Abweichungen je Gruppe geprüft)"
+    parameter:
+      tol_zahl: 1
+      tol_sichtbar_pp: 15.0
+      min_punkte_teller: 240
+      min_punkte_hinweis: "60 Punkte auf Schätzerskala 2 entsprechen bei voller Auflösung etwa 240 Punkten (Annahme: 4 Pixel je Schätzerpunkt)"
+    urteil:
+      stimmt: "Je Gruppe und Auszug höchstens ein Platz Abweichung; mittlere Abweichung der sichtbaren Fläche <= 15 Prozentpunkte."
+      zu_optimistisch: "Mehr als ein Platz weniger nutzbar als gerechnet (oder sichtbare Fläche im Mittel mehr als 15 Prozentpunkte niedriger)."
+      zu_pessimistisch: "Mehr als ein Platz mehr nutzbar (oder sichtbare Fläche mehr als 15 Prozentpunkte höher)."
+    konsequenz:
+      stimmt: "Plätze aus der Tabelle als Planungsgrundlage verwenden."
+      zu_optimistisch: "Fehlende Plätze namentlich notieren: dort Lage aus dem Slot (Mechanik-Prior B) und Kamera nur zur Anwesenheitsprüfung. Fehlt fast ein ganzer Korb, Mastposition wechseln (Haupt gegen einfachen Ausleger) und Reihe wiederholen."
+      zu_pessimistisch: "Mehr Plätze als gerechnet: Modell ist obere Hürde; Planung unverändert, Unterschiede der Zählung (Rand gegen Fläche) in der Auswertung vermerken."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 5
+    name: Punktabdeckung je Objekt
+    einheit: "% der Objektpixel mit gültigem Tiefenwert"
+    prioritaet: {p4_rang: 3, text: "mit Messung 3 (Erkennung bei Licht) zusammen aufgenommen; Teller-Punktabdeckung hängt an Zeile 11"}
+    aufwand: {minuten: 0, quelle: A, hilfsmittel: ["Aufnahmen aus m3 und m1", "Maske je Objekt (Handlabel oder Erkennung)"], hinweis: "keine eigene Aufnahme; Auswertung der Wolken mit Maske"}
+    vorhersage:
+      text: "Glas im Mittel 31 % (Streuung der Objekte P10 bis P90: 27 bis 38 %). Teller im Mittel 29 % trocken / 28 % nass (Bootstrap 25 bis 31 %), Median 18 bis 19 %, P10 bis P90 11 bis 85 % (zweigipflig: flach gesehene Teller wenig, steiler gesehene viel). Glas nass wird nicht vorhergesagt (siehe unbekannt 1 und 3)."
+      herkunft:
+        - {art: M, text: "Strahlschnitt mit angenommenem Fehlermodell, 72 Szenen (docs/kameratag-p3.md, Punktabdeckung)"}
+        - {art: A, text: "Fehlermodell Glas: 50 % Ausfall, 35 % Durchblick, 15 % Reflex; Nässe 5 % Ausfall - Annahmen (wahrnehmung/sensor.py); Projektormuster und Stereo-Matching nicht simuliert"}
+        - {art: A, text: "'Glas nass = Glas trocken' im Modell ist durch das Fehlermodell bedingt, kein Ergebnis"}
+      band: "Glas 31 % +-8 Prozentpunkte, Teller 29 % +-8 Prozentpunkte als Mittel über mindestens 8 Objekte (A: Fenster ist größer als die Bootstrap-Breite, weil das Fehlermodell nicht gemessen ist)"
+    schwelle: "stimmt, wenn der Mittelwert über >= 8 Objekte der Klasse innerhalb des Fensters liegt"
+    parameter:
+      glas: {mittel: 31.0, fenster: [23.0, 39.0]}
+      teller: {mittel: 29.0, fenster: [21.0, 37.0], median: 19.0}
+      min_objekte: 8
+    urteil:
+      stimmt: "Mittel im Fenster."
+      zu_optimistisch: "Mittel unter dem Fenster (weniger Tiefenpunkte als gerechnet)."
+      zu_pessimistisch: "Mittel über dem Fenster (mehr Tiefenpunkte als gerechnet)."
+    konsequenz:
+      stimmt: "Fehlermodell von Glas und Teller bleibt."
+      zu_optimistisch: "Glas: Pose aus der Kontur (RGB-Maske) plus D405 statt aus Ensenso-Tiefe; Zeile 5 versagt: Glas aus Slot-Position schätzen, Kamera nur zur Prüfung (Mechanik-Prior B). Teller: Randdicke (Zeile 11) und Einfallswinkel (Zeile 4) als Ursache prüfen, Teller aus Slot-Position."
+      zu_pessimistisch: "Mehr Punkte als gerechnet: Ensenso kann auch auf Glas oder Teller verwertbare Tiefe liefern; Fehlermodell-Raten anpassen und Zeile 7 (Lagegenauigkeit) mit den Wolken prüfen."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 6
+    name: Erkennung (Trefferquote, Nachbarverwechslung)
+    einheit: "% der sichtbaren Objekte (IoU >= 0,5)"
+    prioritaet: {p4_rang: 3, text: "Messung 3 (75 min); größter Treiber für Glas (ST a 0,31 bis 0,95)"}
+    aufwand: {minuten: 75, quelle: P4, hilfsmittel: ["20+ Aufnahmen bei Tag / Küche / dunkel", "Handlabel (Objektmasken)", "Erkennungslauf (scripts/p3_erkennen.py)"]}
+    vorhersage:
+      text: "Klassische Baseline, Treffer: Glas 55 % (95 %: 49 bis 61), Tag 86 % (78 bis 91), Küche 66 % (55 bis 75), dunkel 0 % (0 bis 5); Teller 45 % (41 bis 50), Tag 52 %, Küche 54 %, dunkel 31 % (24 bis 38). Nachbarverwechslung/Verschmelzung: Glas 9 %, Teller 16 %. Mask R-CNN (COCO, ungetunt): Glas 31 % (26 bis 37), Teller 0 % klassenrichtig."
+      herkunft:
+        - {art: M, text: "Isaac-Renderbilder, 72 Szenen, 727 Objekte (docs/kameratag-p3.md); Wilson-Intervall 95 % aus den Renderdaten"}
+        - {art: A, text: "Übertragbarkeit auf echte Bilder nicht belegt (Domänenlücke: Kalk, Gravur, Spiegelungen, Bildrauschen, Projektormuster fehlen); Licht 'dunkel' ist nur über den mittleren Grauwert des Renderbilds definiert (Tag 182 bis 194, Küche 86 bis 101, dunkel 14 bis 18 von 255)"}
+        - {art: A, text: "Baseline kennt Nennmaße und Kamerapose (Suchfenster); sie ist keine blinde Erkennung"}
+    schwelle: "stimmt, wenn der Modellwert im 95-%-Wilson-Intervall der gemessenen Rate k/n liegt"
+    band: "Wilson 95 % aus den Renderdaten; am Kameratag Wilson 95 % aus k/n. Bei n = 20 ist das Intervall etwa +-20 Prozentpunkte breit, das Urteil dann schwach."
+    parameter:
+      raten:
+        glas_alle: {p: 0.55, lo: 0.49, hi: 0.61, besser: hoeher}
+        glas_tag: {p: 0.86, lo: 0.78, hi: 0.91, besser: hoeher}
+        glas_kueche: {p: 0.66, lo: 0.55, hi: 0.75, besser: hoeher}
+        glas_dunkel: {p: 0.0, lo: 0.0, hi: 0.05, besser: hoeher}
+        teller_alle: {p: 0.45, lo: 0.41, hi: 0.50, besser: hoeher}
+        teller_tag: {p: 0.52, lo: 0.44, hi: 0.60, besser: hoeher}
+        teller_kueche: {p: 0.54, lo: 0.46, hi: 0.62, besser: hoeher}
+        teller_dunkel: {p: 0.31, lo: 0.24, hi: 0.38, besser: hoeher}
+        nachbar_glas: {p: 0.09, n_modell: 270, besser: niedriger}
+        nachbar_teller: {p: 0.16, n_modell: 457, besser: niedriger}
+        maskrcnn_glas_alle: {p: 0.31, lo: 0.26, hi: 0.37, besser: hoeher}
+        maskrcnn_teller_klassenrichtig: {p: 0.0, lo: 0.0, hi: 0.01, besser: hoeher}
+    urteil:
+      stimmt: "Modellrate liegt im Wilson-Intervall der Messung."
+      zu_optimistisch: "Gemessene Treffer liegen (Intervall) unter der Modellrate bzw. Nachbarverwechslung darüber."
+      zu_pessimistisch: "Gemessene Treffer liegen über der Modellrate bzw. Verwechslung darunter."
+    konsequenz:
+      stimmt: "Erkennungsrate der Baseline als Erwartung für die Kette verwenden (Glas bei Tag etwa 80 % Griffe, docs/sensitivitaet.md)."
+      zu_optimistisch: "Beleuchtung sicherstellen (Tag / Küche hell), Suchfenster auf den Nennort einengen, Glas im Dunkeln nicht einplanen. Liegt die Glas-Rate bei Tag deutlich unter 86 %: Erkennung vor jeder Griffplanung nachziehen (Feintuning auf eigenen Bildern); Kette B (Prior) braucht die Erkennung nur zur Prüfung. Teller-Rate unter 45 %: Teller aus Slot-Position (B)."
+      zu_pessimistisch: "Erkennung besser als gerechnet: nichts ändern, Planwerte (Glas 0,55 / Teller 0,45) in der Sensitivitätsrechnung hochsetzen."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 7
+    name: Lagegenauigkeit gegen Referenz
+    einheit: mm
+    prioritaet: {p4_rang: null, text: "nicht in der Top 5; folgt aus Zeile 12 (Kalibrierfehler) und Zeile 6 (Maske)"}
+    aufwand: {minuten: 20, quelle: A, hilfsmittel: ["Lehre/Schablone auf dem Korb (Referenzlage +-1 mm, Annahme)", "Pose-Schätzer auf den Aufnahmen", "Kalibriertafel 390 x 390 mm als Ebenenreferenz"], hinweis: "Zusatzmessung m6"}
+    vorhersage:
+      text: "Fehler der Schätzpose gegen die Referenz, mit wahrer Maske und Fehlermodell: Glas Median 1,4 mm, P90 2,5 mm (92 % freigegeben); Teller bei 5 mm Randdicke Median 3,3 mm, P90 4,6 mm (96 von 131 freigegeben). Mit erkannter Baseline-Maske: Glas Median 1,5 / P90 2,3 mm, aber nur 14 % freigegeben; Teller 4 von 131 (Median 4,0 mm). Teller bei 12 mm Randdicke: 0 von 131."
+      herkunft:
+        - {art: M, text: "Strahlschnitt-Simulator, wahre Maske (docs/kameratag-p3.md, Lagefehler)"}
+        - {art: A, text: "Kalibrierfehler der Station nicht eingerechnet; Zeile 12 kommt hinzu. Referenzlage am Korb +-1 mm ist eine Annahme"}
+        - {art: A, text: "Teller 3,3 mm hängt an der angenommenen Randdicke 5 mm (Zeile 11)"}
+      band: "Schwelle <= 5 mm (Entwurf, A); Modell pessimistisch, wenn Median < halber Modellwert"
+    schwelle: "stimmt, wenn der Median des Lagefehlers <= 5 mm (Entwurf) und mindestens halb so groß wie der Modellwert ist"
+    parameter:
+      glas: {median: 1.4, p90: 2.5, freigegeben: 0.92}
+      teller: {median: 3.3, p90: 4.6, freigegeben: 0.73}
+      schwelle_mm: 5.0
+      faktor_tief: 0.5
+    urteil:
+      stimmt: "Median zwischen halbem Modellwert und 5 mm."
+      zu_optimistisch: "Median über 5 mm."
+      zu_pessimistisch: "Median unter dem halben Modellwert."
+    konsequenz:
+      stimmt: "Pose aus der Station als Grobpose für den Griff verwendbar."
+      zu_optimistisch: "Median über 5 mm: Station-Pose reicht nicht als Griffpose. Erst Kalibrierung (Zeile 12) und Referenzlage prüfen; sonst Lage aus dem Slot (B) und D405 am Handgelenk als Feinmessung. Teller: Randdicke (Zeile 11) und Winkel (Zeile 4) prüfen."
+      zu_pessimistisch: "Modell zu pessimistisch; keine Änderung, Fehlermodell der Tiefe nicht nachziehen, bevor Zeile 12 bekannt ist."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 8
+    name: Wiederholgenauigkeit (20 Aufnahmen derselben Szene)
+    einheit: mm
+    prioritaet: {p4_rang: null, text: "nicht von P4 bewertet"}
+    aufwand: {minuten: 15, quelle: A, hilfsmittel: ["Stativ fest", "20 Aufnahmen derselben Szene (Glas, Teller)", "Skript"], hinweis: "Zusatzmessung m6; Kamera, Szene und Licht unverändert"}
+    vorhersage:
+      text: "(a) Streuung je Punkt über 20 Aufnahmen = Zeile-1-Rauschen sigma(z), bei z = 1,0 m 0,219 mm. (b) Streuung der Schätzpose (Standardabweichung über 20 Aufnahmen derselben Szene): Glas x 1,1 / y 1,4 mm (Betrag 1,8 mm), Teller x 1,2 / y 1,0 mm (Betrag 1,5 mm), Teller-Gier 0,26 Grad."
+      herkunft:
+        - {art: M, text: "(b) neu gerechnet für diesen Katalog (einzige neue Rechnung): 20 Seeds (1 bis 20) auf den Testszenen des Wahrnehmungsmodells (tests/test_robustheit.py: ein Glas, eine Tellerreihe), Plan-Fehlermodell, Standardabweichung der End-Pose x/y; Ensenso-Zwischenpose Glas 1,3 / 1,8 mm, Teller 1,4 / 1,6 mm. 20 von 20 Läufen freigegeben (einfache Szene, nicht die dichte Belegung der Renderszenen)"}
+        - {art: A, text: "Das Modell zieht den Kalibrierfehler (1,5 mm / 0,05 Grad Ensenso, 1,0 mm / 0,2 Grad D405) und das Maskenrauschen je Aufnahme neu; an der echten Kamera bei fester Szene sind sie fest. Die Modellstreuung ist deshalb eine obere Schranke, erwartete Richtung: zu_pessimistisch"}
+        - {art: A, text: "(a) nimmt zeitlich unabhängiges Rauschen an; Datenblatt nennt keine Wiederholgenauigkeit"}
+      band: "Faktor 0,5 bis 2 um den Modellwert (A)"
+    schwelle: "stimmt, wenn gemessene Streuung zwischen 0,5x und 2x des Modellwerts liegt"
+    parameter:
+      pose_streuung_mm: {glas: 1.8, teller: 1.5}
+      gier_streuung_grad: 0.26
+      faktor_hoch: 2.0
+      faktor_tief: 0.5
+      punkt_k_mm_pro_m2: 0.219
+    urteil:
+      stimmt: "Streuung im Faktor 0,5 bis 2."
+      zu_optimistisch: "Streuung mehr als doppelt so groß (Aufnahme nicht wiederholbar: Belichtung, Projektor, Vibration, Auto-Parameter)."
+      zu_pessimistisch: "Streuung weniger als halb so groß (erwartet, siehe Herkunft)."
+    konsequenz:
+      stimmt: "Wiederholstreuung wie modelliert."
+      zu_optimistisch: "Die Pose streut zwischen identischen Aufnahmen: mehrere Aufnahmen mitteln (Streuung sinkt mit 1/Wurzel n), Belichtung und Projektor auf feste Werte stellen, Stativ auf Vibration prüfen. Zeile 7 erst nach fester Einstellung auswerten."
+      zu_pessimistisch: "Aufnahmen sind besser wiederholbar als modelliert; Systematik (Zeile 7, 12) bleibt die eigentliche Unsicherheit, sie wird durch Mitteln nicht kleiner."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 9
+    name: Teller-Lage und -Gier im Ständer
+    einheit: "Grad (Gier), mm (Lage x/y)"
+    prioritaet: {p4_rang: 4, text: "Messung 4 (35 min); Gier im geometrischen Maß wirkungslos (ST <= 0,01), im Physik-Maß ST 0,02 (K) / 0,22 (B); Tellerlage ST 0,10 / 0,11, unbemerkter Fehlgriff B 0,37"}
+    aufwand: {minuten: 35, quelle: P4, hilfsmittel: ["Messschieber / Lehre", "Winkelmesser an 6 Tellern"]}
+    vorhersage:
+      text: "Gier jedes Tellers im Ständer gegen die Nennlage: +-1 Grad. Lage x/y gegen Nennlage: +-5 mm."
+      herkunft:
+        - {art: A, text: "Prior ±1 Grad und ±5 mm (docs/griff-prior.md, PRIOR_STANDARD), nicht gemessen"}
+        - {art: M, text: "B trägt im Modell 16/16 bei wahrer Gier ±1, ±3, ±6 Grad (Gier-Fehler Max 1,8 / 2,6 / 4,5 Grad); Lage ±5 mm 16/16, ±10 mm 15/16, ±15 mm 8/16 mit 8 (σ frei) bzw. 7 (σ hart) unbemerkten Fehlgriffen"}
+        - {art: M, text: "Newton, je 1 Seed: Gier 3 Grad Erfolg, 7 Grad Fehlgriff - die Modellgrenze 8,7 Grad ist widerlegt"}
+      band: "+-1 Grad (A); Schwelle <= 2 Grad (Entwurf, A); Lage +-5 mm (A), Alarmband B 14,6 mm"
+    schwelle: "stimmt, wenn der größte Betrag der Gier <= 2 Grad (Entwurf) und der größte Lagefehler <= 5 mm"
+    parameter:
+      gier: {prior_grad: 1.0, schwelle_grad: 2.0, ok_grad: 3.0, aufloesung_grad: 0.5}
+      lage_xy: {prior_mm: 5.0, b_bis_mm: 10.0}
+    urteil:
+      stimmt: "Größte Gier <= 2 Grad und größte Lageabweichung <= 5 mm."
+      zu_optimistisch: "Größte Gier über 2 Grad oder Lageabweichung über 5 mm."
+      zu_pessimistisch: "Alle Gier-Beträge <= 0,5 Grad (Auflösung des Winkelmessers) und Lage <= 2,5 mm: der Prior ist weiter als nötig."
+    konsequenz:
+      stimmt: "Prior-Kette B für den Teller einsetzbar."
+      zu_optimistisch:
+        - {ab: 2.0, text: "Gier 2 bis 3 Grad: Prior-Band auf die gemessene Streuung weiten; B bleibt im Modell (16/16 bei ±3 Grad) und in Newton (3 Grad Erfolg) tragfähig, aber ohne Reserve zur Grenze (Zeile 13)."}
+        - {ab: 3.0, text: "Gier über 3 Grad: Prior-Kette B für den Teller verwerfen. Ohne Prior hält die heutige Kette bei 5 Grad Stationsdrehung (16/16); die Newton-Grenze (Zeile 13) liegt zwischen 3 und 7 Grad, ist nicht enger bekannt. Gier dann messen (Station + D405) statt vorgeben."}
+      zu_pessimistisch: "Prior enger legen (Gier ±0,5 Grad, Lage ±2,5 mm); gibt mehr Reserve und engeren Alarm."
+    konsequenz_lage:
+      - {ab: 5.0, text: "Lage x/y 5 bis 10 mm: Prior-Band auf die gemessene Streuung weiten (Modell: ±10 mm 15/16, 1 unbemerkt)."}
+      - {ab: 10.0, text: "Lage x/y über 10 mm: B beim Teller nicht ohne engeren Prior-Alarm einsetzen (Modell: ±15 mm nur 8/16, davon 8 bzw. 7 unbemerkte Fehlgriffe; Alarmband 14,6 mm zu weit)."}
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 10
+    name: Glaslage im Slot
+    einheit: "mm (Lage), Grad (Neigung)"
+    prioritaet: {p4_rang: null, text: "P4: Glaslage 0 bis 10 mm im Modell wirkungslos (A und B fangen sie ab); Aufnahme zusammen mit Messung 4"}
+    aufwand: {minuten: 20, quelle: A, hilfsmittel: ["Lehre / Schablone auf dem Glashalter", "Winkelmesser", "8 bis 16 Gläser"], hinweis: "Teil von m4"}
+    vorhersage:
+      text: "Glasmitte gegen Nennort: +-5 mm je Achse; Neigung des Glases gegen die Senkrechte +-3 Grad."
+      herkunft:
+        - {art: A, text: "Prior Glas ±5 mm / ±3 Grad (docs/griff-prior.md), ungetestet"}
+        - {art: M, text: "Nennlage allein trägt 16/16 bei ±5 mm, 11/16 bei ±10 mm, 5/16 bei ±15 mm; B bricht bei ±10 mm in 5/16, bei ±15 mm in 10/16 ab (Fehlalarme), 0 unbemerkt in 96 Läufen; Plausibilitätsband 8,9 mm; zwischen 5 und 10 mm nicht gemessen"}
+      band: "+-5 mm / +-3 Grad (A); Schwelle <= 8 mm (Entwurf, A)"
+    schwelle: "stimmt, wenn der größte Betrag der Lageabweichung <= 8 mm und die größte Neigung <= 3 Grad"
+    parameter:
+      lage_mm: {prior: 5.0, schwelle: 8.0, unter: 2.5}
+      neigung_grad: {prior: 3.0, unter: 1.0}
+    urteil:
+      stimmt: "Größte Lage <= 8 mm, Neigung <= 3 Grad, Lage nicht unter 2,5 mm (sonst zu_pessimistisch)."
+      zu_optimistisch: "Größte Lage über 8 mm oder Neigung über 3 Grad."
+      zu_pessimistisch: "Größte Lage <= 2,5 mm und Neigung <= 1 Grad: Prior weiter als nötig."
+    konsequenz:
+      stimmt: "Prior B für Gläser einsetzbar (Nennlage allein 16/16 bei ±5 mm)."
+      zu_optimistisch:
+        - {ab: 8.0, text: "Lage über 8 mm: B-Abbrüche häufen sich (Fehlalarme bei ±10 mm 5/16); A ('neu hinsehen', trägt im Modell 13 bis 16/16 in allen Welten) oder S1 statt B einsetzen."}
+        - {ab: 15.0, text: "Lage über 15 mm: außerhalb der Newton-Eckfälle und der Modellwelt (bis ±15 mm); Glas nur mit A und D405, Prior neu festlegen."}
+      zu_pessimistisch: "Prior-Band verkleinern; Plausibilitätsband des Alarms entsprechend (heute 8,9 mm)."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 11
+    name: Randwulst-Dicke der echten Teller
+    einheit: mm
+    prioritaet: {p4_rang: 1, text: "Messung 1 (20 min); ST 0,33 (K) / 0,38 (B), für den Teller 0,53 / 0,76; Teller aus der Station: <= 6 mm ja, >= 8 mm nein"}
+    aufwand: {minuten: 20, quelle: P4, hilfsmittel: ["Messschieber", "3 Dessertteller (besser 6)", "Ensenso-Aufnahme der Tellerreihe in Mastpose", "Pose-Schätzer"]}
+    vorhersage:
+      text: "Randdicke 5 mm (Annahme Finger-Dokumentation, Auftrag 3 bis 6 mm). Dann gelingt die Teller-Pose aus der Station in 96 von 131 Fällen (73 %, Strahlschnitt, wahre Maske, Bestandsposition); bei 12 mm in 0 von 131; Dicke-Sweep: 3 bis 5 mm 83 bis 100 %, 7 mm 33 bis 100 %, ab 8 mm 0 %."
+      herkunft:
+        - {art: A, text: "5 mm aus config/finger.yaml (wulst_dicke_mm, Quelle 'auftrag'); die 12 mm der Renderszenen sind eine Szenenannahme ohne Quelle"}
+        - {art: M, text: "96/131 gegen 0/131: docs/kameratag-p3.md; Sweep 3 bis 12 mm, 6 Seeds je Dicke: docs/sensitivitaet.md. Gerechnet nur an der Bestandsposition; 12 mm nicht an Haupt und Ausleger"}
+        - {art: M, text: "Dass dickerer Rand schlechter ist, ergibt sich im Modell aus Zylinderhöhe und Stabgeometrie, nicht aus der Sensorphysik; die echte Wirkung ist offen"}
+      band: "Dicke: Auftrag 3 bis 6 mm (A). Grenzbereich 6 bis 8 mm (M, 6 Seeds)."
+    schwelle: "stimmt (Annahme trägt), wenn die größte gemessene Randdicke <= 6 mm; Grenzbereich 6 bis 8 mm; ab 8 mm trägt die Station-Pose nicht"
+    parameter:
+      dicke_mm: {plan: 5.0, baut_bis: 6.0, grenze_ab: 8.0, spanne_min: 3.0}
+      pose_ausbeute: {p: 0.733, n_modell: 131, k_modell: 96}
+    urteil:
+      stimmt: "Größte Randdicke <= 6 mm."
+      zu_optimistisch: "Größte Randdicke über 6 mm (6 bis 8 mm Grenzbereich, ab 8 mm trägt das Modell die Station-Pose nicht)."
+      zu_pessimistisch: "Größte Randdicke unter 3 mm: dünner als die gerechnete Spanne 3 bis 12 mm; das Modell sagt dazu nichts. Die Ausbeute der Ensenso-Aufnahmen entscheidet."
+    konsequenz:
+      stimmt: "Teller-Pose aus der Station ist plausibel; Haupt- gegen einfache Position entscheidet die Rand-Ausbeute (Messung an beiden Positionen): trägt der Rand an der einfachen Position bei beiden Auszügen, gilt der einfache Ausleger (gleiche Gläser, 0,10 m weniger Ausleger), sonst die Hauptposition."
+      zu_optimistisch:
+        - {ab: 6.0, text: "6 bis 8 mm Grenzbereich: Station-Pose für den Teller nur als Prüfung; Teller-Lage aus Slot (B) mit D405. Ausbeute der Ensenso-Aufnahmen entscheidet. Hauptposition bevorzugen (Fläche 0,743 gegen 0,549)."}
+        - {ab: 8.0, text: "Ab 8 mm: keine Station-Pose für den Teller (Modell: alle Ketten 0 %). Teller aus Mechanik-Prior (B) plus D405; Mast auf die Gläser auslegen; Haupt behalten, Tellerfläche nur bei Auszug 0,225 m nutzen (an der Hauptposition 8/8 Oberkorb-, 5/6 Unterkorb-Teller nutzbar; mit 12 mm dort nicht gerechnet)."}
+      zu_pessimistisch: "Messung wiederholen und mit Messschieber an mehreren Stellen prüfen; Ausbeute der Ensenso-Aufnahmen entscheidet."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 12
+    name: Station-Kalibrierfehler (Versatz und Drehung)
+    einheit: "mm (Versatz), Grad (Drehung)"
+    prioritaet: {p4_rang: 2, text: "Messung 2 (45 min); ST Versatz 0,53 / Drehung 0,39 (K), bei B 0,03 / 0,12"}
+    aufwand: {minuten: 45, quelle: P4, hilfsmittel: ["Kalibriertafel 390 x 390 mm", "TCP auf 3 bis 5 Referenzpunkte", "Kabsch-Anpassung im Auswertungsskript"]}
+    vorhersage:
+      text: "Nach der Kalibrierung Versatz 5 mm und Drehung 5 Grad (Planwert der Sensitivitätsrechnung). Die Ketten tragen: K bis etwa 2,5 mm Versatz und 5 Grad Drehung; A Glas überall, A Teller bis 15 mm; B Versatz überall, Drehung bis 20 Grad. Vor der Kalibrierung rechnen die Studien mit 20 mm / 15 Grad."
+      herkunft:
+        - {art: A, text: "Planwert 5 mm / 5 Grad 'nach Kalibrierung' (docs/sensitivitaet.md); σ 20 mm / 15 Grad stammt aus dem Ticket der Robustheitsstudie, nicht aus einer Messung"}
+        - {art: M, text: "Tragfähigkeit der Ketten: Glas K 100 / 100 / 50 / 17 / 0 % bei 0 / 2,5 / 5 / 7,5 / 10 mm, Teller K 100 / 100 / 83 / 0 / 0; K und A 0 % ab 10 Grad; B 100 % bis 20 Grad; A Teller bei 20 mm 83 %, bei 30 mm 33 % mit 67 % unbemerkt (6 Seeds je Punkt)"}
+        - {art: A, text: "Fehler als fester Betrag mit zufälliger Richtung, nicht Gauß; Drehung wirkt nur beim Teller"}
+      band: "5 mm / 5 Grad als Planwert; Fenster 'stimmt' 1,25 bis 5 mm und 1 bis 5 Grad (A, untere Grenze = halber Planwert)"
+    schwelle: "stimmt, wenn Versatz zwischen 1,25 und 5 mm und Drehung zwischen 1 und 5 Grad liegen"
+    parameter:
+      versatz_mm: {plan: 5.0, unter: 1.25, k_traegt_bis: 2.5, k_tot_ab: 7.5, a_teller_unbemerkt_ab: 20.0}
+      dreh_grad: {plan: 5.0, unter: 1.0, k_tot_ab: 10.0, b_bis: 20.0}
+    urteil:
+      stimmt: "Versatz 1,25 bis 5 mm und Drehung 1 bis 5 Grad."
+      zu_optimistisch: "Versatz über 5 mm oder Drehung über 5 Grad."
+      zu_pessimistisch: "Versatz unter 1,25 mm und Drehung unter 1 Grad: Kalibrierung besser als angenommen."
+    konsequenz:
+      stimmt: "Planwert bestätigt. Kette K nur bis 2,5 mm sicher; zwischen 2,5 und 5 mm Glas-Fehlalarm 50 % bei 5 mm - A einplanen."
+      zu_optimistisch:
+        - {ab: 5.0, text: "Versatz oder Drehung über Plan: Kette K (heutige Prüfung) nicht einsetzen; 'neu hinsehen' (A) für das Glas, für den Teller B."}
+        - {ab: 7.5, text: "Versatz ab 7,5 mm oder Drehung ab 10 Grad: K und A beim Teller tragen nicht (0 %); Teller nur mit B; Glas mit A oder B. Kalibrierung wiederholen."}
+        - {ab: 15.0, text: "Versatz ab 15 mm: A beim Teller riskant (unbemerkte Fehlgriffe ab 20 mm: 10 von 16 im Modell). Drehung über 20 Grad: außerhalb der gerechneten Spanne, auch B nicht belegt."}
+      zu_pessimistisch: "Kalibrierung besser als Plan: Kette K trägt (bis 2,5 mm / 5 Grad), A nur als Absicherung; Planwert in der Sensitivitätsrechnung senken."
+
+  # ------------------------------------------------------------------------------------------------
+  - id: 13
+    name: Teller-Gier-Grenze, physikalisch
+    einheit: Grad
+    prioritaet: {p4_rang: 4, text: "gehört zu Messung 4; die Grenze selbst misst nur eine Newton-Reihe, nicht der Kameratag"}
+    aufwand: {minuten: 10, quelle: A, hilfsmittel: ["Winkelmesser", "Teller im Ständer per Hand bis zum Anschlag verdrehen"], hinweis: "Misst nur das mechanische Spiel des Ständers (größte erreichbare Gier). Kein Greifversuch: der Roboter steht am Kameratag nicht."}
+    vorhersage:
+      text: "Die physikalische Grenze der wahren Teller-Gier (Griff gelingt / scheitert) liegt zwischen 3 und 7 Grad. Newton: 3 Grad Erfolg (Gier-Fehler nach dem Prior 2 Grad), 7 Grad Fehlgriff (Gier-Fehler etwa 6 Grad, mit und ohne Prior). Ein Punktwert wird nicht angegeben."
+      herkunft:
+        - {art: M, text: "Newton 1.6.1, je 1 Seed, nur Teller-Gier 3 und 7 Grad (docs/griff-prior.md, Newton-Eckfälle); das Modell (Kerbengrenze 7,66 Grad) ist durch den Lauf bei 7 Grad widerlegt"}
+        - {art: A, text: "Grenze zwischen 3 und 7 Grad: nicht bestimmt; der Zwischenwert 4 Grad ('Physik-Gierlimit') in der Sensitivitätsrechnung ist eine Annahme"}
+        - {art: A, text: "Der Gier-Fehler 6 Grad bei 7 Grad folgt aus 7 minus 1 Grad Prior und steht nicht im Lauf-Log"}
+      band: "Grenze G: 3 Grad < G < 7 Grad (nur die zwei Eckpunkte sind Messungen der Simulation)"
+    schwelle: "Es gibt keine Modellaussage, die der Kameratag prüft. Eingeordnet wird das mechanische Spiel s (größte erreichbare Gier) gegen 3 und 7 Grad."
+    parameter:
+      grenze_grad: {ok: 3.0, fehlgriff: 7.0, zwischenwert_annahme: 4.0}
+    urteil:
+      stimmt: "nicht definiert - Zeile 13 liefert am Kameratag kein Urteil, nur eine Einordnung (unbekannt)."
+      zu_optimistisch: "nicht definiert."
+      zu_pessimistisch: "nicht definiert."
+    konsequenz:
+      stimmt: "Spiel s <= 3 Grad: Ständer kann die Grenze nicht erreichen; Zeile 13 bleibt ohne Folgen für die Planung."
+      zu_optimistisch:
+        - {ab: 3.0, text: "Spiel 3 bis 7 Grad: Newton-Reihe 3 bis 7 Grad (z. B. 4, 5, 6 Grad, mehrere Seeds) vor dem Einsatz der Prior-Kette B für den Teller; bis dahin Gier messen (Zeile 9) und nicht vorgeben."}
+        - {ab: 7.0, text: "Spiel über 7 Grad: der Fehlgriff-Bereich liegt im Spiel des Ständers; B für den Teller nicht einsetzen, Gier aus Station und D405 messen, Ständer mechanisch führen oder Teller ausrichten."}
+      zu_pessimistisch: "nicht definiert."
+
+# ------------------------------------------------------------------------------------------------
+# Nicht vorhersagbar: keine Zahl, sondern eine begründete 'unbekannt'-Zeile mit Konsequenz je Ausgang.
+unbekannt:
+  - id: u1
+    name: Nasse Optik (Wasserfilm, Tropfen auf Glas, Teller und Korb)
+    zeilen: [5, 6, 7]
+    begruendung: "Das Modell kennt nur 5 % zufälligen Ausfall auf nassen Flächen und Tropfen als Geometrie im Renderbild; ein Wasserfilm, Dampf, Wasserflecken und nasse Mehrfachspiegelungen im Gitter sind nicht modelliert. Die Renderdaten zeigen sogar widersprüchliche Richtungen (Baseline Glas nass 61 % gegen trocken 52 %, Mask R-CNN nass 18 % gegen trocken 40 %). Eine Zahl wäre erfunden."
+    messgroesse: "Differenz der Erkennungsrate nass minus trocken (Prozentpunkte), gleiche Plätze, gleiche Beleuchtung"
+    klassen_gruppe: delta_erkennung_pp
+    klassen:
+      - {bis: -30.0, name: "C", text: "Nässe zerstört die Erkennung (mehr als 30 Prozentpunkte schlechter). Folge: Erkennung nur im trockenen Zustand verlassen; im nassen Betrieb Lage aus dem Slot (B), Kamera nur zur Prüfung; Trocknungszeit oder Abtropfpause als Betriebsregel prüfen."}
+      - {bis: -10.0, name: "B", text: "Nässe schwächt die Erkennung deutlich (10 bis 30 Prozentpunkte). Folge: Zeile 6 in der Nässe nur mit den nassen Raten planen; Prior B bevorzugen."}
+      - {bis: 1000.0, name: "A", text: "Nässe kostet höchstens 10 Prozentpunkte. Folge: Erkennung im nassen Zustand wie trocken einplanen; Zeile 5 nass einzeln prüfen."}
+  - id: u2
+    name: Projektorreflexe im Metallkorb
+    zeilen: [4, 5, 7]
+    begruendung: "Die Ensenso projiziert ein Muster (200 W LED); Korbdrähte aus Metall spiegeln es. Projektormuster und Stereo-Matching sind weder im Strahlschnitt noch im Renderbild simuliert (docs/kameratag-p3.md); wie viele Fehlpunkte entstehen, ist nicht vorhersagbar."
+    messgroesse: "Anteil von Tiefenpunkten im Korb-Bereich, die mehr als 10 mm neben der lokalen Ebene bzw. dem erwarteten Drahtvolumen liegen (Prozent)"
+    klassen_gruppe: ausreisser_pct
+    klassen:
+      - {bis: 2.0, name: "A", text: "Unter 2 % Ausreißer. Folge: Reflexe ignorieren, Pose-Schätzer unverändert."}
+      - {bis: 10.0, name: "B", text: "2 bis 10 % Ausreißer. Folge: Korbdrähte per Maske (Tiefe außerhalb der Objektmaske) ausblenden und Punkte nur aus der Objektmaske nehmen; Zeilen 5 und 7 mit Maske auswerten."}
+      - {bis: 1000.0, name: "C", text: "Über 10 % Ausreißer. Folge: Kameraposition oder Winkel ändern (Spiegelung hängt am Einfallswinkel), Belichtung senken, Korb im Projektorfeld abdecken; reicht das nicht, Ensenso im Korb nur für die Anwesenheit nutzen und Lage aus D405 plus Slot."}
+  - id: u3
+    name: Ensenso auf transparentem Glas
+    zeilen: [5, 7]
+    begruendung: "Das Modell nimmt für Glas 50 % Ausfall, 35 % Durchblick, 15 % Reflex als Fehlermodell an (Annahmen); das Isaac-Tiefenbild sieht Glas ideal und ist bewusst nicht verwendet. Wie ein Stereo-Sensor mit Projektor ein echtes Weinglas sieht, ist nicht vorhersagbar. Der Modellwert von 31 % in Zeile 5 ist eine Folge dieser Annahmen, keine Vorhersage."
+    messgroesse: "Punktabdeckung des Glases (Prozent der Objektpixel mit gültigem Tiefenwert), trocken, Mittel über mindestens 8 Gläser"
+    klassen_gruppe: abdeckung_glas_pct
+    klassen:
+      - {bis: 5.0, name: "C", text: "Unter 5 %: Glas liefert keine Tiefe. Folge: Zeile 5 versagt - Glas aus der Slot-Position schätzen, Kamera nur zur Prüfung (Mechanik-Prior B); D405 am Handgelenk für die Feinlage."}
+      - {bis: 25.0, name: "B", text: "5 bis 25 %: wenig Tiefe. Folge: Glas-Pose aus der Kontur (RGB-Maske) plus D405; Ensenso-Tiefe nur als Plausibilitätsprüfung."}
+      - {bis: 1000.0, name: "A", text: "Ab 25 %: Tiefe auf Glas nutzbar wie im Modell (31 %). Folge: Modellannahme behalten; Durchblickpunkte (Hintergrund hinter dem Glas) in Zeile 7 prüfen."}
+
+positionen:
+  haupt:
+    name: Hauptposition
+    kamera_m: [0.55, 0.7, 1.25]
+    neigung_grad: 55
+    blickpunkt_m: [0.3, 0.17, 0.41]
+    # Abstand (euklidisch, m) und Kamerarahmen-z (m) zu den Referenzpunkten; r1 Mitte Plattenvorderkante (Oberseite),
+    # r2 Mitte Oberkorb-Front am Boden (0,45 m aus), r3 Mitte Unterkorb-Front am Boden (0,45 m aus)
+    referenz:
+      r1: {abstand_m: 0.798, z_rahmen_m: 0.718}
+      r2: {abstand_m: 0.914, z_rahmen_m: 0.892}
+      r3: {abstand_m: 1.177, z_rahmen_m: 1.114}
+    # je Auszug (a0 = 0,000 m, a225 = 0,225 m, a450 = 0,450 m) und Gruppe: Platz-z min/max, Sichtfeld an der mittleren Ebene (mm),
+    # Korb im Bild (u/v-Anteil min/max), sichtbare Fläche Mittel (%), nutzbar [n, N] (Flächenzählung)
+    gruppen:
+      a0:
+        glas: {z_m: [1.05, 1.3], sichtfeld_mm: [1114, 1013], korb_u: [0.04, 0.64], korb_v: [-0.08, 0.43], sichtbar_pct_mittel: 57, nutzbar: [10, 16]}
+        teller_ober: {z_m: [1.03, 1.17], sichtfeld_mm: [1040, 946], korb_u: [0.04, 0.64], korb_v: [-0.08, 0.43], sichtbar_pct_mittel: 46, nutzbar: [8, 8]}
+        teller_unter: {z_m: [1.27, 1.42], sichtfeld_mm: [1271, 1155], korb_u: [0.11, 0.63], korb_v: [0.11, 0.61], sichtbar_pct_mittel: 42, nutzbar: [5, 6]}
+      a225:
+        glas: {z_m: [0.93, 1.17], sichtfeld_mm: [1001, 910], korb_u: [0.08, 0.76], korb_v: [0.02, 0.62], sichtbar_pct_mittel: 74, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.92, 1.05], sichtfeld_mm: [931, 846], korb_u: [0.08, 0.76], korb_v: [0.02, 0.62], sichtbar_pct_mittel: 57, nutzbar: [8, 8]}
+        teller_unter: {z_m: [1.15, 1.26], sichtfeld_mm: [1149, 1044], korb_u: [0.15, 0.73], korb_v: [0.21, 0.79], sichtbar_pct_mittel: 74, nutzbar: [5, 6]}
+      a450:
+        glas: {z_m: [0.81, 1.06], sichtfeld_mm: [892, 811], korb_u: [0.14, 0.92], korb_v: [0.15, 0.87], sichtbar_pct_mittel: 87, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.8, 0.94], sichtfeld_mm: [828, 753], korb_u: [0.14, 0.92], korb_v: [0.15, 0.87], sichtbar_pct_mittel: 73, nutzbar: [5, 8]}
+        teller_unter: {z_m: [1.03, 1.16], sichtfeld_mm: [1046, 950], korb_u: [0.2, 0.85], korb_v: [0.33, 1.0], sichtbar_pct_mittel: 91, nutzbar: [0, 6]}
+    # je Platz und Auszug: [sichtbar %, Platz-z m, Einfallswinkel Grad, nutzbar]; z/Winkel null = nicht gemessen (außerhalb Bild/Bereich)
+    plaetze:
+      glas_1: {a0: [81, 1.05, 49, false], a225: [86, 0.93, 42, true], a450: [98, 0.81, 30, true]}
+      glas_2: {a0: [56, 1.09, 52, true], a225: [67, 0.98, 45, true], a450: [82, 0.86, 35, true]}
+      glas_3: {a0: [52, 1.14, 55, true], a225: [62, 1.03, 49, true], a450: [75, 0.91, 40, true]}
+      glas_4: {a0: [15, 1.2, 51, false], a225: [57, 1.08, 52, true], a450: [68, 0.96, 44, true]}
+      glas_5: {a0: [81, 1.08, 50, true], a225: [86, 0.96, 51, true], a450: [99, 0.84, 32, true]}
+      glas_6: {a0: [62, 1.12, 53, true], a225: [73, 1.01, 47, true], a450: [87, 0.89, 37, true]}
+      glas_7: {a0: [58, 1.17, 55, true], a225: [68, 1.06, 49, true], a450: [80, 0.94, 42, true]}
+      glas_8: {a0: [21, 1.24, 53, false], a225: [63, 1.11, 52, true], a450: [74, 1.0, 46, true]}
+      glas_9: {a0: [81, 1.11, 51, true], a225: [86, 0.99, 49, true], a450: [99, 0.87, 36, true]}
+      glas_10: {a0: [68, 1.16, 54, true], a225: [79, 1.04, 48, true], a450: [92, 0.93, 54, true]}
+      glas_11: {a0: [63, 1.21, 56, true], a225: [73, 1.09, 50, true], a450: [86, 0.98, 50, true]}
+      glas_12: {a0: [26, 1.27, 48, false], a225: [69, 1.14, 53, true], a450: [80, 1.03, 47, true]}
+      glas_13: {a0: [82, 1.14, 52, false], a225: [87, 1.02, 48, true], a450: [99, 0.91, 55, true]}
+      glas_14: {a0: [73, 1.19, 54, true], a225: [83, 1.07, 49, true], a450: [96, 0.96, 52, true]}
+      glas_15: {a0: [69, 1.24, 57, true], a225: [78, 1.12, 51, true], a450: [90, 1.01, 49, true]}
+      glas_16: {a0: [32, 1.3, 44, false], a225: [73, 1.17, 54, true], a450: [84, 1.06, 48, true]}
+      oberteller_0_1: {a0: [91, 1.11, 46, true], a225: [93, 0.99, 55, true], a450: [100, 0.88, 67, false]}
+      oberteller_0_2: {a0: [38, 1.1, 42, true], a225: [51, 0.99, 51, true], a450: [76, 0.89, 63, false]}
+      oberteller_0_3: {a0: [35, 1.13, 40, true], a225: [47, 1.02, 48, true], a450: [67, 0.92, 59, true]}
+      oberteller_0_4: {a0: [26, 1.17, 38, true], a225: [43, 1.05, 46, true], a450: [60, 0.94, 56, true]}
+      oberteller_1_1: {a0: [92, 1.04, 42, true], a225: [94, 0.92, 51, true], a450: [100, 0.8, 64, false]}
+      oberteller_1_2: {a0: [33, 1.03, 38, true], a225: [45, 0.92, 47, true], a450: [69, 0.81, 59, true]}
+      oberteller_1_3: {a0: [31, 1.06, 36, true], a225: [41, 0.95, 45, true], a450: [61, 0.84, 56, true]}
+      oberteller_1_4: {a0: [24, 1.09, 35, true], a225: [38, 0.97, 42, true], a450: [54, 0.87, 52, true]}
+      unterteller_0_1: {a0: [94, 1.34, 54, true], a225: [100, 1.23, 62, false], a450: [100, 1.11, 72, false]}
+      unterteller_0_2: {a0: [31, 1.36, 51, true], a225: [66, 1.23, 59, true], a450: [93, 1.13, 69, false]}
+      unterteller_0_3: {a0: [3, 1.42, 50, false], a225: [61, 1.26, 57, true], a450: [85, 1.16, 67, false]}
+      unterteller_1_1: {a0: [94, 1.27, 52, true], a225: [100, 1.15, 61, true], a450: [100, 1.03, 71, false]}
+      unterteller_1_2: {a0: [27, 1.28, 49, true], a225: [62, 1.16, 58, true], a450: [90, 1.06, 68, false]}
+      unterteller_1_3: {a0: [1, 1.33, 49, true], a225: [57, 1.19, 55, true], a450: [81, 1.08, 65, false]}
+  hoeher:
+    name: Alternative höher
+    kamera_m: [0.55, 0.7, 1.45]
+    neigung_grad: 60
+    blickpunkt_m: [0.3, 0.17, 0.44]
+    # Abstand (euklidisch, m) und Kamerarahmen-z (m) zu den Referenzpunkten; r1 Mitte Plattenvorderkante (Oberseite),
+    # r2 Mitte Oberkorb-Front am Boden (0,45 m aus), r3 Mitte Unterkorb-Front am Boden (0,45 m aus)
+    referenz:
+      r1: {abstand_m: 0.913, z_rahmen_m: 0.858}
+      r2: {abstand_m: 1.099, z_rahmen_m: 1.076}
+      r3: {abstand_m: 1.368, z_rahmen_m: 1.314}
+    # je Auszug (a0 = 0,000 m, a225 = 0,225 m, a450 = 0,450 m) und Gruppe: Platz-z min/max, Sichtfeld an der mittleren Ebene (mm),
+    # Korb im Bild (u/v-Anteil min/max), sichtbare Fläche Mittel (%), nutzbar [n, N] (Flächenzählung)
+    gruppen:
+      a0:
+        glas: {z_m: [1.2, 1.41], sichtfeld_mm: [1236, 1123], korb_u: [0.08, 0.63], korb_v: [-0.05, 0.45], sichtbar_pct_mittel: 39, nutzbar: [8, 16]}
+        teller_ober: {z_m: [1.18, 1.35], sichtfeld_mm: [1194, 1085], korb_u: [0.08, 0.63], korb_v: [-0.05, 0.45], sichtbar_pct_mittel: 37, nutzbar: [6, 8]}
+        teller_unter: {z_m: [1.44, 1.53], sichtfeld_mm: [1412, 1283], korb_u: [0.14, 0.62], korb_v: [0.12, 0.59], sichtbar_pct_mittel: 39, nutzbar: [1, 6]}
+      a225:
+        glas: {z_m: [1.1, 1.31], sichtfeld_mm: [1146, 1041], korb_u: [0.13, 0.73], korb_v: [0.06, 0.62], sichtbar_pct_mittel: 80, nutzbar: [16, 16]}
+        teller_ober: {z_m: [1.08, 1.2], sichtfeld_mm: [1083, 984], korb_u: [0.13, 0.73], korb_v: [0.06, 0.62], sichtbar_pct_mittel: 65, nutzbar: [8, 8]}
+        teller_unter: {z_m: [1.33, 1.43], sichtfeld_mm: [1315, 1195], korb_u: [0.19, 0.7], korb_v: [0.22, 0.74], sichtbar_pct_mittel: 81, nutzbar: [1, 6]}
+      a450:
+        glas: {z_m: [0.99, 1.21], sichtfeld_mm: [1050, 954], korb_u: [0.19, 0.85], korb_v: [0.19, 0.83], sichtbar_pct_mittel: 91, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.98, 1.11], sichtfeld_mm: [995, 904], korb_u: [0.19, 0.85], korb_v: [0.19, 0.83], sichtbar_pct_mittel: 83, nutzbar: [2, 8]}
+        teller_unter: {z_m: [1.23, 1.34], sichtfeld_mm: [1227, 1115], korb_u: [0.24, 0.8], korb_v: [0.34, 0.92], sichtbar_pct_mittel: 97, nutzbar: [0, 6]}
+    # je Platz und Auszug: [sichtbar %, Platz-z m, Einfallswinkel Grad, nutzbar]; z/Winkel null = nicht gemessen (außerhalb Bild/Bereich)
+    plaetze:
+      glas_1: {a0: [84, 1.2, 50, true], a225: [90, 1.1, 35, true], a450: [100, 0.99, 24, true]}
+      glas_2: {a0: [57, 1.23, 46, true], a225: [75, 1.14, 38, true], a450: [89, 1.04, 29, true]}
+      glas_3: {a0: [1, 1.34, 76, false], a225: [70, 1.18, 42, true], a450: [83, 1.08, 33, true]}
+      glas_4: {a0: [0, null, null, false], a225: [65, 1.22, 45, true], a450: [77, 1.13, 37, true]}
+      glas_5: {a0: [84, 1.22, 49, true], a225: [90, 1.12, 36, true], a450: [100, 1.02, 26, true]}
+      glas_6: {a0: [62, 1.26, 46, true], a225: [79, 1.16, 39, true], a450: [92, 1.06, 30, true]}
+      glas_7: {a0: [5, 1.36, 63, false], a225: [75, 1.21, 43, true], a450: [86, 1.11, 35, true]}
+      glas_8: {a0: [0, null, null, false], a225: [70, 1.25, 46, true], a450: [81, 1.15, 38, true]}
+      glas_9: {a0: [85, 1.25, 48, true], a225: [90, 1.15, 38, true], a450: [100, 1.05, 29, true]}
+      glas_10: {a0: [67, 1.29, 47, true], a225: [84, 1.19, 41, true], a450: [95, 1.09, 33, true]}
+      glas_11: {a0: [9, 1.38, 55, false], a225: [79, 1.24, 44, true], a450: [90, 1.14, 37, true]}
+      glas_12: {a0: [0, null, null, false], a225: [75, 1.28, 47, true], a450: [85, 1.18, 40, true]}
+      glas_13: {a0: [85, 1.28, 47, true], a225: [91, 1.17, 53, true], a450: [100, 1.08, 33, true]}
+      glas_14: {a0: [71, 1.32, 48, true], a225: [88, 1.22, 51, true], a450: [98, 1.12, 57, true]}
+      glas_15: {a0: [12, 1.41, 49, false], a225: [83, 1.26, 48, true], a450: [94, 1.16, 54, true]}
+      glas_16: {a0: [0, null, null, false], a225: [79, 1.31, 48, true], a450: [89, 1.21, 51, true]}
+      oberteller_0_1: {a0: [92, 1.25, 51, true], a225: [98, 1.15, 60, true], a450: [100, 1.05, 70, false]}
+      oberteller_0_2: {a0: [45, 1.24, 48, true], a225: [61, 1.15, 57, true], a450: [87, 1.06, 67, false]}
+      oberteller_0_3: {a0: [12, 1.29, 47, true], a225: [56, 1.17, 54, true], a450: [79, 1.09, 64, false]}
+      oberteller_0_4: {a0: [1, 1.35, 46, false], a225: [52, 1.2, 52, true], a450: [72, 1.11, 61, true]}
+      oberteller_1_1: {a0: [93, 1.18, 49, true], a225: [98, 1.08, 58, true], a450: [100, 0.98, 69, false]}
+      oberteller_1_2: {a0: [42, 1.18, 46, true], a225: [57, 1.08, 54, true], a450: [83, 1.0, 65, false]}
+      oberteller_1_3: {a0: [9, 1.23, 45, true], a225: [52, 1.11, 52, true], a450: [74, 1.02, 62, false]}
+      oberteller_1_4: {a0: [0, 1.28, 44, false], a225: [48, 1.13, 50, true], a450: [67, 1.04, 59, true]}
+      unterteller_0_1: {a0: [99, 1.5, 58, false], a225: [100, 1.4, 66, false], a450: [100, 1.29, 75, false]}
+      unterteller_0_2: {a0: [18, 1.53, 56, false], a225: [75, 1.41, 63, false], a450: [100, 1.32, 72, false]}
+      unterteller_0_3: {a0: [0, null, null, false], a225: [70, 1.43, 61, false], a450: [94, 1.34, 70, false]}
+      unterteller_1_1: {a0: [99, 1.44, 57, true], a225: [100, 1.33, 65, false], a450: [100, 1.23, 74, false]}
+      unterteller_1_2: {a0: [15, 1.46, 55, false], a225: [73, 1.34, 62, false], a450: [98, 1.25, 71, false]}
+      unterteller_1_3: {a0: [0, null, null, false], a225: [67, 1.36, 60, true], a450: [91, 1.28, 69, false]}
+  bestand:
+    name: Alternative weiter hinten (Bestand)
+    kamera_m: [0.55, 0.5, 1.35]
+    neigung_grad: 60
+    blickpunkt_m: [0.3, 0.17, 0.63]
+    # Abstand (euklidisch, m) und Kamerarahmen-z (m) zu den Referenzpunkten; r1 Mitte Plattenvorderkante (Oberseite),
+    # r2 Mitte Oberkorb-Front am Boden (0,45 m aus), r3 Mitte Unterkorb-Front am Boden (0,45 m aus)
+    referenz:
+      r1: {abstand_m: 0.711, z_rahmen_m: 0.679}
+      r2: {abstand_m: 0.967, z_rahmen_m: 0.917}
+      r3: {abstand_m: 1.247, z_rahmen_m: 1.156}
+    # je Auszug (a0 = 0,000 m, a225 = 0,225 m, a450 = 0,450 m) und Gruppe: Platz-z min/max, Sichtfeld an der mittleren Ebene (mm),
+    # Korb im Bild (u/v-Anteil min/max), sichtbare Fläche Mittel (%), nutzbar [n, N] (Flächenzählung)
+    gruppen:
+      a0:
+        glas: {z_m: [0.99, 1.16], sichtfeld_mm: [1023, 930], korb_u: [-0.09, 0.58], korb_v: [-0.02, 0.61], sichtbar_pct_mittel: 30, nutzbar: [4, 16]}
+        teller_ober: {z_m: [0.98, 1.14], sichtfeld_mm: [1004, 913], korb_u: [-0.09, 0.58], korb_v: [-0.02, 0.61], sichtbar_pct_mittel: 31, nutzbar: [4, 8]}
+        teller_unter: {z_m: [1.24, 1.37], sichtfeld_mm: [1242, 1129], korb_u: [0.01, 0.58], korb_v: [0.16, 0.74], sichtbar_pct_mittel: 34, nutzbar: [0, 6]}
+      a225:
+        glas: {z_m: [0.91, 1.14], sichtfeld_mm: [971, 883], korb_u: [-0.0, 0.73], korb_v: [0.1, 0.82], sichtbar_pct_mittel: 82, nutzbar: [12, 16]}
+        teller_ober: {z_m: [0.9, 1.03], sichtfeld_mm: [915, 832], korb_u: [-0.0, 0.73], korb_v: [0.1, 0.82], sichtbar_pct_mittel: 76, nutzbar: [5, 8]}
+        teller_unter: {z_m: [1.14, 1.27], sichtfeld_mm: [1150, 1045], korb_u: [0.09, 0.71], korb_v: [0.27, 0.92], sichtbar_pct_mittel: 93, nutzbar: [0, 6]}
+      a450:
+        glas: {z_m: [0.81, 1.05], sichtfeld_mm: [886, 805], korb_u: [0.1, 0.92], korb_v: [0.23, 1.06], sichtbar_pct_mittel: 97, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.8, 0.96], sichtfeld_mm: [841, 764], korb_u: [0.1, 0.92], korb_v: [0.23, 1.06], sichtbar_pct_mittel: 98, nutzbar: [0, 8]}
+        teller_unter: {z_m: [1.04, 1.19], sichtfeld_mm: [1065, 968], korb_u: [0.18, 0.85], korb_v: [0.39, 1.12], sichtbar_pct_mittel: 99, nutzbar: [0, 6]}
+    # je Platz und Auszug: [sichtbar %, Platz-z m, Einfallswinkel Grad, nutzbar]; z/Winkel null = nicht gemessen (außerhalb Bild/Bereich)
+    plaetze:
+      glas_1: {a0: [87, 0.99, 39, true], a225: [99, 0.91, 28, true], a450: [100, 0.81, 14, true]}
+      glas_2: {a0: [26, 1.04, 59, false], a225: [85, 0.94, 33, true], a450: [99, 0.85, 20, true]}
+      glas_3: {a0: [0, null, null, false], a225: [78, 0.98, 38, true], a450: [93, 0.89, 26, true]}
+      glas_4: {a0: [0, null, null, false], a225: [44, 1.02, 54, false], a450: [86, 0.93, 32, true]}
+      glas_5: {a0: [87, 1.03, 40, true], a225: [99, 0.94, 30, true], a450: [100, 0.85, 19, true]}
+      glas_6: {a0: [31, 1.08, 58, false], a225: [88, 0.98, 35, true], a450: [100, 0.89, 23, true]}
+      glas_7: {a0: [0, null, null, false], a225: [82, 1.02, 39, true], a450: [96, 0.93, 29, true]}
+      glas_8: {a0: [0, null, null, false], a225: [50, 1.06, 54, false], a450: [90, 0.97, 33, true]}
+      glas_9: {a0: [87, 1.07, 52, true], a225: [99, 0.98, 33, true], a450: [100, 0.89, 25, true]}
+      glas_10: {a0: [36, 1.12, 54, false], a225: [92, 1.02, 37, true], a450: [100, 0.93, 28, true]}
+      glas_11: {a0: [0, null, null, false], a225: [87, 1.06, 41, true], a450: [98, 0.97, 32, true]}
+      glas_12: {a0: [0, null, null, false], a225: [55, 1.1, 52, false], a450: [94, 1.01, 36, true]}
+      glas_13: {a0: [88, 1.1, 50, true], a225: [99, 1.02, 57, true], a450: [100, 0.93, 31, true]}
+      glas_14: {a0: [42, 1.16, 51, false], a225: [96, 1.06, 54, true], a450: [100, 0.97, 34, true]}
+      glas_15: {a0: [0, null, null, false], a225: [91, 1.09, 51, true], a450: [99, 1.01, 57, true]}
+      glas_16: {a0: [0, null, null, false], a225: [61, 1.14, 50, false], a450: [97, 1.05, 55, true]}
+      oberteller_0_1: {a0: [94, 1.07, 56, true], a225: [100, 0.99, 67, false], a450: [100, 0.89, 80, false]}
+      oberteller_0_2: {a0: [30, 1.09, 53, true], a225: [78, 0.99, 64, false], a450: [100, 0.92, 77, false]}
+      oberteller_0_3: {a0: [2, 1.14, 52, false], a225: [70, 1.01, 61, true], a450: [100, 0.94, 73, false]}
+      oberteller_0_4: {a0: [0, null, null, false], a225: [64, 1.03, 58, true], a450: [95, 0.96, 70, false]}
+      oberteller_1_1: {a0: [94, 0.98, 54, true], a225: [100, 0.9, 65, false], a450: [100, 0.8, 79, false]}
+      oberteller_1_2: {a0: [25, 0.99, 51, true], a225: [73, 0.9, 61, true], a450: [100, 0.83, 75, false]}
+      oberteller_1_3: {a0: [0, 1.04, 50, false], a225: [65, 0.92, 58, true], a450: [100, 0.85, 71, false]}
+      oberteller_1_4: {a0: [0, null, null, false], a225: [59, 0.94, 55, true], a450: [90, 0.87, 68, false]}
+      unterteller_0_1: {a0: [96, 1.33, 63, false], a225: [100, 1.23, 72, false], a450: [100, 1.13, 83, false]}
+      unterteller_0_2: {a0: [7, 1.37, 61, false], a225: [94, 1.25, 70, false], a450: [100, 1.16, 80, false]}
+      unterteller_0_3: {a0: [0, null, null, false], a225: [87, 1.27, 67, false], a450: [100, 1.19, 77, false]}
+      unterteller_1_1: {a0: [96, 1.24, 62, false], a225: [100, 1.14, 72, false], a450: [96, 1.04, 82, false]}
+      unterteller_1_2: {a0: [4, 1.28, 60, false], a225: [91, 1.16, 69, false], a450: [100, 1.07, 79, false]}
+      unterteller_1_3: {a0: [0, null, null, false], a225: [83, 1.18, 66, false], a450: [100, 1.1, 76, false]}
+  ausleger:
+    name: Alternative einfacher Ausleger
+    kamera_m: [0.55, 0.6, 1.3]
+    neigung_grad: 60
+    blickpunkt_m: [0.3, 0.17, 0.44]
+    # Abstand (euklidisch, m) und Kamerarahmen-z (m) zu den Referenzpunkten; r1 Mitte Plattenvorderkante (Oberseite),
+    # r2 Mitte Oberkorb-Front am Boden (0,45 m aus), r3 Mitte Unterkorb-Front am Boden (0,45 m aus)
+    referenz:
+      r1: {abstand_m: 0.747, z_rahmen_m: 0.682}
+      r2: {abstand_m: 0.934, z_rahmen_m: 0.907}
+      r3: {abstand_m: 1.207, z_rahmen_m: 1.145}
+    # je Auszug (a0 = 0,000 m, a225 = 0,225 m, a450 = 0,450 m) und Gruppe: Platz-z min/max, Sichtfeld an der mittleren Ebene (mm),
+    # Korb im Bild (u/v-Anteil min/max), sichtbare Fläche Mittel (%), nutzbar [n, N] (Flächenzählung)
+    gruppen:
+      a0:
+        glas: {z_m: [1.01, 1.21], sichtfeld_mm: [1053, 957], korb_u: [-0.03, 0.62], korb_v: [-0.12, 0.47], sichtbar_pct_mittel: 44, nutzbar: [8, 16]}
+        teller_ober: {z_m: [0.99, 1.15], sichtfeld_mm: [1012, 919], korb_u: [-0.03, 0.62], korb_v: [-0.12, 0.47], sichtbar_pct_mittel: 41, nutzbar: [7, 8]}
+        teller_unter: {z_m: [1.25, 1.42], sichtfeld_mm: [1262, 1147], korb_u: [0.06, 0.61], korb_v: [0.08, 0.62], sichtbar_pct_mittel: 39, nutzbar: [4, 6]}
+      a225:
+        glas: {z_m: [0.91, 1.13], sichtfeld_mm: [975, 886], korb_u: [0.04, 0.75], korb_v: [-0.0, 0.67], sichtbar_pct_mittel: 81, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.9, 1.03], sichtfeld_mm: [913, 830], korb_u: [0.04, 0.75], korb_v: [-0.0, 0.67], sichtbar_pct_mittel: 66, nutzbar: [8, 8]}
+        teller_unter: {z_m: [1.15, 1.26], sichtfeld_mm: [1147, 1042], korb_u: [0.12, 0.72], korb_v: [0.19, 0.8], sichtbar_pct_mittel: 83, nutzbar: [1, 6]}
+      a450:
+        glas: {z_m: [0.82, 1.04], sichtfeld_mm: [884, 804], korb_u: [0.12, 0.92], korb_v: [0.13, 0.92], sichtbar_pct_mittel: 93, nutzbar: [16, 16]}
+        teller_ober: {z_m: [0.8, 0.94], sichtfeld_mm: [831, 756], korb_u: [0.12, 0.92], korb_v: [0.13, 0.92], sichtbar_pct_mittel: 87, nutzbar: [1, 8]}
+        teller_unter: {z_m: [1.05, 1.18], sichtfeld_mm: [1063, 966], korb_u: [0.19, 0.85], korb_v: [0.31, 1.0], sichtbar_pct_mittel: 100, nutzbar: [0, 6]}
+    # je Platz und Auszug: [sichtbar %, Platz-z m, Einfallswinkel Grad, nutzbar]; z/Winkel null = nicht gemessen (außerhalb Bild/Bereich)
+    plaetze:
+      glas_1: {a0: [84, 1.01, 49, true], a225: [91, 0.91, 35, true], a450: [100, 0.82, 22, true]}
+      glas_2: {a0: [63, 1.05, 48, true], a225: [76, 0.95, 39, true], a450: [92, 0.86, 28, true]}
+      glas_3: {a0: [14, 1.1, 56, false], a225: [70, 0.99, 43, true], a450: [85, 0.9, 33, true]}
+      glas_4: {a0: [0, null, null, false], a225: [64, 1.04, 47, true], a450: [77, 0.94, 38, true]}
+      glas_5: {a0: [84, 1.04, 48, true], a225: [91, 0.94, 36, true], a450: [100, 0.85, 25, true]}
+      glas_6: {a0: [68, 1.08, 48, true], a225: [81, 0.98, 41, true], a450: [95, 0.89, 30, true]}
+      glas_7: {a0: [20, 1.14, 56, false], a225: [75, 1.03, 45, true], a450: [89, 0.93, 35, true]}
+      glas_8: {a0: [0, null, null, false], a225: [70, 1.07, 48, true], a450: [82, 0.97, 40, true]}
+      glas_9: {a0: [84, 1.07, 47, true], a225: [91, 0.97, 39, true], a450: [100, 0.88, 30, true]}
+      glas_10: {a0: [74, 1.11, 49, true], a225: [86, 1.02, 51, true], a450: [98, 0.92, 34, true]}
+      glas_11: {a0: [25, 1.17, 50, false], a225: [80, 1.06, 47, true], a450: [93, 0.96, 38, true]}
+      glas_12: {a0: [0, null, null, false], a225: [75, 1.1, 49, true], a450: [87, 1.01, 52, true]}
+      glas_13: {a0: [85, 1.1, 48, true], a225: [92, 1.01, 52, true], a450: [100, 0.91, 36, true]}
+      glas_14: {a0: [79, 1.15, 50, true], a225: [90, 1.05, 49, true], a450: [99, 0.95, 56, true]}
+      glas_15: {a0: [30, 1.21, 46, false], a225: [85, 1.09, 48, true], a450: [96, 1.0, 53, true]}
+      glas_16: {a0: [0, null, null, false], a225: [80, 1.13, 50, true], a450: [92, 1.04, 50, true]}
+      oberteller_0_1: {a0: [92, 1.07, 51, true], a225: [99, 0.98, 61, true], a450: [100, 0.88, 73, false]}
+      oberteller_0_2: {a0: [45, 1.07, 47, true], a225: [63, 0.98, 57, true], a450: [96, 0.9, 70, false]}
+      oberteller_0_3: {a0: [27, 1.1, 45, true], a225: [57, 1.0, 54, true], a450: [85, 0.92, 66, false]}
+      oberteller_0_4: {a0: [5, 1.15, 44, false], a225: [52, 1.03, 52, true], a450: [76, 0.94, 63, false]}
+      oberteller_1_1: {a0: [93, 1.0, 48, true], a225: [99, 0.9, 58, true], a450: [100, 0.8, 72, false]}
+      oberteller_1_2: {a0: [41, 0.99, 44, true], a225: [57, 0.9, 54, true], a450: [90, 0.82, 68, false]}
+      oberteller_1_3: {a0: [22, 1.02, 42, true], a225: [52, 0.92, 51, true], a450: [79, 0.84, 64, false]}
+      oberteller_1_4: {a0: [2, 1.07, 42, true], a225: [47, 0.95, 48, true], a450: [70, 0.86, 60, true]}
+      unterteller_0_1: {a0: [100, 1.33, 59, true], a225: [100, 1.23, 67, false], a450: [100, 1.12, 78, false]}
+      unterteller_0_2: {a0: [19, 1.35, 56, true], a225: [79, 1.24, 65, false], a450: [100, 1.15, 75, false]}
+      unterteller_0_3: {a0: [0, 1.42, 55, false], a225: [73, 1.26, 62, false], a450: [100, 1.18, 72, false]}
+      unterteller_1_1: {a0: [100, 1.25, 57, true], a225: [100, 1.15, 66, false], a450: [100, 1.05, 77, false]}
+      unterteller_1_2: {a0: [16, 1.27, 55, true], a225: [76, 1.16, 63, false], a450: [100, 1.08, 74, false]}
+      unterteller_1_3: {a0: [0, null, null, false], a225: [69, 1.18, 60, true], a450: [98, 1.1, 71, false]}
