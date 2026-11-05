@@ -51,73 +51,95 @@ def roi_aus_szene(d: Dict, cam, rand_px: int = 60, hw=None) -> tuple:
 
 # --- Baseline ---------------------------------------------------------------------------------
 
-def _hue_ellipse(cx, cy, a, b, ang, shape):
-    import cv2
-    m = np.zeros(shape, np.uint8)
-    cv2.ellipse(m, ((float(cx), float(cy)), (float(2 * a), float(2 * b)), float(ang)), 1, -1)
-    return m.astype(bool)
+def kreis_vorlage(cam, mitte, radius: float, normale, n: int = 72) -> np.ndarray:
+    """Bildumriss (n, 2) eines Kreises im Raum (Mitte, Radius, Ebenennormale) relativ zum Bild der Mitte, in Pixeln."""
+    nv = np.asarray(normale, float)
+    nv = nv / np.linalg.norm(nv)
+    t = np.cross(nv, [0.0, 0.0, 1.0] if abs(nv[2]) < 0.9 else [1.0, 0.0, 0.0])
+    t /= np.linalg.norm(t)
+    u_ = np.cross(nv, t)
+    a = np.linspace(0, 2 * math.pi, n, endpoint=False)
+    P = np.asarray(mitte, float) + radius * (np.outer(np.cos(a), t) + np.outer(np.sin(a), u_))
+    u, v, _ = cam.projiziere(np.vstack([P, np.asarray(mitte, float)[None]]))
+    return np.stack([u[:-1] - u[-1], v[:-1] - v[-1]], 1)
 
 
-def baseline(rgb: np.ndarray, roi: tuple, px_glas: float, px_teller: Sequence[float], hoehe_vec: Sequence[float],
-             schwelle: float = 0.0, arbeits_skala: float = 0.5) -> List[Dict]:
-    """Klassische Erkennung. ``px_glas``: Durchmesser des Glasdeckels im Bild (px), ``px_teller``: erwartete
-    Tellerdurchmesser (px, z. B. Dessert-, Essteller), ``hoehe_vec``: Bildverschiebung (dx, dy) Deckel -> Boden
-    eines Glases (px). Rueckgabe: Liste {maske, klasse, score} im Vollbild."""
+def vorlagen_aus_szene(d: Dict, cam) -> Dict:
+    """Erwartete Bildumrisse (relativ zur Objektmitte) aus Kamerapose und Nennmassen: Glasdeckel (geschlossener
+    Boden oben), Dessert- und Essteller. Referenzort: Mittel der Objekte der Szene (die Station kennt den Korb,
+    nicht die einzelnen Plaetze)."""
+    ob = d["objekte"]
+    gl = [np.asarray(o["mitte"], float) for o in ob if o["klasse"] == "glas"]
+    te = [np.asarray(o["mitte"], float) for o in ob if o["klasse"] == "teller"]
+    cg = np.mean(gl, 0) if gl else np.array([0.30, 0.15, 0.475])
+    ct = np.mean(te, 0) if te else np.array([0.30, 0.15, 0.52])
+    z = np.array([0.0, 0.0, 1.0])
+    lid = kreis_vorlage(cam, cg + 0.055 * z, 0.0375, z)
+    uv = cam.projiziere(np.array([cg + 0.055 * z, cg - 0.055 * z]))
+    ny = np.array([0.0, -1.0, 0.0])
+    return {"glas": {"lid": lid, "versatz": (float(uv[0][1] - uv[0][0]), float(uv[1][1] - uv[1][0]))},
+            "teller": {"dessert": kreis_vorlage(cam, ct, 0.095, ny), "essteller": kreis_vorlage(cam, ct, 0.13, ny)}}
+
+
+def _ring(poly, s, dicke=3):
     import cv2
+    p = poly * s
+    x0, y0 = np.floor(p.min(0)).astype(int) - 6
+    x1, y1 = np.ceil(p.max(0)).astype(int) + 6
+    img = np.zeros((y1 - y0, x1 - x0), np.float32)
+    cv2.polylines(img, [np.round(p - [x0, y0]).astype(np.int32)], True, 1.0, dicke)
+    return img, p.mean(0) - [x0, y0]       # Vorlage und Ankerpunkt (Mitte)
+
+
+def baseline(rgb: np.ndarray, roi: tuple, vorlagen: Dict, schwelle: Optional[Dict] = None, arbeits_skala: float = 0.5,
+             massstaebe=(0.85, 1.0, 1.15)) -> List[Dict]:
+    """Klassische Erkennung per Kantenabgleich: Canny-Kanten, Vorlage = projizierter Umriss der Nennform,
+    ``matchTemplate`` bei mehreren Massstaeben, Maximumsuche. Score = mittlere Kantendichte laengs des Umrisses
+    (0..1). Rueckgabe: Liste {maske, klasse, score, unter} im Vollbild."""
+    import cv2
+    schwelle = schwelle or {"glas": 0.50, "teller": 0.42}
     x0, y0, x1, y1 = roi
-    crop = rgb[y0:y1, x0:x1]
     s = arbeits_skala
-    g = cv2.cvtColor(cv2.resize(crop, None, fx=s, fy=s, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)
+    g = cv2.cvtColor(cv2.resize(rgb[y0:y1, x0:x1], None, fx=s, fy=s, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)
     g = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(cv2.GaussianBlur(g, (5, 5), 0))
-    e = cv2.Canny(g, 35, 100)
-    e = cv2.dilate(e, np.ones((3, 3), np.uint8))
-    cs, _ = cv2.findContours(e, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-    cand = []
+    e = cv2.Canny(g, 30, 90).astype(np.float32) / 255.0
+    ef = np.minimum(1.0, cv2.GaussianBlur(e, (0, 0), 1.6) * 6.0)
     shape = rgb.shape[:2]
-    d_g = px_glas * s
-    d_t = [t * s for t in px_teller]
-    for c in cs:
-        if len(c) < 50:
-            continue
-        (cx, cy), (w, h), ang = cv2.fitEllipse(c)
-        major, minor = max(w, h), min(w, h)
-        if minor < 0.45 * major:
-            continue
-        # Abweichung der Kontur von der Ellipse (algebraisch, normiert)
-        pts = c[:, 0, :].astype(float)
-        th = math.radians(ang)
-        ct, st = math.cos(th), math.sin(th)
-        dx, dy = pts[:, 0] - cx, pts[:, 1] - cy
-        xr, yr = dx * ct + dy * st, -dx * st + dy * ct
-        r = np.sqrt((xr / (w / 2)) ** 2 + (yr / (h / 2)) ** 2)
-        res = float(np.mean(np.abs(r - 1.0)))
-        if res > 0.08:
-            continue
-        cover = len(np.unique(np.round(np.degrees(np.arctan2(yr, xr)) / 20))) / 18.0
-        if cover < 0.45:
-            continue
-        for klasse, dref in [("glas", [d_g])] + [("teller", d_t)]:
-            if any(0.75 * dr <= major <= 1.3 * dr for dr in dref):
-                score = (1.0 - res / 0.08) * 0.5 + cover * 0.5
-                cand.append((score, klasse, cx / s + x0, cy / s + y0, major / s / 2, minor / s / 2,
-                             ang if w >= h else ang + 90.0))
-                break
+    cand = []
+    arten = [("glas", "glas", vorlagen["glas"]["lid"])] + [("teller", k, p) for k, p in vorlagen["teller"].items()]
+    for klasse, unter, poly in arten:
+        for ms in massstaebe:
+            tm, anker = _ring(poly * ms, s)
+            if tm.shape[0] >= ef.shape[0] or tm.shape[1] >= ef.shape[1]:
+                continue
+            res = cv2.matchTemplate(ef, tm, cv2.TM_CCORR) / max(1.0, float((tm > 0).sum()))
+            r = int(0.45 * min(tm.shape))
+            mx = cv2.dilate(res, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))
+            ys, xs = np.where((res >= mx) & (res >= schwelle[klasse]))
+            for yy, xx in zip(ys, xs):
+                cand.append((float(res[yy, xx]), klasse, unter, (xx + anker[0]) / s + x0, (yy + anker[1]) / s + y0, ms))
     cand.sort(key=lambda t: -t[0])
+    cand = cand[:120]
     out: List[Dict] = []
-    for score, klasse, cx, cy, a, b, ang in cand:
-        if score < schwelle:
-            continue
-        m = _hue_ellipse(cx, cy, a, b, ang, shape)
+    klein, kz = [], 0.25
+    sh_k = (int(shape[0] * kz) + 1, int(shape[1] * kz) + 1)
+    for score, klasse, unter, cx, cy, ms in cand:
+        poly = vorlagen["glas"]["lid"] if klasse == "glas" else vorlagen["teller"][unter]
+        pts = poly * ms + [cx, cy]
         if klasse == "glas":
-            m2 = _hue_ellipse(cx + hoehe_vec[0], cy + hoehe_vec[1], a, b, ang, shape)
-            hull = cv2.convexHull(np.argwhere(m | m2)[:, ::-1].astype(np.int32))
-            mm = np.zeros(shape, np.uint8)
-            cv2.fillConvexPoly(mm, hull, 1)
-            m = mm.astype(bool)
-        if any((m & o["maske"]).sum() / max(1, (m | o["maske"]).sum()) > 0.5 for o in out if o["klasse"] == klasse):
+            vx, vy = vorlagen["glas"]["versatz"]
+            pts = cv2.convexHull(np.vstack([pts, pts + [vx * ms, vy * ms]]).astype(np.float32))[:, 0, :]
+        mk = np.zeros(sh_k, np.uint8)
+        cv2.fillPoly(mk, [np.round(pts * kz).astype(np.int32)], 1)
+        mk = mk.astype(bool)
+        if any(_iou(mk, o) > 0.4 for o in klein):
             continue
-        out.append({"maske": m, "klasse": klasse, "score": float(score)})
+        klein.append(mk)
+        m = np.zeros(shape, np.uint8)
+        cv2.fillPoly(m, [np.round(pts).astype(np.int32)], 1)
+        out.append({"maske": m.astype(bool), "klasse": klasse, "score": score, "unter": unter})
     return out
+
 
 
 # --- Mask R-CNN -------------------------------------------------------------------------------
@@ -233,13 +255,18 @@ def erk_speichern(pfad, erk: List[Dict], roi: tuple, hw: tuple) -> None:
                         score=np.array([e["score"] for e in erk] or [0.0]))
 
 
-def erk_laden(pfad) -> List[Dict]:
+def erk_laden(pfad, f: int = 1) -> List[Dict]:
+    """Erkennungen laden; ``f`` > 1: Masken nur an jedem f-ten Pixel (wie ``inst[::f, ::f]``), schneller auszuwerten."""
     z = np.load(pfad)
     x0, y0, x1, y1 = (int(v) for v in z["roi"])
     h, w = (int(v) for v in z["hw"])
+    ys = np.arange(-(-y0 // f) * f, y1, f)
+    xs = np.arange(-(-x0 // f) * f, x1, f)
     out = []
     for k in range(int(z["n"])):
-        m = np.zeros((h, w), bool)
-        m[y0:y1, x0:x1] = np.unpackbits(z["packed"][k])[: (y1 - y0) * (x1 - x0)].reshape(y1 - y0, x1 - x0).astype(bool)
+        m = np.zeros((-(-h // f), -(-w // f)), bool)
+        if len(ys) and len(xs):
+            crop = np.unpackbits(z["packed"][k])[: (y1 - y0) * (x1 - x0)].reshape(y1 - y0, x1 - x0)
+            m[ys[0] // f:ys[-1] // f + 1, xs[0] // f:xs[-1] // f + 1] = crop[np.ix_(ys - y0, xs - x0)].astype(bool)
         out.append({"maske": m, "klasse": str(z["klasse"][k]), "coco": int(z["coco"][k]), "score": float(z["score"][k])})
     return out

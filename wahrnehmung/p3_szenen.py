@@ -67,8 +67,9 @@ def plan(korb: str, n_je_zelle: int = 3, seed0: int = 0) -> List[Dict]:
     return out
 
 
-def _obj(name, klasse, unter, c, R, r, h, farbe, nass):
+def _obj(name, klasse, unter, c, R, r, h, farbe, nass, nenn=None):
     return {"name": name, "klasse": klasse, "unterklasse": unter, "mitte": [float(v) for v in c],
+            "nenn_mitte": [float(v) for v in (nenn if nenn is not None else c)],   # Lage laut Belegungsplan (ohne Jitter)
             "rot": [[float(v) for v in row] for row in R], "radius": float(r), "hoehe": float(h),
             "farbe": farbe, "nass": bool(nass)}
 
@@ -124,7 +125,8 @@ def baue_szene(spec: Dict) -> Dict:
                 d = rng.uniform(-0.004, 0.004, 2)
                 n_gl += 1
                 objekte.append(_obj(f"glas_{n_gl}", "glas", "glas", (s[0] + d[0], s[1] + d[1], s[2]),
-                                    KOPFUEBER @ rz(float(rng.uniform(-3, 3))), glas_r, glas_h, "klar", nass))
+                                    KOPFUEBER @ rz(float(rng.uniform(-3, 3))), glas_r, glas_h, "klar", nass,
+                                    nenn=(s[0], s[1], s[2])))
         if layout in ("gemischt", "teller"):
             ok = m["oberkorb"]
             vorne = ok["vorne_eingeschoben_y_m"] + auszug_o
@@ -137,7 +139,7 @@ def baue_szene(spec: Dict) -> Dict:
                         R = rz(float(rng.uniform(-1.5, 1.5))) @ rx(float(rng.uniform(-1.5, 1.5))) @ TELLER_ROT
                         n_te += 1
                         objekte.append(_obj(f"teller_{n_te}", "teller", "dessert", (x, y, boden + DESSERT_R), R,
-                                            DESSERT_R, TELLER_DICKE, farbe(), nass))
+                                            DESSERT_R, TELLER_DICKE, farbe(), nass, nenn=(x0, vorne - dy, boden + DESSERT_R)))
                         _halter(f"tellerhalter_{n_te}", x0, y, boden, TELLER_DICKE, stat_extra)
     else:
         uk = m["unterkorb"]
@@ -151,7 +153,7 @@ def baue_szene(spec: Dict) -> Dict:
                 n_te += 1
                 objekte.append(_obj(f"teller_{n_te}", "teller", "essteller",
                                     (x, y, boden + ESS_R * math.cos(math.radians(tilt)) + 0.004), R, ESS_R,
-                                    TELLER_DICKE, farbe(), nass))
+                                    TELLER_DICKE, farbe(), nass, nenn=(0.17, vorne - 0.05 - 0.05 * k, boden + ESS_R)))
                 _halter(f"tellerhalter_{n_te}", 0.17, y, boden, TELLER_DICKE, stat_extra)
         if layout == "ess_dessert":      # rechte Haelfte: Dessertteller
             for k in range(8):
@@ -162,7 +164,8 @@ def baue_szene(spec: Dict) -> Dict:
                     n_te += 1
                     objekte.append(_obj(f"teller_{n_te}", "teller", "dessert",
                                         (x, y, boden + DESSERT_R * math.cos(math.radians(tilt)) + 0.004), R,
-                                        DESSERT_R, TELLER_DICKE, farbe(), nass))
+                                        DESSERT_R, TELLER_DICKE, farbe(), nass,
+                                        nenn=(0.42, vorne - 0.05 - 0.055 * k, boden + DESSERT_R)))
                     _halter(f"tellerhalter_{n_te}", 0.42, y, boden, TELLER_DICKE, stat_extra)
         else:                            # rechte Haelfte: Glaeser kopfueber
             for xg in (0.38, 0.48):
@@ -171,7 +174,8 @@ def baue_szene(spec: Dict) -> Dict:
                         x, y = xg + rng.uniform(-0.005, 0.005), vorne - 0.08 - 0.11 * k + rng.uniform(-0.005, 0.005)
                         n_gl += 1
                         objekte.append(_obj(f"glas_{n_gl}", "glas", "glas", (x, y, boden + glas_h / 2 + 0.003),
-                                            KOPFUEBER @ rz(float(rng.uniform(-3, 3))), glas_r, glas_h, "klar", nass))
+                                            KOPFUEBER @ rz(float(rng.uniform(-3, 3))), glas_r, glas_h, "klar", nass,
+                                            nenn=(xg, vorne - 0.08 - 0.11 * k, boden + glas_h / 2 + 0.003)))
     statisch = [_quader(k) for k in sz.koerper] + stat_extra
     statisch.append({"name": "boden", "gruppe": "boden", "mitte": [0.3, 0.3, -0.01], "halb": [4.0, 4.0, 0.01],
                      "rot": np.eye(3).tolist()})
