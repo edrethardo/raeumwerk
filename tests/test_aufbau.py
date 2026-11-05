@@ -303,6 +303,8 @@ def test_cli_aufbau(tmp_path):
 
 def test_beispiele_laden():
     for f in sorted((REPO / "beispiele").glob("*.yaml")):
+        if f.name.startswith("kameratag-"):          # Messdatei des Kameratags, kein Aufbau
+            continue
         d = AU.lade_yaml(f)
         assert AU.aufgaben(d), f.name
 
