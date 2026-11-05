@@ -1,0 +1,145 @@
+# Beispiel-Messdatei für scripts/kameratag_auswerten.py - ALLE WERTE ERFUNDEN (synthetisch), keine Messung.
+#
+# Aufnahmen: relative Pfade (Ordner kameratag/<datum>/<messung>/...). Synthetische Beispielaufnahmen schreibt
+#   scripts/kameratag_auswerten.py --demo <ordner>
+# Auswerten:
+#   scripts/kameratag_auswerten.py beispiele/kameratag-messung-beispiel.yaml --basis <ordner> --out <ergebnisordner>
+# Jede Zeile ist optional; was fehlt, wird als 'nicht_gemessen' ausgewiesen.
+kopf:
+  datum: "2026-11-20"
+  mast: haupt
+  bearbeiter: "Beispiel"
+  notiz: "erfundene Werte; zeigt alle Urteile (stimmt, zu_optimistisch, zu_pessimistisch, unbekannt)"
+
+messungen:
+  # Zeile 1 Tiefenrauschen: aus Aufnahme einer ebenen Platte (ROI in Pixeln) oder direkt als Wert
+  z01:
+    ensenso:
+      - {aufnahme: kameratag/beispiel/m6_rauschen/001_ensenso.npz, roi_px: [20, 20, 140, 100]}   # z = 1,0 m
+      - {aufnahme: kameratag/beispiel/m6_rauschen/002_ensenso.npz, roi_px: [20, 20, 140, 100]}   # z = 0,82 m, doppelt so laut
+    d405:
+      - {z_m: 0.30, sigma_mm: 1.2}
+      - {z_m: 0.20, sigma_mm: 2.4}                                                               # erfunden: dreifach über Modell
+
+  # Zeile 2 Abstände: je Position, gemessen mit Laser (m)
+  z02:
+    haupt: {r1: 0.805, r2: 0.931, r3: 1.215}
+
+  # Zeile 3 Bildausschnitt: Sichtfeld bei 1 m (mm) und Korbecken im Bild
+  z03:
+    haupt:
+      fov_1m_mm: [930, 860]
+      ecken: {a225: 8, a450: 6}
+
+  # Zeile 4 Sichtbarkeit je Platz: nutzbar (true/false) oder {punkte: n} oder {nutzbar:, sichtbar_pct:}
+  z04:
+    haupt:
+      a225:
+        glas_1: true
+        glas_2: true
+        glas_3: false
+        glas_4: false
+        glas_5: true
+        glas_6: false
+        glas_7: true
+        glas_8: true
+        oberteller_0_1: true
+        oberteller_0_2: true
+        oberteller_1_1: true
+        oberteller_1_2: true
+      a450:
+        oberteller_0_1: false
+        oberteller_0_2: false
+        oberteller_0_3: false
+        oberteller_0_4: true
+        oberteller_1_1: false
+        oberteller_1_2: false
+        unterteller_0_1: {punkte: 410}
+        unterteller_0_2: {punkte: 120}
+
+  # Zeile 5 Punktabdeckung: Anteile in Prozent oder Aufnahmen mit Maske (organisierte npz mit xyz und maske)
+  z05:
+    glas:
+      objekte:
+        - {aufnahme: kameratag/beispiel/m3_erkennung/glas_001_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/glas_002_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/glas_003_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/glas_004_ensenso.npz}
+      abdeckung_pct: [28, 33, 35, 29]
+    teller:
+      objekte:
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_001_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_002_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_003_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_004_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_005_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_006_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_007_ensenso.npz}
+        - {aufnahme: kameratag/beispiel/m3_erkennung/teller_008_ensenso.npz}
+
+  # Zeile 6 Erkennung: Treffer k von n sichtbaren Objekten (IoU >= 0,5 gegen Handlabel)
+  z06:
+    glas_tag: {k: 17, n: 20}
+    glas_kueche: {k: 8, n: 20}
+    teller_tag: {k: 19, n: 20}
+    nachbar_glas: {k: 2, n: 20}
+
+  # Zeile 7 Lagegenauigkeit: Fehler in mm je Objekt, oder geschaetzt_mm / referenz_mm (Listen von [x, y] oder [x, y, z])
+  z07:
+    glas:
+      fehler_mm: [0.9, 1.4, 1.1, 2.3, 1.8, 1.2, 0.8, 1.6]
+    teller:
+      geschaetzt_mm: [[150.0, 330.0], [150.5, 348.0], [151.0, 366.0], [149.0, 384.0]]
+      referenz_mm: [[144.0, 330.0], [144.0, 342.0], [144.5, 360.0], [143.0, 378.0]]
+
+  # Zeile 8 Wiederholgenauigkeit: 20 Aufnahmen derselben Szene
+  z08:
+    punkt:
+      aufnahmen: [
+        kameratag/beispiel/m6_wiederholung/001_ensenso.npz, kameratag/beispiel/m6_wiederholung/002_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/003_ensenso.npz, kameratag/beispiel/m6_wiederholung/004_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/005_ensenso.npz, kameratag/beispiel/m6_wiederholung/006_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/007_ensenso.npz, kameratag/beispiel/m6_wiederholung/008_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/009_ensenso.npz, kameratag/beispiel/m6_wiederholung/010_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/011_ensenso.npz, kameratag/beispiel/m6_wiederholung/012_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/013_ensenso.npz, kameratag/beispiel/m6_wiederholung/014_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/015_ensenso.npz, kameratag/beispiel/m6_wiederholung/016_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/017_ensenso.npz, kameratag/beispiel/m6_wiederholung/018_ensenso.npz,
+        kameratag/beispiel/m6_wiederholung/019_ensenso.npz, kameratag/beispiel/m6_wiederholung/020_ensenso.npz]
+      roi_px: [20, 20, 140, 100]
+    pose:
+      glas: [[300.2, 200.1], [300.9, 199.4], [299.6, 200.3], [300.4, 200.8], [299.9, 199.7], [300.1, 200.2]]
+      teller_gier_grad: [0.1, -0.2, 0.3, 0.0, -0.1, 0.2]
+
+  # Zeile 9 Teller-Lage und -Gier im Ständer (6 Teller): Gier in Grad, Lage x/y in mm gegen Nennlage
+  z09:
+    gier_grad: [0.5, 1.2, 1.8, 0.3, 2.6, 0.9]
+    lage_mm: [2.0, 3.5, 4.0, 1.5, 3.0, 4.5]
+
+  # Zeile 10 Glaslage im Slot
+  z10:
+    lage_mm: [2.0, 3.5, 6.5, 4.0, 5.0]
+    neigung_grad: [0.5, 1.5, 2.0, 1.0]
+
+  # Zeile 11 Randdicke (Messschieber) und Anteil gelungener Teller-Posen aus der Ensenso
+  z11:
+    dicke_mm: [4.8, 5.1, 5.4, 5.0, 4.9, 5.2]
+    pose: {k: 10, n: 14}
+
+  # Zeile 12 Station-Kalibrierfehler: direkt, oder station / referenz (Punktlisten in mm, mindestens 3 Paare)
+  z12:
+    versatz_mm: 0.9
+    dreh_grad: 0.4
+
+  # Zeile 13 Spiel des Ständers (größte erreichbare Gier, Grad)
+  z13:
+    spiel_grad: [1.5, 2.2, 3.4]
+
+  # Nicht vorhersagbar (u1 bis u3)
+  u1:
+    erkennung_trocken: {k: 14, n: 20}
+    erkennung_nass: {k: 9, n: 20}
+  u2:
+    ausreisser_pct: 6.5
+  u3:
+    abdeckung_glas_pct: [3, 4, 2, 6, 4, 3, 5, 4]
