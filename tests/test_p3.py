@@ -159,9 +159,17 @@ def test_erk_ablage_rundlauf(tmp_path):
 
 def test_baseline_findet_ellipsen():
     cv2 = pytest.importorskip("cv2")
-    img = np.full((600, 800, 3), 200, np.uint8)
-    cv2.ellipse(img, ((300.0, 300.0), (400.0, 330.0), 10.0), (40, 40, 60), 6)     # "Teller"-Rand
-    cv2.ellipse(img, ((600.0, 300.0), (200.0, 180.0), 0.0), (30, 30, 30), 5)      # "Glas"-Deckel
-    erk = E.baseline(img, (0, 0, 800, 600), px_glas=190.0, px_teller=[380.0, 520.0], hoehe_vec=(0.0, 60.0))
-    klassen = {e["klasse"] for e in erk}
-    assert "glas" in klassen and "teller" in klassen
+    cam = WG.ensenso(skala=1.0)
+    d = P3.baue_szene({**P3.plan("ober", 1)[0], "layout": "glas"})
+    vor = E.vorlagen_aus_szene(d, cam)
+    # Testbild: Glasdeckel-Umriss und Dessertteller-Umriss als dunkle Linien auf hellem Grund
+    img = np.full((2064, 2472, 3), 210, np.uint8)
+    for poly, c in ((vor["glas"]["lid"], (900.0, 800.0)), (vor["teller"]["dessert"], (1500.0, 1100.0))):
+        cv2.polylines(img, [np.round(poly + c).astype(np.int32)], True, (30, 30, 30), 5)
+    erk = E.baseline(img, (400, 300, 2200, 1700), vor)
+    best = {k: max((e for e in erk if e["klasse"] == k), key=lambda e: e["score"], default=None) for k in ("glas", "teller")}
+    assert best["glas"] is not None and best["teller"] is not None
+    ys, xs = np.nonzero(best["glas"]["maske"])
+    assert abs(xs.mean() - (900.0 + vor["glas"]["versatz"][0] / 2)) < 40
+    ys, xs = np.nonzero(best["teller"]["maske"])
+    assert abs(xs.mean() - 1500.0) < 30 and abs(ys.mean() - 1100.0) < 30

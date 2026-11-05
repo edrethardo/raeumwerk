@@ -24,23 +24,6 @@ from wahrnehmung import erkennung as E  # noqa: E402
 from wahrnehmung import griffpose as WG  # noqa: E402
 
 
-def geometrie_hinweise(d, cam):
-    """Erwartete Bildgroessen (px) aus Kamera und Szene: Glasdeckel, Tellerdurchmesser, Glashoehe als Bildvektor."""
-    ob = d["objekte"]
-    gl = [np.asarray(o["mitte"], float) for o in ob if o["klasse"] == "glas"]
-    c = np.mean(gl, 0) if gl else np.array([0.30, 0.15, 0.45])
-    q = (c - cam.C) @ cam.R
-    f = cam.modell["f"]
-    px_glas = 2 * 0.0375 * f / q[2]
-    top = c + np.array([0, 0, 0.055])
-    bot = c - np.array([0, 0, 0.055])
-    u, v, _ = cam.projiziere(np.array([top, bot]))
-    hv = (float(u[1] - u[0]), float(v[1] - v[0]))
-    tc = np.mean([np.asarray(o["mitte"], float) for o in ob if o["klasse"] == "teller"] or [c], 0)
-    zt = ((tc - cam.C) @ cam.R)[2]
-    return px_glas, [2 * 0.095 * f / zt, 2 * 0.13 * f / zt], hv
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("szenen")
@@ -70,8 +53,7 @@ def main(argv=None) -> int:
         zt = {}
         if "baseline" in verf:
             t = time.monotonic()
-            pg, pt, hv = geometrie_hinweise(d, cam)
-            erk = E.baseline(rgb, roi, pg, pt, hv)
+            erk = E.baseline(rgb, roi, E.vorlagen_aus_szene(d, cam))
             E.erk_speichern(out / f"{d['id']}_baseline.npz", erk, roi, rgb.shape[:2])
             zt["baseline_s"] = round(time.monotonic() - t, 2)
             zt["baseline_n"] = len(erk)
