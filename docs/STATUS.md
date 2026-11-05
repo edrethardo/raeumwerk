@@ -129,3 +129,15 @@ jeweiligen Rechner (siehe `docs/umgebung.md`).
 | Teller-Pose aus der Station hängt an der Randdicke (Dicke-Sweep) | experimentell | Teller 3–5 mm 83–100 %, 7 mm 33–100 %, ab 8 mm 0 % (6 Seeds je Dicke); 0 von 227 Designpunkten mit Dicke > 8 mm |
 | Empfohlene Messreihenfolge Kameratag | Entwurf aus dem Modell | Randdicke → Kalibrierung → Erkennung → Tellerlage/-gier → D405-Rauschen; Aufwand ist Annahme |
 | Einfluss der Mastposition | im Modell ohne Wirkung (ST ≈ 0), Verdeckung des Mast-Branches nicht im Modell | `docs/sensitivitaet.md`, Abschnitt Grenzen |
+
+## Kameratag P5: Vorhersagekatalog, Messprotokoll, Auswertung
+
+| Funktion | Status | Beleg |
+|---|---|---|
+| Vorhersagekatalog, 13 Zeilen + 3 „unbekannt“-Zeilen, 4 Mastpositionen (Zeilen 2 bis 4 je Position, 30 Plätze × 3 Auszüge) | nachgewiesen (Dokumentation, eingefroren); Inhalt = Modell, Datenblatt, Annahme, **keine Messung** | `docs/kameratag-vorhersagen.md`, `config/kameratag_vorhersagen.yaml`; Einfrier-Commit und SHA-256 im Dokument; `tests/test_kameratag_auswerten.py::test_katalog_*`, `::test_doku_traegt_pruefsumme_des_eingefrorenen_katalogs` |
+| Messprotokoll mit Reihenfolge (Aufbau, Messung 1 bis 5 nach P4, Zusatz), Dateinamen, Formaten, Metadaten, Entscheidungsregeln | nachgewiesen (Dokument); Aufwände sind Annahmen | `docs/kameratag-messprotokoll.md` |
+| Auswertungsskript: Messdatei + Katalog → Abweichung, Urteil, Konsequenz, `kameratag_ergebnis.md` / `.json` | nachgewiesen (nur synthetische Daten) | `scripts/kameratag_auswerten.py`; `tests/test_kameratag_auswerten.py`: je ein Fall „stimmt“ / „zu optimistisch“ / „zu pessimistisch“ für 9 Zeilen, Beispiel Ende zu Ende |
+| Rechnung aus Punktwolken (Ebenen-σ, Abdeckung mit Maske, Pixelstreuung über 20 Aufnahmen, Kabsch, PLY-Einlesen) | nachgewiesen an synthetischen Wolken; nicht an Ensenso-Aufnahmen | `test_sigma_aus_synthetischer_wolke`, `test_abdeckung_aus_synthetischer_wolke`, `test_punkt_streuung_trifft_das_eingesetzte_rauschen`, `test_kabsch_findet_versatz_und_drehung`, `test_ply_ascii_und_binaer_gleiche_punkte` |
+| Anbindung der Pose-Schätzer und der Erkennung an echte Ensenso-Wolken und Fotos | nicht gebaut | Messprotokoll, Messung 1 (Behelf) und 3 |
+| Wiederholstreuung der Schätzpose (Katalogzeile 8b): Glas 1,8 mm, Teller 1,5 mm | experimentell (20 Seeds, einfache Testszene, enthält je Aufnahme gezogene Kalibrierfehler: obere Schranke) | `docs/kameratag-vorhersagen.md`, Zeile 8 |
+| Echte Messung am Kameratag | nicht nachgewiesen | steht aus |
