@@ -128,14 +128,30 @@ dem Vorlauf (Kamera (0,55; 0,40; 1,15) m über der Korbfront) liegen die Objekte
 750-mm-Untergrenze, der Oberkorb fällt aus dem Betriebsbereich (Sichtbarkeit 0 %). Der
 Mast muss weiter weg. Mit dem C57-6-S an **(0,55; 0,50; 1,35) m** liegen Oberkorb
 0,82–0,98 m und Unterkorb 1,02–1,20 m – beide im Bereich 750–1500 mm (≥ 70 mm zur Unter-,
-≥ 300 mm zur Obergrenze), und die Optik bleibt erhalten:
+≥ 300 mm zur Obergrenze), und die Optik bleibt erhalten (Zahlen der Tabelle aus dem früheren
+Rechenmodell **ohne Verdeckung und ohne Einfallswinkel der Teller**, Teller nach der
+Rand-Zählung; als Stand bewahrt, nicht mehr die Entscheidungsgrundlage):
 
 | Kamera / Mast (x; y; z) m | Abstand Oberkorb | Abstand Unterkorb | Oberkorb Gläser sicht / erk | Oberkorb Teller sicht / erk | Unterkorb Teller sicht / erk | Erreichbarkeit |
 |---|---|---|---|---|---|---|
 | C57-6-S, (0,55; 0,40; 1,15) alt | 0,61–0,77 m | 0,81–1,00 m | **0 %** (unter 750 mm) | 30 % / 0 % | 100 % / 83 % | 8/16, 8/8, 4/4 |
-| **C57-6-S, (0,55; 0,50; 1,35)** | 0,82–0,98 m | 1,02–1,20 m | **100 % / 100 %** (1,6 mm) | 100 % / 100 % (1,3 mm) | 100 % / 67–83 % (0,7 mm) | **8/16, 8/8, 4/4** |
+| C57-6-S, (0,55; 0,50; 1,35) *(früheres Modell ohne Verdeckung, Rand-Zählung)* | 0,82–0,98 m | 1,02–1,20 m | 100 % / 100 % (1,6 mm) | 100 % / 100 % (1,3 mm) | 100 % / 67–83 % (0,7 mm) | 8/16, 8/8, 4/4 |
 
-Damit ist das **C57-6-S (Art. 1009348)** die Kamera für beide Körbe; die erhöhte Montage
+**Neuer Stand (Mastposition mit Verdeckung und Einfallswinkel, `docs/stationssichtbarkeit.md`):**
+Hauptposition (0,55; 0,70; 1,25) m, 55°; als Alternative „einfacher Ausleger“ (0,55; 0,60; 1,30) m, 60° (0,10 m weniger Ausleger,
+gleiche Gläser und gleiche Rand-Zählung, aber Teller-Fläche schwächer: Punktzahl 0,549 gegen 0,743); welche gilt, entscheidet die Randwulst-Dicke am Kameratag (zwei Messreihen). Erreichbarkeit
+unverändert 8/16, 8/8, 4/4. Die frühere Position (0,55; 0,50; 1,35) ist dort die
+„Alternative weiter hinten (Bestand)“: Gläser 12/16 bei 0,225 m und 16/16 bei 0,45 m,
+Oberkorb-Teller (Fläche) 5/8 und 0/8, Unterkorb-Teller 0/6 und 0/6 – die oben genannten
+„100 %“ der Oberkorb-Teller sind **vom schmalen Tellerrand getragen**, nicht von der
+Tellerfläche (Rand-Zählung, 0,45 m: 7/8). Ob die Teller aus der Ensenso eine Pose liefern,
+hängt an der Randwulst-Dicke der echten Teller (5 mm trägt, 12 mm nicht: `docs/kameratag-p3.md`)
+und ist eine Kameratag-Messgröße.
+
+Damit ist das **C57-6-S (Art. 1009348)** die Kamera, die den Betriebsabstand für beide Körbe
+einhält (Gläser beider Körbe liegen im Bereich); **für die Teller in beiden Körben gilt das nur
+unter der Randwulst-Annahme** (Flächen-Zählung: Unterkorb bei vollem Auszug 0/6 an jeder
+gerechneten Position). Die erhöhte Montage
 ist erreichbarkeitsneutral (kein Slot, kein Teller verloren, Ablage 4/4) und kostet rund
 950 € mehr als die B57-4. Zwei B57-4 (je eine über einem Korb) liefern die besten
 Einzelwerte, kosten aber rund 2 × 7.950 €. Die monochrome N46 hat kein Farbbild und findet
